@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice - Project Nexus</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary: #00d9ff;
+            --bg-dark: #0d1117;
+            --bg-card: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+            --success: #238636;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+        
+        .logo h1 { font-size: 1.25rem; color: var(--primary); }
+        
+        .nav-links { display: flex; gap: 0.5rem; }
+        
+        .nav-link {
+            padding: 0.5rem 1rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        
+        .nav-link:hover, .nav-link.active { background: var(--border); color: var(--text); }
+        
+        main { padding: 1.5rem; max-width: 800px; margin: 0 auto; }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .mic-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--border);
+            border: 4px solid var(--primary);
+            cursor: pointer;
+            margin: 2rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .mic-button:hover { transform: scale(1.05); }
+        
+        .mic-button.recording {
+            background: var(--primary);
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 217, 255, 0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(0, 217, 255, 0); }
+        }
+        
+        .mic-button svg {
+            width: 48px;
+            height: 48px;
+            fill: var(--text);
+        }
+        
+        .mic-button.recording svg { fill: var(--bg-dark); }
+        
+        .status {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .transcript {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            text-align: left;
+            min-height: 100px;
+        }
+        
+        .transcript-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        
+        .output-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="14" stroke="#00d9ff" stroke-width="2"/>
+                <circle cx="16" cy="16" r="6" fill="#00d9ff"/>
+            </svg>
+            <h1>Project Nexus</h1>
+        </a>
+        
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/chat.html" class="nav-link">Chat</a>
+            <a href="/vision.html" class="nav-link">Vision</a>
+            <a href="/voice.html" class="nav-link active">Voice</a>
+            <a href="/rag.html" class="nav-link">RAG</a>
+            <a href="/monitor.html" class="nav-link">Monitor</a>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="card">
+            <h2>Voice Input</h2>
+            <p class="status" id="status">Click microphone to start recording</p>
+            
+            <button class="mic-button" id="micBtn" onclick="toggleRecording()">
+                <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </button>
+            
+            <div class="transcript">
+                <div class="transcript-label">Transcript</div>
+                <div id="transcriptText">Your speech will appear here...</div>
+            </div>
+            
+            <div class="output-section">
+                <div class="transcript-label">AI Response</div>
+                <div id="responseText">Response will appear here...</div>
+            </div>
+            
+            <button class="btn" onclick="sendToChat()">Send to Chat</button>
+        </div>
+    </main>
+    
+    <script>
+        const socket = io();
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        
+        async function toggleRecording() {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+                    mediaRecorder.onstop = processAudio;
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    document.getElementById('micBtn').classList.add('recording');
+                    document.getElementById('status').textContent = 'Recording...';
+                } catch (e) {
+                    alert('Could not access microphone: ' + e.message);
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                document.getElementById('micBtn').classList.remove('recording');
+                document.getElementById('status').textContent = 'Processing...';
+            }
+        }
+        
+        function processAudio() {
+            document.getElementById('transcriptText').textContent = 'Audio processed. Configure Whisper API for transcription.';
+            document.getElementById('status').textContent = 'Click microphone to start recording';
+        }
+        
+        function sendToChat() {
+            const text = document.getElementById('transcriptText').textContent;
+            if (text && text !== 'Your speech will appear here...') {
+                window.location.href = '/chat.html?message=' + encodeURIComponent(text);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+Ok pero espera, de la fase 1 te saltaste varios capítulos que quedaron en blanco: "part-07-remote-access"
+"part-08-docker" "part-09-usb (esta la puedes omitir y luego la eliminamos)" "part-10-boot-config (esta la puedes omitir y luego la eliminamos)" "part-11-python-ai (esta la puedes omitir e incluirla en la fase 2 para experimentar con los modelos descargados, creando varios flujos de ejemplo usando vscode remote vía SSH - Debes explicar cómo configurar todo desde cero)" "part-16-troubleshooting". Verifica también los nuevos fixes que he agregado al directorio "D:\Documents\Jetson\eBook\Fixes" para actualizar el tutorial, haciendo énfasis en los fixes de los archivos "Arreglar servicios de inicio jetson - clean start.md" "[FIX] Configuración de Modelos LLM.txt" también considera utilizar los comandos de ejecución originales de los modelos de NVIDIA (optimizando el context windows y los tokens de acuerdo a las capacidades del modelo y las recomendaciones que estimes pertinente para la jetson), pero no olvides añadir el flag "--host 0.0.0.0" y el puerto respectivo "vLLM uses port `8000` by default, llama.cpp uses port `8080`" para que queden listos para ser compatibles con open-webUI, con Hermes, openClaw, Claude, y todo lo demás. Te comparto los comandos originales de la página de NVIDIA, también te anexo el link de cada modelo directamente de NVIDIA para que compruebes, siempre es mejor usar los links y comandos dados por el fabricante. Considera que estamos usando jetpack 7.2 para NVIDIA Jetson orin AGX 64 gb:
+
+"""
+### 1. Qwen3.5 35B-A3B (MoE)
+- **Category**: Reasoning & Agent (Tool Calling)
+- **Expected Performance**: ~30-35 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/qwen3-5-35b-a3b/ 
+- **Installation via vLLM**:
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  vllm serve Kbenkhaled/Qwen3.5-35B-A3B-quantized.w4a16 \
+  --gpu-memory-utilization 0.8 \
+  --enable-prefix-caching \
+  --reasoning-parser qwen3 \
+  --enable-auto-tool-choice \
+  --tool-call-parser qwen3_coder
+```
+
+> **Optional**: Enable Multi-Token Prediction (MTP) speculative decoding for higher throughput:
+> `--speculative-config '{"method": "mtp", "num_speculative_tokens": 4}'`
+
+---
+
+### 2. Nemotron 3 Nano Omni
+- **Category**: Multimodal (Text, Image, Audio, Video)
+- **Expected Performance**: ~39 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/nemotron-3-nano-omni/ 
+- **Installation via llama.cpp**:
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin \
+  llama-server \
+  --hf-repo ggml-org/NVIDIA-Nemotron-3-Nano-Omni \
+  --hf-file nemotron-3-nano-omni-ga_v1.0-Q4_K_M.gguf \
+  --ctx-size 8192 \
+  --port 8080 \
+  --alias my_model \
+  --n-gpu-layers 999
+```
+
+---
+
+### 3. Qwen3-VL-4B
+- **Category**: Vision-Language (Visual Agent)
+- **Expected Performance**: ~58 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/qwen3-vl-4b/ 
+- **Installation via vLLM**:
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  vllm serve cpatonn/Qwen3-VL-4B-Instruct-AWQ-4bit \
+  --gpu-memory-utilization 0.8
+```
+
+---
+
+### 4. Cosmos Reason 2 2B
+- **Category**: Vision-Language Reasoning (Spatial Reasoning, Anomaly Detection)
+- **Expected Performance**: ~59 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/cosmos-reason2-2b/ 
+- **Installation via vLLM** (requires NGC CLI):
+
+```bash
+# Install NGC CLI
+wget -O ngccli_arm64.zip https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/4.13.0/files/ngccli_arm64.zip
+unzip ngccli_arm64.zip && chmod u+x ngc-cli/ngc
+export PATH="$PATH:$(pwd)/ngc-cli"
+ngc config set   # (requires NGC account and API key)
+
+# Download FP8 model
+ngc registry model download-version "nim/nvidia/cosmos-reason2-2b:1208-fp8-static-kv8" \
+  --dest ~/.cache/huggingface/hub
+MODEL_PATH="$HOME/.cache/huggingface/hub/cosmos-reason2-2b_v1208-fp8-static-kv8"
+
+# Serve
+mkdir -p ~/.cache/vllm
+sudo sysctl -w vm.drop_caches=3
+sudo docker run -it --rm --runtime=nvidia --network host \
+  -v $MODEL_PATH:/models/cosmos-reason2-2b:ro \
+  -v ${HOME}/.cache/vllm:/root/.cache/vllm \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  vllm serve /models/cosmos-reason2-2b \
+    --max-model-len 8192 --gpu-memory-utilization 0.8 \
+    --reasoning-parser qwen3 \
+    --media-io-kwargs '{"video": {"num_frames": -1}}' \
+    --enable-prefix-caching \
+    --port 8010
+```
+
+- **Installation via llama.cpp** (simpler alternative):
+
+```bash
+sudo docker run -it --rm --pull always --runtime=nvidia --network host \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin \
+  llama-server -hf Kbenkhaled/Cosmos-Reason2-2B-GGUF:Q8_0 -c 8192
+```
+
+---
+
+### 5. Gemma 4 26B-A4B (MoE)
+- **Category**: Reasoning & Long Context (256K)
+- **Expected Performance**: ~32 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/gemma4-26b-a4b/ 
+- **Installation via vLLM** (use `gemma4-jetson-orin` image):
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/nvidia-ai-iot/vllm:gemma4-jetson-orin \
+  vllm serve cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit \
+  --gpu-memory-utilization 0.8 \
+  --enable-auto-tool-choice \
+  --reasoning-parser gemma4 \
+  --tool-call-parser gemma4
+```
+
+---
+
+### 6. Qwen3.5 9B
+- **Category**: Vision-Language (Balanced)
+- **Expected Performance**: ~55 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/qwen3-5-9b/ 
+- **Installation via vLLM**:
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  vllm serve Kbenkhaled/Qwen3.5-9B-quantized.w4a16 \
+  --gpu-memory-utilization 0.8 \
+  --enable-prefix-caching \
+  --reasoning-parser qwen3 \
+  --enable-auto-tool-choice \
+  --tool-call-parser qwen3_coder
+```
+
+---
+
+### 7. Nemotron3 Nano 4B
+- **Category**: Text-only (Fast & Efficient, 256K context)
+- **Expected Performance**: ~43 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/nemotron3-nano-4b/ 
+- **Installation via llama.cpp**:
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin \
+  llama-server \
+  --hf-repo nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF \
+  --hf-file NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf \
+  --ctx-size 8196 \
+  --alias my_model \
+  --n-gpu-layers 999
+```
+
+---
+
+### 8. Qwen3.5 4B
+- **Category**: Vision-Language (Lightweight)
+- **Expected Performance**: ~50 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/qwen3-5-4b/ 
+- **Installation via vLLM**:
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  vllm serve cyankiwi/Qwen3.5-4B-AWQ-4bit \
+  --gpu-memory-utilization 0.8 \
+  --enable-prefix-caching \
+  --reasoning-parser qwen3 \
+  --enable-auto-tool-choice \
+  --tool-call-parser qwen3_coder
+```
+
+---
+
+### 9. Gemma 4 E4B
+- **Category**: Multimodal (Text, Image, Audio)
+- **Expected Performance**: ~50 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/gemma4-e4b/ 
+- **Installation via vLLM**:
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/nvidia-ai-iot/vllm:gemma4-jetson-orin \
+  vllm serve google/gemma-4-E4B-it \
+  --gpu-memory-utilization 0.8 \
+  --enable-auto-tool-choice \
+  --reasoning-parser gemma4 \
+  --tool-call-parser gemma4
+```
+
+- **Installation via llama.cpp**:
+
+```bash
+sudo docker run -it --rm --pull always \
+  --runtime=nvidia --network host \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin \
+  llama-server -hf unsloth/gemma-4-E4B:Q4_K_M
+```
+
+---
+
+### 10. GPT OSS 20B
+- **Category**: Text-only (OpenAI-style)
+- **Expected Performance**: ~42 tok/s
+- **Official Page**: https://www.jetson-ai-lab.com/models/gpt-oss-20b/ (reference: )
+- **Installation via vLLM** (requires Tiktoken encodings):
+
+```bash
+# Download Tiktoken encodings
+mkdir -p $HOME/.cache/tiktoken
+wget -q https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken -O $HOME/.cache/tiktoken/cl100k_base.tiktoken
+wget -q https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken -O $HOME/.cache/tiktoken/o200k_base.tiktoken
+
+# Serve
+sudo docker run -it --rm --pull always --runtime=nvidia --network host \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  -v $HOME/.cache/tiktoken:/etc/encodings \
+  -e TIKTOKEN_ENCODINGS_BASE=/etc/encodings \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  vllm serve openai/gpt-oss-20b --gpu-memory-utilization 0.8
+```
+
+---
+
+## Testing & Benchmarking
+
+For each model, once the server is running, test with:
+
+```bash
+curl -s http://${JETSON_HOST}:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "my_model",
+    "messages": [{"role": "user", "content": "Explain quantum computing in one sentence."}],
+    "max_tokens": 100
+  }'
+```
+
+"""

@@ -1,0 +1,259 @@
+# ═══════════════════════════════════════════════════════════════
+# INNOVALABS — Autonomous Literature Factory
+# Docker Compose Stack v1.0
+# ═══════════════════════════════════════════════════════════════
+# Target: NVIDIA Jetson AGX Orin (aarch64)
+# OS: Ubuntu 22.04.5 LTS / JetPack 6.2.2 / CUDA 12.6
+#
+# Servicios:
+#   1. ollama     — Servidor de inferencia (GLM-4.7, DeepSeek-R1, Nemotron)
+#   2. writer     — Sidecar con llama-cli + CUDA para Qwen3.5-27B
+#   3. n8n        — Orquestador de workflows
+#
+# Requisitos previos:
+#   - NVIDIA Container Toolkit instalado (viene con JetPack 6.2.2)
+#   - Docker Compose v2.x+
+#   - Copiar .env.example → .env y ajustar valores
+#   - Ejecutar setup.sh antes del primer docker compose up
+#
+# Uso:
+#   docker compose up -d          # Levantar todo
+#   docker compose logs -f n8n    # Ver logs de n8n
+#   docker compose down           # Parar todo
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  # ─────────────────────────────────────────────
+  # OLLAMA — Servidor de inferencia local
+  # ─────────────────────────────────────────────
+  # Sirve 3 modelos vía API REST:
+  #   - glm-4.7-flash     (~4 GB) → Agente Estratega
+  #   - deepseek-r1:8b    (~6 GB) → Agente Arquitecto
+  #   - nemotron-3-nano   (~5 GB) → Agente Editor
+  #
+  # Los modelos se cargan/descargan secuencialmente
+  # gracias a OLLAMA_MAX_LOADED_MODELS=1
+  # ─────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: innovalabs-ollama
+    restart: unless-stopped
+
+    runtime: nvidia
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - OLLAMA_HOST=0.0.0.0:11434
+      # Máximo 1 modelo en VRAM simultáneamente (carga secuencial)
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-1}
+      # Descargar modelo de VRAM tras 2 min sin uso
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-120}
+      # Deshabilitar telemetría
+      - OLLAMA_NOPRUNE=true
+
+    volumes:
+      # Persistir modelos descargados entre reinicios
+      - ${OLLAMA_MODELS_DIR:-~/.ollama}:/root/.ollama
+
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+
+    # Health check para que n8n no arranque hasta que Ollama esté listo
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+
+  # ─────────────────────────────────────────────
+  # WRITER — Sidecar de llama.cpp con CUDA
+  # ─────────────────────────────────────────────
+  # Contenedor persistente que ejecuta llama-cli
+  # bajo demanda vía 'docker exec'.
+  #
+  # ¿Por qué un sidecar separado?
+  # → llama-cli necesita CUDA + el modelo GGUF de ~18 GB.
+  #   n8n no tiene CUDA en su imagen base.
+  #   El sidecar mantiene el entorno GPU aislado.
+  #
+  # n8n lo invoca así:
+  #   docker exec innovalabs-writer \
+  #     llama-cli -m /models/MODELO.gguf ... > /shared/output.txt
+  # ─────────────────────────────────────────────
+  writer:
+    image: ubuntu:22.04
+    container_name: innovalabs-writer
+    restart: unless-stopped
+
+    runtime: nvidia
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      # Asegurar que llama-cli encuentre las libs de CUDA
+      - LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/aarch64-linux-gnu:${LD_LIBRARY_PATH:-}
+      - PATH=/usr/local/bin:/usr/bin:/bin
+
+    volumes:
+      # Binario de llama-cli compilado en el host
+      - ${LLAMA_CLI_PATH:-~/.local/bin/llama-cli}:/usr/local/bin/llama-cli:ro
+
+      # Bibliotecas CUDA del host (JetPack 6.2.2)
+      - /usr/local/cuda:/usr/local/cuda:ro
+      - /usr/lib/aarch64-linux-gnu:/usr/lib/aarch64-linux-gnu:ro
+
+      # Modelos GGUF
+      - ${LLAMA_MODELS_DIR:-~/.cache/llama.cpp}:/models:ro
+
+      # Volumen compartido con n8n para intercambio de archivos
+      - shared_workspace:/shared
+
+    # Mantener el contenedor vivo sin consumir CPU
+    command: ["sleep", "infinity"]
+    # Alternativa más robusta:
+    # command: ["tail", "-f", "/dev/null"]
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    # No expone puertos — comunicación solo via docker exec + volumen compartido
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "2"
+
+
+  # ─────────────────────────────────────────────
+  # N8N — Orquestador de workflows
+  # ─────────────────────────────────────────────
+  # Ejecuta el workflow INNOVALABS:
+  #   Cron → Scout → Estratega → Arquitecto → Escritor → Editor → Deploy
+  #
+  # Accesos necesarios:
+  #   - HTTP a Ollama (via red interna Docker)
+  #   - docker exec al Writer (via docker.sock)
+  #   - Python en el host (via scripts montados)
+  #   - Filesystem para guardar historias
+  # ─────────────────────────────────────────────
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: innovalabs-n8n
+    restart: unless-stopped
+
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+    environment:
+      # ── Configuración general ──
+      - TZ=${TZ:-America/Bogota}
+      - GENERIC_TIMEZONE=${TZ:-America/Bogota}
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+
+      # ── Seguridad ──
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-cambiame-por-un-hash-seguro}
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-innovalabs2026}
+
+      # ── Ejecución ──
+      # Timeout extendido para nodos de larga duración (30 min)
+      - N8N_DEFAULT_EXECUTION_TIMEOUT=1800
+      - N8N_MAX_EXECUTION_TIMEOUT=3600
+      # Concurrencia máxima = 1 (HARD CONSTRAINT del spec)
+      - EXECUTIONS_MODE=regular
+      - EXECUTIONS_PROCESS=main
+
+      # ── Nodos permitidos ──
+      # Habilitar Execute Command (deshabilitado por defecto en n8n)
+      - N8N_NODES_INCLUDE=n8n-nodes-base.executeCommand
+
+      # ── Persistencia ──
+      - N8N_USER_FOLDER=/home/node/.n8n
+
+    volumes:
+      # Datos persistentes de n8n (workflows, credenciales, ejecuciones)
+      - n8n_data:/home/node/.n8n
+
+      # Docker socket — permite ejecutar 'docker exec' al Writer
+      # y 'docker restart' a Ollama en caso de OOM
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+      # Docker CLI del host (n8n Alpine no lo trae)
+      - /usr/bin/docker:/usr/bin/docker:ro
+
+      # Scripts de INNOVALABS (scout_trends.py, etc.)
+      - ${INNOVALABS_SCRIPTS_DIR:-/opt/innovalabs/scripts}:/opt/innovalabs/scripts:ro
+
+      # Directorio de historias generadas
+      - ${INNOVALABS_HISTORIAS_DIR:-/var/opt/innovalabs/historias}:/var/opt/innovalabs/historias
+
+      # Volumen compartido con Writer (para intercambio de archivos temporales)
+      - shared_workspace:/shared
+
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+
+    # n8n corre como root para acceso al docker socket
+    # En producción, considerar grupo docker o rootless Docker
+    user: "root"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+
+# ─────────────────────────────────────────────
+# Volúmenes persistentes
+# ─────────────────────────────────────────────
+volumes:
+  # Datos de n8n (workflows, credenciales, historial de ejecuciones)
+  n8n_data:
+    driver: local
+    name: innovalabs-n8n-data
+
+  # Espacio compartido entre n8n y Writer para archivos temporales
+  # (historias raw, prompts compilados, etc.)
+  shared_workspace:
+    driver: local
+    name: innovalabs-shared
+
+
+# ─────────────────────────────────────────────
+# Red
+# ─────────────────────────────────────────────
+# Red bridge por defecto. Todos los servicios se resuelven
+# por nombre: n8n puede hacer HTTP a 'ollama:11434'
+# sin exponer puertos al host.

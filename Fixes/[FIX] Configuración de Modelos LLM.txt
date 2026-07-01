@@ -1,0 +1,241 @@
+[FIX] Configuración de Modelos LLM en Jetson Orin con vLLM, llama.cpp y Open WebUI
+
+## Problema 1: Conflicto de nombres en contenedores Docker
+
+### Síntoma
+```
+docker: Error response from daemon: Conflict. The container name "/qwen35-35b" is already in use by container "fa6f4b43506e..."
+```
+
+### Causa
+Ya existe un contenedor con el mismo nombre, ya sea en estado detenido o en ejecución.
+
+### Solución
+```bash
+# Ver contenedores existentes (incluyendo detenidos)
+docker ps -a
+
+# Opciones para resolver:
+# Opción A: Eliminar el contenedor existente
+docker rm qwen35-35b
+
+# Opción B: Reiniciar el contenedor existente si está detenido
+docker start qwen35-35b
+docker logs -f qwen35-35b
+```
+
+---
+
+## Problema 2: Respuestas `None` en vLLM con Qwen3
+
+### Síntoma
+Las peticiones curl devuelven `Content: None` pero `Reasoning: [texto]`
+
+### Causa
+El parámetro `--reasoning-parser qwen3` está activo y el modelo genera solo el proceso de razonamiento interno, sin producir una respuesta final en el campo `content`.
+
+### Solución
+**Opción A: Desactivar el reasoning parser (respuestas directas)**
+```bash
+docker run --runtime nvidia -d \
+  --name qwen35-35b \
+  --restart unless-stopped \
+  --network host \
+  --ipc host \
+  --shm-size 8g \
+  -e NVIDIA_VISIBLE_DEVICES=all \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  bash -c "cd /opt && source venv/bin/activate && \
+    vllm serve Kbenkhaled/Qwen3.5-35B-A3B-quantized.w4a16 \
+      --gpu-memory-utilization 0.80 \
+      --enable-prefix-caching \
+      --enable-auto-tool-choice \
+      --tool-call-parser qwen3_coder \
+      --host 0.0.0.0 \
+      --port 8000"
+```
+
+**Opción B: Mantener reasoning pero ajustar prompt**
+Añadir un mensaje de sistema que guíe al modelo:
+```bash
+curl -s http://$JETSON_HOST:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Kbenkhaled/Qwen3.5-35B-A3B-quantized.w4a16",
+    "messages": [
+      {"role":"system","content":"Responde de manera concisa después de pensar."},
+      {"role":"user","content":"Explica computación cuántica en 1 oración."}
+    ],
+    "max_tokens": 200
+  }'
+```
+
+---
+
+## Problema 3: Error 404 "Model does not exist"
+
+### Síntoma
+```json
+{"error":{"message":"The model `Qwen/Qwen3.5-35B-A3B` does not exist.","type":"NotFoundError","param":"model","code":404}}
+```
+
+### Causa
+El nombre del modelo en la petición curl no coincide exactamente con el nombre usado al iniciar vLLM.
+
+### Solución
+**Opción A: Usar el nombre completo**
+```bash
+curl -s http://$JETSON_HOST:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "Kbenkhaled/Qwen3.5-35B-A3B-quantized.w4a16",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+```
+
+**Opción B: Definir un alias al iniciar vLLM**
+```bash
+vllm serve Kbenkhaled/Qwen3.5-35B-A3B-quantized.w4a16 \
+  --served-model-name qwen35 \
+  --gpu-memory-utilization 0.80 \
+  --enable-prefix-caching
+```
+Luego usar: `"model": "qwen35"`
+
+---
+
+## Problema 4: Open WebUI no aparece en Docker
+
+### Síntoma
+```
+Error response from daemon: No such container: open-webui
+```
+
+### Causa
+El contenedor fue eliminado o nunca se creó con ese nombre.
+
+### Solución
+Recrear el contenedor con configuración persistente:
+```bash
+docker run -d \
+  --name open-webui \
+  --restart unless-stopped \
+  -p 3000:8080 \
+  -v open-webui:/app/backend/data \
+  -e OPENAI_API_BASE_URL=http://192.168.1.100:8000/v1 \
+  ghcr.io/open-webui/open-webui:main
+```
+Acceder a: `http://192.168.1.100:3000`
+
+---
+
+## Problema 5: Cargar modelo Nemotron con llama.cpp
+
+### Comando de inicio
+```bash
+sudo docker run -d --name nemotron --restart unless-stopped \
+  --runtime=nvidia --network host \
+  ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin \
+  llama-server \
+  --hf-repo ggml-org/NVIDIA-Nemotron-3-Nano-Omni \
+  --hf-file nemotron-3-nano-omni-ga_v1.0-Q4_K_M.gguf \
+  --ctx-size 8192 \
+  --port 8080 \
+  --host 0.0.0.0 \
+  --alias my_model \
+  --n-gpu-layers 999
+```
+
+### Verificación
+```bash
+curl -s http://localhost:8080/completion \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "<|im_start|>user\nHola<|im_end|>\n<|im_start|>assistant\n<think>",
+    "n_predict": 50
+  }'
+```
+
+---
+
+## Problema 6: Open WebUI no conecta con llama.cpp
+
+### Síntoma
+Error "Network Problem" o "Connection failed" en Open WebUI al intentar conectar con llama.cpp.
+
+### Causa
+1. El servidor llama.cpp escucha solo en `127.0.0.1:8080` (localhost del host)
+2. Open WebUI está en un contenedor Docker separado, por lo que `localhost` para Open WebUI significa su propio contenedor
+
+### Solución
+
+**Paso 1: Reiniciar llama.cpp con `--host 0.0.0.0`**
+```bash
+sudo docker run -d --name nemotron --restart unless-stopped \
+  --runtime=nvidia --network host \
+  ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin \
+  llama-server \
+  --hf-repo ggml-org/NVIDIA-Nemotron-3-Nano-Omni \
+  --hf-file nemotron-3-nano-omni-ga_v1.0-Q4_K_M.gguf \
+  --ctx-size 8192 \
+  --port 8080 \
+  --host 0.0.0.0 \
+  --alias my_model \
+  --n-gpu-layers 999
+```
+
+**Paso 2: Verificar en los logs**
+```bash
+docker logs nemotron | grep "listening on"
+```
+Debe mostrar: `main: server is listening on http://0.0.0.0:8080`
+
+**Paso 3: Configurar Open WebUI**
+En **Admin Panel > Settings > Connections**:
+- **URL:** `http://192.168.1.100:8080/v1` (usar IP real del Jetson, no localhost)
+- **Auth:** None
+- **Provider:** llama.cpp
+- **API Type:** Chat Completions
+- **Model IDs:** Dejar en blanco (detecta automáticamente)
+
+**Paso 4: Verificar conectividad**
+```bash
+# Desde el host del Jetson
+curl http://192.168.1.100:8080/v1/models
+
+# Debe devolver JSON con el modelo "my_model"
+```
+
+---
+
+## Resumen de Arquitectura Final
+
+| Servicio | Puerto | Modelo | Backend |
+|----------|--------|--------|---------|
+| vLLM | 8000 | Qwen3.5-35B-A3B | GPU (CUDA) |
+| llama.cpp | 8080 | Nemotron-3-Nano-Omni | GPU (CUDA) + CPU |
+| Open WebUI | 3000 | Interfaz web | Conecta a ambos |
+
+### Comandos de verificación rápida
+```bash
+# Ver todos los contenedores activos
+docker ps
+
+# Ver logs en tiempo real
+docker logs -f qwen35-35b
+docker logs -f nemotron
+docker logs -f open-webui
+
+# Probar endpoints
+curl http://localhost:8000/v1/models
+curl http://localhost:8080/v1/models
+```
+
+### Notas importantes
+- **Persistencia:** Usar `--restart unless-stopped` para que los servicios se inicien automáticamente tras reiniciar el Jetson
+- **Red:** Usar `--network host` permite que los contenedores compartan la red del host, simplificando la comunicación
+- **Memoria GPU:** Ajustar `--gpu-memory-utilization` según la RAM disponible (0.80 = 80% de la GPU)
+- **Thinking/Reasoning:** Los modelos con razonamiento interno (`<think>`) pueden mostrar el proceso de pensamiento. Open WebUI tiene opciones para ocultar esto visualmente.
+
+
+## Considera también generar un script para correr debidamente open-webui evitando generar servicios de inicio que afecten el rendimiento o el funcionamiento del sistema, el script debe poder start y kill open-webui sin borrar el contenedor, para dejarlo disponible para usos futuros. De igual manera, asegúrate que sea compatible con todos los proveedores de inferencia y con los modelos con los que venimos trabajando.

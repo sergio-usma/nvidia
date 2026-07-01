@@ -1,0 +1,103 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "type": "TextPrompt",
+      "pos": [100, 100],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "PROMPT", "type": "STRING", "links": [10]}
+      ],
+      "properties": {"Node name for S&R": "TextPrompt"},
+      "widgets_values": ["A cinematic shot of a futuristic city at night, neon lights, flying cars, cyberpunk aesthetic, 8k, detailed"]
+    },
+    {
+      "id": 2,
+      "type": "LTXVideoLoader",
+      "pos": [100, 350],
+      "size": [300, 80],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [11]}
+      ],
+      "properties": {"Node name for S&R": "LTXVideoLoader"},
+      "widgets_values": ["ltx-2.3-22b-distilled"]
+    },
+    {
+      "id": 3,
+      "type": "LTXVideoGenerate",
+      "pos": [550, 100],
+      "size": [450, 350],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 11},
+        {"name": "prompt", "type": "STRING", "link": 10}
+      ],
+      "outputs": [
+        {"name": "VIDEO", "type": "VIDEO", "links": [12]}
+      ],
+      "properties": {"Node name for S&R": "LTXVideoGenerate"},
+      "widgets_values": [
+        5,
+        24,
+        704,
+        480,
+        1,
+        -1
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAEDecodeTiled",
+      "pos": [1050, 100],
+      "size": [300, 200],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 12}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [13]}
+      ],
+      "properties": {"Node name for S&R": "VAEDecodeTiled"},
+      "widgets_values": [true]
+    },
+    {
+      "id": 5,
+      "type": "SaveVideo",
+      "pos": [1400, 100],
+      "size": [300, 270],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "video", "type": "VIDEO", "link": 12}
+      ],
+      "properties": {"Node name for S&R": "SaveVideo"},
+      "widgets_values": ["/opt/creative-studio/outputs/ltx_video.mp4", "mp4"]
+    }
+  ],
+  "links": [
+    [10, 1, 0, "STRING", "STRING"],
+    [11, 2, 0, "MODEL", "MODEL"],
+    [12, 3, 0, "VIDEO", "VIDEO"],
+    [13, 4, 0, "IMAGE", "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.0,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}

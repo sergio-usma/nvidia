@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"D:\\\\Documents\\\\Jetson\\\\eBook\\\\book\\\\chapters\" -Recurse -File | Sort-Object DirectoryName, Name | Format-Table Name, @{N=\"Size\\(KB\\)\";E={[math]::Round\\($_.Length/1KB,0\\)}}, LastWriteTime -AutoSize)"
+    ]
+  }
+}

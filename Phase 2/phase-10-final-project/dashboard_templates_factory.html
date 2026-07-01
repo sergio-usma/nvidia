@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INNOVALABS — The Factory Floor</title>
+<style>
+@font-face {
+  font-family: 'PressStart';
+  src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/fonts/fontawesome-webfont.woff2') format('woff2');
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#1a1120;overflow:hidden;
+  font-family:'Courier New',monospace;
+  image-rendering:pixelated;
+  -ms-interpolation-mode:nearest-neighbor;
+}
+canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+
+/* Retro UI overlay */
+.ui-overlay{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:10}
+.ui-overlay *{pointer-events:auto}
+
+/* Top status bar - Pokemon style */
+.status-bar{
+  position:absolute;top:0;left:0;right:0;
+  background:linear-gradient(180deg,#1a1a2e 0%,#16213e 100%);
+  border-bottom:3px solid #0f3460;
+  padding:6px 16px;display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;color:#a8d8ea;
+  box-shadow:0 2px 0 #0a0a1a;
+}
+.status-left,.status-right{display:flex;align-items:center;gap:16px}
+.status-led{width:8px;height:8px;border-radius:50%;box-shadow:0 0 6px currentColor}
+.led-green{background:#4ade80;color:#4ade80}
+.led-amber{background:#fbbf24;color:#fbbf24;animation:blink 1s step-end infinite}
+.led-red{background:#f87171;color:#f87171}
+@keyframes blink{50%{opacity:.3}}
+
+/* Dialog box - Pokemon text box style */
+.dialog-box{
+  position:absolute;bottom:0;left:0;right:0;
+  background:#1a1a2e;border-top:3px solid #0f3460;
+  padding:12px 20px;min-height:90px;
+  box-shadow:0 -2px 0 #0a0a1a;
+}
+.dialog-inner{
+  border:2px solid #0f3460;border-radius:4px;
+  background:#0d1b2a;padding:10px 14px;
+  position:relative;min-height:66px;
+}
+.dialog-speaker{
+  position:absolute;top:-10px;left:12px;
+  background:#e94560;color:#fff;font-size:10px;
+  padding:1px 8px;border-radius:2px;
+  font-weight:bold;letter-spacing:1px;
+  text-transform:uppercase;
+}
+.dialog-text{
+  color:#a8d8ea;font-size:13px;line-height:1.6;
+  min-height:40px;padding-top:4px;
+}
+.dialog-text .typing-cursor{
+  display:inline-block;width:8px;height:14px;
+  background:#a8d8ea;animation:cursor-blink .6s step-end infinite;
+  vertical-align:middle;margin-left:2px;
+}
+@keyframes cursor-blink{50%{opacity:0}}
+
+/* Agent cards - side panel */
+.agent-panel{
+  position:absolute;right:8px;top:40px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.agent-card{
+  background:rgba(13,27,42,.92);border:2px solid #0f3460;border-radius:4px;
+  padding:6px 10px;width:195px;transition:all .3s;
+  cursor:pointer;
+}
+.agent-card:hover{border-color:#e94560;transform:translateX(-4px)}
+.agent-card.active{border-color:#4ade80;box-shadow:0 0 10px rgba(74,222,128,.2)}
+.agent-card.working{border-color:#fbbf24;box-shadow:0 0 10px rgba(251,191,36,.2)}
+.agent-card.error{border-color:#f87171}
+.agent-row{display:flex;justify-content:space-between;align-items:center}
+.agent-name{color:#e94560;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px}
+.agent-model{color:#4a6fa5;font-size:9px}
+.agent-status{font-size:9px;color:#4ade80;text-transform:uppercase}
+.agent-status.working{color:#fbbf24}
+.agent-status.idle{color:#4a6fa5}
+.agent-status.error{color:#f87171}
+
+/* HP-style progress bar */
+.hp-bar{
+  margin-top:4px;height:6px;background:#0a0a1a;border-radius:1px;
+  border:1px solid #0f3460;overflow:hidden;
+}
+.hp-fill{height:100%;transition:width 1s ease;border-radius:1px}
+.hp-fill.green{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.hp-fill.amber{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.hp-fill.red{background:linear-gradient(90deg,#dc2626,#f87171)}
+
+/* Mini stats */
+.mini-stats{
+  position:absolute;left:8px;top:40px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.mini-stat{
+  background:rgba(13,27,42,.92);border:2px solid #0f3460;border-radius:4px;
+  padding:6px 10px;width:160px;
+}
+.mini-stat-label{color:#4a6fa5;font-size:9px;text-transform:uppercase;letter-spacing:1px}
+.mini-stat-value{color:#a8d8ea;font-size:12px;font-weight:bold;margin-top:2px;font-variant-numeric:tabular-nums}
+
+/* Story counter - badge style */
+.story-badge{
+  position:absolute;left:8px;bottom:100px;
+  background:rgba(13,27,42,.92);border:2px solid #0f3460;border-radius:4px;
+  padding:8px 12px;
+}
+.story-count{color:#e94560;font-size:22px;font-weight:bold}
+.story-label{color:#4a6fa5;font-size:9px;text-transform:uppercase;letter-spacing:1px}
+
+/* Controls */
+.control-hint{
+  position:absolute;bottom:100px;right:8px;
+  background:rgba(13,27,42,.85);border:1px solid #0f3460;border-radius:4px;
+  padding:6px 10px;font-size:9px;color:#4a6fa5;
+}
+.control-hint kbd{
+  background:#0f3460;color:#a8d8ea;padding:1px 4px;border-radius:2px;
+  font-family:inherit;
+}
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<div class="ui-overlay">
+  <!-- Top bar -->
+  <div class="status-bar">
+    <div class="status-left">
+      <div class="status-led led-green" id="mainLed"></div>
+      <span style="font-weight:bold;color:#e94560;letter-spacing:2px">INNOVALABS</span>
+      <span>THE FACTORY FLOOR</span>
+    </div>
+    <div class="status-right">
+      <span id="uiHost">---</span>
+      <span id="uiUptime">---</span>
+      <span id="uiClock" style="color:#fff;font-variant-numeric:tabular-nums">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- Agent cards -->
+  <div class="agent-panel" id="agentPanel"></div>
+
+  <!-- Mini stats -->
+  <div class="mini-stats" id="miniStats"></div>
+
+  <!-- Story counter -->
+  <div class="story-badge">
+    <div class="story-count" id="storyCount">--</div>
+    <div class="story-label">Historias creadas</div>
+  </div>
+
+  <!-- Dialog box -->
+  <div class="dialog-box">
+    <div class="dialog-inner">
+      <div class="dialog-speaker" id="dialogSpeaker">SYSTEM</div>
+      <div class="dialog-text" id="dialogText">
+        Iniciando sistemas...<span class="typing-cursor"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="control-hint">
+    <kbd>D</kbd> Dashboard &nbsp; <kbd>N</kbd> n8n &nbsp; <kbd>F</kbd> Fullscreen
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// INNOVALABS — THE FACTORY FLOOR
+// Pixel-art office dashboard with animated agents
+// ═══════════════════════════════════════════════════
+
+const API = window.location.origin;
+const PIXEL = 3;  // Scale factor for pixel art
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+
+// ─── Color Palette (PICO-8 inspired + custom) ───
+const PAL = {
+  black:    '#1a1120',  dark:     '#2b1d34',  
+  navy:     '#1d2b53',  purple:   '#7e2553',
+  green:    '#008751',  brown:    '#ab5236',
+  dkgray:   '#5f574f',  ltgray:   '#c2c3c7',
+  white:    '#fff1e8',  red:      '#ff004d',
+  orange:   '#ffa300',  yellow:   '#ffec27',
+  lime:     '#00e436',  cyan:     '#29adff',
+  lavender: '#83769c',  pink:     '#ff77a8',
+  // Office colors
+  wall:     '#2d2240',  wallLt:   '#3d3260',
+  floor:    '#4a3f5c',  floorLt:  '#5a4f6c',
+  desk:     '#8b6f47',  deskDk:   '#6b4f27',
+  deskTop:  '#a08060',
+  monitor:  '#1a1a2e',  monGlow:  '#29adff',
+  plant:    '#008751',  plantDk:  '#005a35',
+  window:   '#29adff',  windowNt: '#1d2b53',
+  bookR:    '#ff004d',  bookG:    '#008751',  bookB:    '#29adff',  bookY:    '#ffa300',
+};
+
+// ─── Agent Definitions ───
+const AGENTS = [
+  { id:'scout',   name:'Scout',      model:'pytrends',           color:'#00e436', role:'Explorador',     x:0, desk:0 },
+  { id:'strat',   name:'Estratega',  model:'glm-4.7-flash',      color:'#7e2553', role:'Filósofo',       x:0, desk:1 },
+  { id:'arch',    name:'Arquitecto', model:'deepseek-r1:8b',     color:'#29adff', role:'Diseñador',      x:0, desk:2 },
+  { id:'writer',  name:'Escritor',   model:'Qwen3.5-27B',        color:'#ffa300', role:'Novelista',      x:0, desk:3 },
+  { id:'editor',  name:'Editor',     model:'nemotron-3-nano',    color:'#ff77a8', role:'Corrector',      x:0, desk:4 },
+];
+
+// Agent states
+const STATE = { IDLE:0, WORKING:1, DONE:2, ERROR:3, WAITING:4 };
+let agentStates = AGENTS.map(() => STATE.IDLE);
+let activeAgent = -1;
+let frame = 0;
+let time = 0;
+let particles = [];
+let dialogQueue = [];
+let currentDialog = { speaker:'SYSTEM', text:'Conectando con la fábrica...', progress:0 };
+let storyTotal = 0;
+let storiesToday = 0;
+let systemData = null;
+
+// ─── Sprite Data (16x16 pixel characters) ───
+// Each sprite is defined as rows of color chars
+// . = transparent, 0-9,a-f = palette index
+
+const SPRITE_PALETTE = {
+  '.': null,
+  '0': '#1a1120', '1': '#fff1e8', '2': '#ff004d', '3': '#ffa300',
+  '4': '#ffec27', '5': '#00e436', '6': '#29adff', '7': '#7e2553',
+  '8': '#5f574f', '9': '#c2c3c7', 'a': '#ab5236', 'b': '#83769c',
+  'c': '#1d2b53', 'd': '#ff77a8', 'e': '#008751', 'f': '#2b1d34',
+};
+
+// Scout - explorer with hat and binoculars
+const SPRITE_SCOUT = [
+  // Frame 0 (idle)
+  [
+    '......5555......',
+    '.....555555.....',
+    '....55555555....',
+    '.....5ee55e.....',
+    '.....e11e11.....',
+    '.....e19e19.....',
+    '.....e11e11.....',
+    '......1111......',
+    '......1881......',
+    '.....555555.....',
+    '....55555555....',
+    '.....555555.....',
+    '......5555......',
+    '.....5a..a5.....',
+    '......a..a......',
+    '......a..a......',
+  ],
+  // Frame 1 (working - leaning forward)
+  [
+    '.......5555.....',
+    '......555555....',
+    '.....55555555...',
+    '......5ee55e....',
+    '......e11e11....',
+    '......e19e19....',
+    '......e11e11....',
+    '.......1111.....',
+    '.......1881.....',
+    '......555555....',
+    '.....55555555...',
+    '......555555....',
+    '.......5555.....',
+    '......5a..a5....',
+    '.......a..a.....',
+    '.......a..a.....',
+  ],
+];
+
+// Estratega - wizard with pointed hat
+const SPRITE_STRAT = [
+  [
+    '........7.......',
+    '.......777......',
+    '......77477.....',
+    '.....7777777....',
+    '.....7117117....',
+    '.....7197197....',
+    '.....7117117....',
+    '......71117.....',
+    '......71817.....',
+    '.....7777777....',
+    '....777bb777....',
+    '.....777777.....',
+    '......7777......',
+    '.....7a..a7.....',
+    '......a..a......',
+    '......0..0......',
+  ],
+  [
+    '........7.......',
+    '.......777......',
+    '......77477.....',
+    '.....7777777....',
+    '.....7117117....',
+    '.....7197197....',
+    '.....7117117....',
+    '......71117.....',
+    '......71817.....',
+    '.....7777777....',
+    '....777bb777....',
+    '.....777777.....',
+    '......7777......',
+    '.....7a..a7.....',
+    '.......a.a......',
+    '.......0.0......',
+  ],
+];
+
+// Arquitecto - hard hat and blueprints
+const SPRITE_ARCH = [
+  [
+    '....66666666....',
+    '...6666666666...',
+    '....66666666....',
+    '.....611116.....',
+    '.....619916.....',
+    '.....611116.....',
+    '......1111......',
+    '......1881......',
+    '.....666666.....',
+    '....6666c666....',
+    '.....666666.....',
+    '......6666......',
+    '.....66..66.....',
+    '......a..a......',
+    '......a..a......',
+    '......0..0......',
+  ],
+  [
+    '....66666666....',
+    '...6666666666...',
+    '....66666666....',
+    '.....611116.....',
+    '.....619916.....',
+    '.....611116.....',
+    '......1111......',
+    '......1881......',
+    '.....666666.....',
+    '....6666c666....',
+    '.....666666.....',
+    '......6666......',
+    '.....66..66.....',
+    '......a..a......',
+    '.....a....a.....',
+    '.....0....0.....',
+  ],
+];
+
+// Escritor - large imposing character with red scarf
+const SPRITE_WRITER = [
+  [
+    '.....333333.....',
+    '....33333333....',
+    '.....331133.....',
+    '.....319913.....',
+    '.....331133.....',
+    '......1111......',
+    '....22211222....',
+    '...3322222233...',
+    '...3333333333...',
+    '...3333883333...',
+    '...3333333333...',
+    '....33333333....',
+    '.....333333.....',
+    '....33a..a33....',
+    '.....a....a.....',
+    '.....0....0.....',
+  ],
+  [
+    '.....333333.....',
+    '....33333333....',
+    '.....331133.....',
+    '.....319913.....',
+    '.....331133.....',
+    '......1111......',
+    '....22211222....',
+    '...3322222233...',
+    '...3333333333...',
+    '...3333883333...',
+    '...3333333333...',
+    '....33333333....',
+    '.....333333.....',
+    '....33a..a33....',
+    '......a..a......',
+    '......0..0......',
+  ],
+];
+
+// Editor - glasses and bow tie
+const SPRITE_EDITOR = [
+  [
+    '.....dddddd.....',
+    '....dddddddd....',
+    '.....dd11dd.....',
+    '...006190619....',
+    '...006110611....',
+    '.....d11d11.....',
+    '......1111......',
+    '......2dd2......',
+    '.....dddddd.....',
+    '....dddddddd....',
+    '.....dddddd.....',
+    '......dddd......',
+    '.....dd..dd.....',
+    '......a..a......',
+    '......a..a......',
+    '......0..0......',
+  ],
+  [
+    '.....dddddd.....',
+    '....dddddddd....',
+    '.....dd11dd.....',
+    '...006190619....',
+    '...006110611....',
+    '.....d11d11.....',
+    '......1111......',
+    '......2dd2......',
+    '.....dddddd.....',
+    '....dddddddd....',
+    '.....dddddd.....',
+    '......dddd......',
+    '.....dd..dd.....',
+    '......a..a......',
+    '.....a....a.....',
+    '.....0....0.....',
+  ],
+];
+
+const ALL_SPRITES = [SPRITE_SCOUT, SPRITE_STRAT, SPRITE_ARCH, SPRITE_WRITER, SPRITE_EDITOR];
+
+// ─── Resize ───
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.imageSmoothingEnabled = false;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ─── Pixel Drawing ───
+function drawPixel(x, y, color, size = PIXEL) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.floor(x), Math.floor(y), size, size);
+}
+
+function drawSprite(sprite, sx, sy, scale = PIXEL, flipX = false) {
+  for (let row = 0; row < sprite.length; row++) {
+    const line = sprite[row];
+    for (let col = 0; col < line.length; col++) {
+      const ch = line[col];
+      if (ch === '.') continue;
+      const color = SPRITE_PALETTE[ch];
+      if (!color) continue;
+      const px = flipX ? sx + (line.length - 1 - col) * scale : sx + col * scale;
+      const py = sy + row * scale;
+      drawPixel(px, py, color, scale);
+    }
+  }
+}
+
+function drawRect(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
+}
+
+function drawText(text, x, y, color = '#fff1e8', size = 10) {
+  ctx.fillStyle = color;
+  ctx.font = `bold ${size}px 'Courier New', monospace`;
+  ctx.fillText(text, Math.floor(x), Math.floor(y));
+}
+
+// ─── Scene Drawing ───
+function drawOffice() {
+  const W = canvas.width;
+  const H = canvas.height;
+  const floorY = H * 0.62;
+  const wallH = floorY;
+
+  // Wall
+  drawRect(0, 0, W, wallH, PAL.wall);
+  // Wall texture (bricks pattern)
+  for (let by = 30; by < wallH; by += 20) {
+    const offset = (Math.floor(by / 20) % 2) * 30;
+    for (let bx = offset; bx < W; bx += 60) {
+      drawRect(bx, by, 58, 18, PAL.wallLt);
+      drawRect(bx + 1, by + 1, 56, 16, PAL.wall);
+    }
+  }
+
+  // Window (center top)
+  const winW = 200, winH = 140;
+  const winX = W / 2 - winW / 2;
+  const winY = 50;
+  drawRect(winX - 4, winY - 4, winW + 8, winH + 8, PAL.deskDk);
+  drawRect(winX, winY, winW, winH, PAL.window);
+  // Window cross
+  drawRect(winX + winW / 2 - 2, winY, 4, winH, PAL.deskDk);
+  drawRect(winX, winY + winH / 2 - 2, winW, 4, PAL.deskDk);
+  // Stars in window
+  const starPhase = time * 0.001;
+  for (let i = 0; i < 8; i++) {
+    const sx = winX + 10 + ((i * 67 + Math.sin(starPhase + i) * 5) % (winW - 20));
+    const sy = winY + 10 + ((i * 43 + Math.cos(starPhase + i * 1.3) * 3) % (winH - 20));
+    const bright = 0.5 + 0.5 * Math.sin(starPhase * 2 + i);
+    ctx.globalAlpha = bright;
+    drawPixel(sx, sy, PAL.white, 2);
+    ctx.globalAlpha = 1;
+  }
+  // Moon
+  const moonX = winX + 40;
+  const moonY = winY + 30;
+  ctx.fillStyle = PAL.yellow;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 15, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Floor
+  drawRect(0, floorY, W, H - floorY, PAL.floor);
+  // Floor tiles
+  for (let fy = floorY; fy < H; fy += 24) {
+    for (let fx = 0; fx < W; fx += 48) {
+      const offset = (Math.floor((fy - floorY) / 24) % 2) * 24;
+      drawRect(fx + offset, fy, 46, 22, PAL.floorLt);
+      drawRect(fx + offset + 1, fy + 1, 44, 20, PAL.floor);
+    }
+  }
+
+  // Bookshelf (left wall)
+  const shelfX = 30;
+  const shelfY = wallH - 180;
+  drawRect(shelfX, shelfY, 80, 180, PAL.deskDk);
+  drawRect(shelfX + 2, shelfY + 2, 76, 176, PAL.desk);
+  // Shelves
+  for (let s = 0; s < 4; s++) {
+    const sy2 = shelfY + 8 + s * 44;
+    drawRect(shelfX + 2, sy2 + 36, 76, 4, PAL.deskDk);
+    // Books
+    const bookColors = [PAL.bookR, PAL.bookG, PAL.bookB, PAL.bookY, PAL.bookR, PAL.bookB];
+    for (let b = 0; b < 6; b++) {
+      const bw = 8 + (b * 7 % 5);
+      const bh = 28 + (b * 3 % 8);
+      drawRect(shelfX + 6 + b * 12, sy2 + 36 - bh, bw, bh, bookColors[b]);
+    }
+  }
+
+  // Poster / whiteboard
+  const posterX = W - 150;
+  const posterY = 60;
+  drawRect(posterX, posterY, 110, 80, PAL.white);
+  drawRect(posterX + 2, posterY + 2, 106, 76, '#f0f0f0');
+  drawText('PIPELINE', posterX + 14, posterY + 20, PAL.navy, 10);
+  drawText('v1.0', posterX + 40, posterY + 34, PAL.dkgray, 9);
+  // Mini bar chart on poster
+  const phases = ['S','E','A','W','Ed'];
+  for (let i = 0; i < 5; i++) {
+    const bh2 = 10 + (agentStates[i] === STATE.WORKING ? 30 : agentStates[i] === STATE.DONE ? 25 : 10);
+    const bColor = agentStates[i] === STATE.WORKING ? PAL.orange : agentStates[i] === STATE.DONE ? PAL.green : PAL.lavender;
+    drawRect(posterX + 10 + i * 20, posterY + 68 - bh2, 14, bh2, bColor);
+    drawText(phases[i], posterX + 11 + i * 20, posterY + 74, PAL.dkgray, 8);
+  }
+
+  // Plant (right side)
+  const plantX = W - 60;
+  const plantY = floorY - 60;
+  drawRect(plantX + 8, plantY + 40, 24, 20, PAL.brown);
+  drawRect(plantX + 10, plantY + 42, 20, 16, PAL.deskDk);
+  // Leaves
+  const leafBob = Math.sin(time * 0.002) * 2;
+  for (let l = 0; l < 5; l++) {
+    const lx = plantX + 10 + l * 6 + Math.sin(time * 0.003 + l) * 2;
+    const ly = plantY + 10 + Math.abs(l - 2) * 8 + leafBob;
+    ctx.fillStyle = l % 2 === 0 ? PAL.plant : PAL.plantDk;
+    ctx.beginPath();
+    ctx.ellipse(lx, ly, 8, 14, (l - 2) * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ─── Draw Desks and Agents ───
+  const deskSpacing = W / 6;
+  const deskY = floorY - 10;
+
+  for (let i = 0; i < 5; i++) {
+    const dx = deskSpacing * (i + 0.7);
+    const dy = deskY;
+    const agent = AGENTS[i];
+    const state = agentStates[i];
+
+    // Desk
+    drawRect(dx - 36, dy, 72, 8, PAL.deskDk);
+    drawRect(dx - 34, dy - 4, 68, 6, PAL.deskTop);
+    // Desk legs
+    drawRect(dx - 30, dy + 8, 4, 30, PAL.deskDk);
+    drawRect(dx + 26, dy + 8, 4, 30, PAL.deskDk);
+
+    // Monitor on desk
+    const monBob = state === STATE.WORKING ? Math.sin(time * 0.01 + i) * 1 : 0;
+    drawRect(dx - 14, dy - 30 + monBob, 28, 24, PAL.dkgray);
+    drawRect(dx - 12, dy - 28 + monBob, 24, 20, state === STATE.WORKING ? PAL.monGlow : PAL.monitor);
+    drawRect(dx - 4, dy - 6, 8, 4, PAL.dkgray);  // Monitor stand
+
+    // Screen content when working
+    if (state === STATE.WORKING) {
+      const glowPhase = Math.sin(time * 0.005 + i) * 0.3 + 0.7;
+      ctx.globalAlpha = glowPhase;
+      // Text lines on screen
+      for (let tl = 0; tl < 4; tl++) {
+        const tlw = 8 + ((tl * 7 + Math.floor(time * 0.02)) % 14);
+        drawRect(dx - 10, dy - 26 + tl * 5 + monBob, tlw, 3, agent.color);
+      }
+      // Screen glow
+      ctx.globalAlpha = 0.1;
+      drawRect(dx - 20, dy - 36, 40, 30, agent.color);
+      ctx.globalAlpha = 1;
+    }
+
+    // Items on desk
+    if (i === 0) { // Scout - binoculars
+      drawRect(dx + 16, dy - 8, 8, 6, PAL.dkgray);
+      drawRect(dx + 18, dy - 8, 4, 6, PAL.ltgray);
+    } else if (i === 1) { // Estratega - book
+      drawRect(dx + 14, dy - 10, 12, 8, PAL.bookR);
+    } else if (i === 3) { // Escritor - stack of papers
+      for (let p = 0; p < 3; p++) {
+        drawRect(dx + 14 + p, dy - 8 - p * 2, 10, 7, PAL.white);
+      }
+    } else if (i === 4) { // Editor - red pen
+      drawRect(dx + 16, dy - 6, 12, 2, PAL.red);
+      drawRect(dx + 26, dy - 7, 3, 4, PAL.red);
+    }
+
+    // Coffee mug (for all agents)
+    drawRect(dx - 22, dy - 10, 6, 8, PAL.white);
+    drawRect(dx - 23, dy - 6, 2, 4, PAL.white);
+    // Steam if idle
+    if (state === STATE.IDLE || state === STATE.WAITING) {
+      const steamPhase = time * 0.005 + i;
+      for (let s = 0; s < 2; s++) {
+        const steamY = dy - 14 - s * 6 - (time * 0.02 % 10);
+        const steamX = dx - 20 + Math.sin(steamPhase + s) * 3;
+        ctx.globalAlpha = 0.4 - s * 0.15;
+        drawPixel(steamX, steamY, PAL.ltgray, 2);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Chair
+    drawRect(dx - 10, dy + 14, 20, 4, PAL.dkgray);
+    drawRect(dx - 8, dy + 18, 4, 18, PAL.dkgray);
+    drawRect(dx + 4, dy + 18, 4, 18, PAL.dkgray);
+    drawRect(dx - 12, dy + 2, 24, 14, state === STATE.WORKING ? agent.color : PAL.dkgray);
+
+    // Character sprite
+    const spriteFrames = ALL_SPRITES[i];
+    const frameIdx = state === STATE.WORKING ? (Math.floor(time * 0.004) % 2) : 0;
+    const spriteData = spriteFrames[frameIdx] || spriteFrames[0];
+
+    const charX = dx - 24;
+    const charBob = state === STATE.WORKING
+      ? Math.sin(time * 0.008 + i) * 2
+      : Math.sin(time * 0.002 + i) * 1;
+    const charY = dy - 70 + charBob;
+
+    drawSprite(spriteData, charX, charY, PIXEL);
+
+    // Status indicator above head
+    if (state === STATE.WORKING) {
+      // Animated dots "..."
+      const dots = '.'.repeat(1 + Math.floor(time * 0.003) % 3);
+      drawText(dots, dx - 4, charY - 8, agent.color, 14);
+    } else if (state === STATE.DONE) {
+      // Checkmark
+      drawText('✓', dx - 6, charY - 6, PAL.lime, 14);
+    } else if (state === STATE.ERROR) {
+      // X mark
+      drawText('✗', dx - 6, charY - 6, PAL.red, 14);
+    }
+
+    // Name plate under desk
+    const nameW = ctx.measureText(agent.name.toUpperCase()).width;
+    drawRect(dx - nameW / 2 - 4, dy + 42, nameW + 8, 14, 'rgba(0,0,0,0.6)');
+    drawText(agent.name.toUpperCase(), dx - nameW / 2, dy + 53, agent.color, 10);
+  }
+
+  // ─── Particles ───
+  for (let p = particles.length - 1; p >= 0; p--) {
+    const part = particles[p];
+    part.x += part.vx;
+    part.y += part.vy;
+    part.life -= part.decay;
+    part.vy += 0.05; // gravity
+
+    if (part.life <= 0) { particles.splice(p, 1); continue; }
+
+    ctx.globalAlpha = part.life;
+    if (part.type === 'sparkle') {
+      const sparkSize = 2 + Math.sin(time * 0.02 + p) * 1;
+      drawPixel(part.x, part.y, part.color, sparkSize);
+    } else if (part.type === 'paper') {
+      const rot = Math.sin(time * 0.01 + p) * 4;
+      drawRect(part.x, part.y, 6 + rot, 8 - Math.abs(rot), PAL.white);
+    } else {
+      drawPixel(part.x, part.y, part.color, 3);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ─── Particle Emitters ───
+function emitSparkles(x, y, color, count = 5) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 3,
+      vy: -Math.random() * 3 - 1,
+      life: 1,
+      decay: 0.02 + Math.random() * 0.02,
+      color: color,
+      type: 'sparkle',
+    });
+  }
+}
+
+function emitPapers(x, y, count = 3) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y: y - 20,
+      vx: (Math.random() - 0.5) * 2,
+      vy: -Math.random() * 2 - 1,
+      life: 1,
+      decay: 0.008,
+      color: PAL.white,
+      type: 'paper',
+    });
+  }
+}
+
+// ─── Dialog System ───
+const DIALOG_MESSAGES = {
+  idle: [
+    { speaker: 'SCOUT', text: 'Todo tranquilo... esperando el próximo ciclo del cron.' },
+    { speaker: 'ESCRITOR', text: 'Hmm... me pregunto sobre qué escribiré la próxima historia.' },
+    { speaker: 'EDITOR', text: '*ajusta sus gafas* Las últimas historias han salido bastante bien.' },
+    { speaker: 'ESTRATEGA', text: 'Las tendencias de Colombia son fascinantes últimamente...' },
+    { speaker: 'ARQUITECTO', text: 'El Viaje del Héroe nunca falla como estructura narrativa.' },
+  ],
+  scouting: [
+    { speaker: 'SCOUT', text: '¡Tendencia detectada! Analizando búsquedas en Colombia...' },
+    { speaker: 'SCOUT', text: 'Google Trends tiene algo interesante hoy. Déjenme investigar...' },
+  ],
+  inferencing: [
+    { speaker: 'ESTRATEGA', text: 'Interesante tema. Veo un conflicto humano profundo aquí...' },
+    { speaker: 'ESTRATEGA', text: 'La moraleja debe ser universal, atemporal...' },
+    { speaker: 'ARQUITECTO', text: 'Perfecto. Diseñaré los 12 pasos del viaje del héroe.' },
+    { speaker: 'ARQUITECTO', text: 'Paso 1: El mundo ordinario. Paso 2: La llamada a la aventura...' },
+  ],
+  writing: [
+    { speaker: 'ESCRITOR', text: 'Mis dedos vuelan sobre el teclado. La historia cobra vida...' },
+    { speaker: 'ESCRITOR', text: 'Este personaje necesita más profundidad. Déjenme trabajar...' },
+    { speaker: 'ESCRITOR', text: '3,000 palabras y contando. Los diálogos fluyen naturalmente.' },
+    { speaker: 'EDITOR', text: 'El Escritor está en la zona. Mejor no interrumpirlo.' },
+  ],
+  editing: [
+    { speaker: 'EDITOR', text: '*saca su pluma roja* Hora de pulir esta joya.' },
+    { speaker: 'EDITOR', text: 'Ortografía... gramática... ritmo de las oraciones... ¡perfecto!' },
+  ],
+  complete: [
+    { speaker: 'SYSTEM', text: '¡Historia completada! Guardada en el archivo de la fábrica.' },
+    { speaker: 'ESCRITOR', text: '¡Otra obra maestra para la colección!' },
+  ],
+};
+
+let lastDialogTime = 0;
+let dialogCharIdx = 0;
+let dialogFullText = '';
+
+function updateDialog() {
+  const now = Date.now();
+  // Typewriter effect
+  if (dialogCharIdx < dialogFullText.length) {
+    dialogCharIdx += 1;
+    const visibleText = dialogFullText.substring(0, dialogCharIdx);
+    document.getElementById('dialogText').innerHTML = visibleText + '<span class="typing-cursor"></span>';
+    return;
+  }
+
+  // New dialog every 8 seconds
+  if (now - lastDialogTime < 8000) return;
+  lastDialogTime = now;
+
+  let phase = 'idle';
+  if (activeAgent === 0) phase = 'scouting';
+  else if (activeAgent === 1 || activeAgent === 2) phase = 'inferencing';
+  else if (activeAgent === 3) phase = 'writing';
+  else if (activeAgent === 4) phase = 'editing';
+
+  const msgs = DIALOG_MESSAGES[phase];
+  const msg = msgs[Math.floor(Math.random() * msgs.length)];
+
+  currentDialog = msg;
+  dialogFullText = msg.text;
+  dialogCharIdx = 0;
+
+  document.getElementById('dialogSpeaker').textContent = msg.speaker;
+  document.getElementById('dialogSpeaker').style.background =
+    AGENTS.find(a => a.name.toUpperCase() === msg.speaker)?.color || '#e94560';
+}
+
+// ─── UI Updates ───
+function renderAgentCards() {
+  const panel = document.getElementById('agentPanel');
+  panel.innerHTML = AGENTS.map((a, i) => {
+    const state = agentStates[i];
+    const stClass = state === STATE.WORKING ? 'working' : state === STATE.DONE ? 'active' : state === STATE.ERROR ? 'error' : '';
+    const stText = state === STATE.WORKING ? 'TRABAJANDO' : state === STATE.DONE ? 'LISTO' : state === STATE.ERROR ? 'ERROR' : 'ESPERANDO';
+    const stTextClass = state === STATE.WORKING ? 'working' : state === STATE.DONE ? '' : state === STATE.ERROR ? 'error' : 'idle';
+    const hpPct = state === STATE.WORKING ? (50 + Math.sin(time * 0.003 + i) * 30) : state === STATE.DONE ? 100 : 0;
+    const hpColor = state === STATE.WORKING ? 'amber' : state === STATE.DONE ? 'green' : state === STATE.ERROR ? 'red' : 'green';
+
+    return `<div class="agent-card ${stClass}">
+      <div class="agent-row">
+        <span class="agent-name" style="color:${a.color}">${a.name}</span>
+        <span class="agent-status ${stTextClass}">${stText}</span>
+      </div>
+      <div class="agent-model">${a.model} — ${a.role}</div>
+      <div class="hp-bar"><div class="hp-fill ${hpColor}" style="width:${hpPct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderMiniStats() {
+  if (!systemData) return;
+  const stats = document.getElementById('miniStats');
+  const mem = systemData.memory || {};
+  const cpu = systemData.cpu || {};
+  const gpu = systemData.gpu || {};
+
+  stats.innerHTML = `
+    <div class="mini-stat">
+      <div class="mini-stat-label">CPU</div>
+      <div class="mini-stat-value">${(cpu.usage_percent || 0).toFixed(1)}% @ ${cpu.freq_mhz || 0} MHz</div>
+    </div>
+    <div class="mini-stat">
+      <div class="mini-stat-label">RAM</div>
+      <div class="mini-stat-value">${((mem.used_mb || 0) / 1024).toFixed(1)} / ${((mem.total_mb || 0) / 1024).toFixed(0)} GB</div>
+    </div>
+    <div class="mini-stat">
+      <div class="mini-stat-label">GPU</div>
+      <div class="mini-stat-value">${(gpu.gpu_load_percent || 0).toFixed(0)}% @ ${gpu.gpu_freq_mhz || 0} MHz</div>
+    </div>
+  `;
+}
+
+// ─── API Polling ───
+async function pollAPI() {
+  try {
+    const [sys, pipe] = await Promise.all([
+      fetch(API + '/api/system', { signal: AbortSignal.timeout(5000) }).then(r => r.json()).catch(() => null),
+      fetch(API + '/api/pipeline', { signal: AbortSignal.timeout(5000) }).then(r => r.json()).catch(() => null),
+    ]);
+
+    if (sys) {
+      systemData = sys;
+      document.getElementById('uiHost').textContent = sys.hostname || '---';
+      document.getElementById('uiUptime').textContent = 'UP ' + (sys.uptime?.formatted || '---');
+      document.getElementById('mainLed').className = 'status-led led-green';
+      renderMiniStats();
+    }
+
+    if (pipe) {
+      storyTotal = pipe.stories_total || 0;
+      storiesToday = pipe.stories_today || 0;
+      document.getElementById('storyCount').textContent = storyTotal;
+
+      // Update agent states based on pipeline phase
+      const prevActive = activeAgent;
+      const phase = pipe.current_phase;
+
+      // Reset all
+      agentStates = AGENTS.map(() => STATE.IDLE);
+      activeAgent = -1;
+
+      if (phase === 'scouting') {
+        agentStates[0] = STATE.WORKING;
+        activeAgent = 0;
+      } else if (phase === 'inferencing') {
+        agentStates[0] = STATE.DONE;
+        // Could be estratega or arquitecto
+        if (pipe.active_processes?.some(p => p.command?.includes('deepseek'))) {
+          agentStates[1] = STATE.DONE;
+          agentStates[2] = STATE.WORKING;
+          activeAgent = 2;
+        } else {
+          agentStates[1] = STATE.WORKING;
+          activeAgent = 1;
+        }
+      } else if (phase === 'writing') {
+        agentStates[0] = STATE.DONE;
+        agentStates[1] = STATE.DONE;
+        agentStates[2] = STATE.DONE;
+        agentStates[3] = STATE.WORKING;
+        activeAgent = 3;
+      }
+
+      // Emit particles on state change
+      if (activeAgent !== prevActive && activeAgent >= 0) {
+        const deskSpacing = canvas.width / 6;
+        const dx = deskSpacing * (activeAgent + 0.7);
+        const dy = canvas.height * 0.62 - 80;
+        emitSparkles(dx, dy, AGENTS[activeAgent].color, 12);
+      }
+    }
+  } catch(e) {
+    document.getElementById('mainLed').className = 'status-led led-red';
+  }
+}
+
+// ─── Simulation (when API unavailable, demo mode) ───
+let demoMode = false;
+let demoPhase = 0;
+let demoTimer = 0;
+
+function runDemo() {
+  demoTimer++;
+  if (demoTimer % 300 === 0) {
+    demoPhase = (demoPhase + 1) % 7;
+    const deskSpacing = canvas.width / 6;
+
+    agentStates = AGENTS.map(() => STATE.IDLE);
+    activeAgent = -1;
+
+    if (demoPhase === 0) { // idle
+      activeAgent = -1;
+    } else if (demoPhase === 1) { // scout
+      agentStates[0] = STATE.WORKING; activeAgent = 0;
+    } else if (demoPhase === 2) { // estratega
+      agentStates[0] = STATE.DONE;
+      agentStates[1] = STATE.WORKING; activeAgent = 1;
+    } else if (demoPhase === 3) { // arquitecto
+      agentStates[0] = STATE.DONE; agentStates[1] = STATE.DONE;
+      agentStates[2] = STATE.WORKING; activeAgent = 2;
+    } else if (demoPhase === 4) { // writer
+      agentStates[0] = STATE.DONE; agentStates[1] = STATE.DONE; agentStates[2] = STATE.DONE;
+      agentStates[3] = STATE.WORKING; activeAgent = 3;
+    } else if (demoPhase === 5) { // editor
+      agentStates[0] = STATE.DONE; agentStates[1] = STATE.DONE;
+      agentStates[2] = STATE.DONE; agentStates[3] = STATE.DONE;
+      agentStates[4] = STATE.WORKING; activeAgent = 4;
+    } else { // all done
+      agentStates = AGENTS.map(() => STATE.DONE);
+      storyTotal++;
+    }
+
+    if (activeAgent >= 0) {
+      const dx = deskSpacing * (activeAgent + 0.7);
+      emitSparkles(dx, canvas.height * 0.52, AGENTS[activeAgent].color, 15);
+      if (activeAgent === 3) emitPapers(dx, canvas.height * 0.52, 5);
+    }
+  }
+}
+
+// ─── Keyboard Controls ───
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'd' || e.key === 'D') {
+    window.open(API + '/', '_blank');
+  } else if (e.key === 'n' || e.key === 'N') {
+    const n8nPort = 5678;
+    const host = window.location.hostname;
+    window.open(`http://${host}:${n8nPort}`, '_blank');
+  } else if (e.key === 'f' || e.key === 'F') {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+});
+
+// ─── Clock ───
+setInterval(() => {
+  const now = new Date();
+  document.getElementById('uiClock').textContent =
+    now.toLocaleTimeString('es-CO', { hour12: false });
+}, 1000);
+
+// ─── Main Loop ───
+function gameLoop(timestamp) {
+  time = timestamp;
+  frame++;
+
+  // Clear
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw
+  drawOffice();
+
+  // UI updates (throttled)
+  if (frame % 15 === 0) renderAgentCards();
+  if (frame % 5 === 0) updateDialog();
+
+  // Demo mode
+  if (demoMode) runDemo();
+
+  // Periodic sparkles for working agents
+  if (frame % 30 === 0) {
+    const deskSpacing = canvas.width / 6;
+    AGENTS.forEach((a, i) => {
+      if (agentStates[i] === STATE.WORKING) {
+        const dx = deskSpacing * (i + 0.7);
+        emitSparkles(dx, canvas.height * 0.52, a.color, 3);
+        if (i === 3) emitPapers(dx, canvas.height * 0.52, 1);
+      }
+    });
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ─── Init ───
+async function init() {
+  // Try to connect to API
+  try {
+    const r = await fetch(API + '/api/system', { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      demoMode = false;
+      pollAPI();
+      setInterval(pollAPI, 5000);
+      currentDialog = { speaker: 'SYSTEM', text: 'Conexión establecida con la fábrica. Sistemas nominales.' };
+    } else { throw new Error(); }
+  } catch {
+    demoMode = true;
+    currentDialog = { speaker: 'SYSTEM', text: 'Modo demo activado. Los agentes simulan el pipeline completo.' };
+    document.getElementById('mainLed').className = 'status-led led-amber';
+  }
+
+  dialogFullText = currentDialog.text;
+  document.getElementById('dialogSpeaker').textContent = currentDialog.speaker;
+
+  renderAgentCards();
+  requestAnimationFrame(gameLoop);
+}
+
+init();
+</script>
+</body>
+</html>

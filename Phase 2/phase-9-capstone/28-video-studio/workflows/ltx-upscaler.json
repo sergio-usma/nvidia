@@ -1,0 +1,99 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "type": "TextPrompt",
+      "pos": [100, 100],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "PROMPT", "type": "STRING", "links": [10]}
+      ],
+      "properties": {"Node name for S&R": "TextPrompt"},
+      "widgets_values": ["A serene lake at sunset, gentle waves, birds flying, cinematic drone shot, 8k"]
+    },
+    {
+      "id": 2,
+      "type": "LTXVideoLoader",
+      "pos": [100, 350],
+      "size": [300, 80],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [11]}
+      ],
+      "properties": {"Node name for S&R": "LTXVideoLoader"},
+      "widgets_values": ["ltx-2.3-22b-distilled"]
+    },
+    {
+      "id": 3,
+      "type": "LTXVideoGenerate",
+      "pos": [550, 100],
+      "size": [450, 350],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 11},
+        {"name": "prompt", "type": "STRING", "link": 10}
+      ],
+      "outputs": [
+        {"name": "VIDEO", "type": "VIDEO", "links": [12, 13]}
+      ],
+      "properties": {"Node name for S&R": "LTXVideoGenerate"},
+      "widgets_values": [
+        5,
+        24,
+        704,
+        480,
+        1,
+        -1
+      ]
+    },
+    {
+      "id": 4,
+      "type": "LTXVideoSpatialUpscaler",
+      "pos": [1050, 100],
+      "size": [400, 200],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "video", "type": "VIDEO", "link": 12}
+      ],
+      "outputs": [
+        {"name": "VIDEO", "type": "VIDEO", "links": [14]}
+      ],
+      "properties": {"Node name for S&R": "LTXVideoSpatialUpscaler"},
+      "widgets_values": ["ltx-2.3-spatial-upscaler-x2-1.0"]
+    },
+    {
+      "id": 5,
+      "type": "SaveVideo",
+      "pos": [1500, 100],
+      "size": [300, 270],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "video", "type": "VIDEO", "link": 14}
+      ],
+      "properties": {"Node name for S&R": "SaveVideo"},
+      "widgets_values": ["/opt/creative-studio/outputs/ltx_upscaled.mp4", "mp4"]
+    }
+  ],
+  "links": [
+    [10, 1, 0, "STRING", "STRING"],
+    [11, 2, 0, "MODEL", "MODEL"],
+    [12, 3, 0, "VIDEO", "VIDEO"],
+    [13, 3, 0, "VIDEO", "VIDEO"],
+    [14, 4, 0, "VIDEO", "VIDEO"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 1.0, "offset": [0, 0]}},
+  "version": 0.4
+}

@@ -1,0 +1,92 @@
+
+<h2 class="sr-only">NVIDIA Jetson AGX Orin 64GB — JetPack 7.2 Full Specifications</h2>
+<div style="font-family:var(--font-mono);font-size:13px;padding:1rem 0">
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:0.5px solid var(--border)">
+  <div style="width:40px;height:40px;border-radius:8px;background:var(--bg-accent);display:flex;align-items:center;justify-content:center">
+    <i class="ti ti-cpu" style="font-size:20px;color:var(--text-accent)" aria-hidden="true"></i>
+  </div>
+  <div>
+    <div style="font-size:15px;font-weight:500;color:var(--text-primary)">NVIDIA Jetson AGX Orin Developer Kit</div>
+    <div style="font-size:12px;color:var(--text-muted)">JetPack 7.2-b187 · L4T r39.2 · Ubuntu 24.04.4 LTS · 192.168.1.100</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+
+  <div style="background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:1rem">
+    <div style="font-size:11px;color:var(--text-muted);letter-spacing:.05em;margin-bottom:10px">HARDWARE</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="color:var(--text-muted);padding:3px 0;width:44%">GPU</td><td style="color:var(--text-primary);font-weight:500">Orin (nvgpu)</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Architecture</td><td style="color:var(--text-primary);font-weight:500">Ampere <span style="color:var(--text-accent);font-weight:500">sm_87</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">CPU</td><td style="color:var(--text-primary);font-weight:500">ARM Cortex-A78AE</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">CPU cores</td><td style="color:var(--text-primary);font-weight:500">12 (8 online) @ 2.2GHz</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">RAM</td><td style="color:var(--text-primary);font-weight:500">64 GB LPDDR5 ECC unificada</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Storage SSD</td><td style="color:var(--text-primary);font-weight:500">931.5 GB NVMe (60GB usados)</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Storage eMMC</td><td style="color:var(--text-primary);font-weight:500">59.2 GB (interno)</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">AI Performance</td><td style="color:var(--text-primary);font-weight:500">275 TOPS (MAXN)</td></tr>
+    </table>
+  </div>
+
+  <div style="background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:1rem">
+    <div style="font-size:11px;color:var(--text-muted);letter-spacing:.05em;margin-bottom:10px">SOFTWARE STACK</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="color:var(--text-muted);padding:3px 0;width:44%">JetPack</td><td style="color:var(--text-primary);font-weight:500">7.2-b187</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">L4T</td><td style="color:var(--text-primary);font-weight:500">r39.2 (Jetson Linux 39.2)</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">OS</td><td style="color:var(--text-primary);font-weight:500">Ubuntu 24.04.4 LTS</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Kernel</td><td style="color:var(--text-primary);font-weight:500">6.8.12-1021-tegra</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">CUDA</td><td><span style="color:var(--text-warning);font-weight:500">13.2.1 ⚠ nvcc no en PATH</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">TensorRT</td><td style="color:var(--text-primary);font-weight:500">10.16.2</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Python</td><td style="color:var(--text-primary);font-weight:500">3.12.3</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Docker</td><td style="color:var(--text-primary);font-weight:500">runtime=nvidia (default)</td></tr>
+    </table>
+  </div>
+
+  <div style="background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:1rem">
+    <div style="font-size:11px;color:var(--text-muted);letter-spacing:.05em;margin-bottom:10px">ACCESO REMOTO</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="color:var(--text-muted);padding:3px 0;width:44%">IP</td><td style="color:var(--text-accent);font-weight:500">192.168.1.100 (estática)</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">SSH</td><td><span style="color:var(--text-success)">✓</span> <span style="color:var(--text-primary)">:22 key-based</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">XRDP</td><td><span style="color:var(--text-success)">✓</span> <span style="color:var(--text-primary)">:3389 (Windows mstsc)</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">NoMachine</td><td><span style="color:var(--text-success)">✓</span> <span style="color:var(--text-primary)">:4000 virtual XFCE4</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Desktop</td><td style="color:var(--text-primary);font-weight:500">XFCE4 (via NX virtual)</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Boot target</td><td style="color:var(--text-primary);font-weight:500">multi-user (sin GDM)</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Display</td><td style="color:var(--text-primary);font-weight:500">Xorg dummy 1920×1080</td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Host Windows</td><td style="color:var(--text-primary);font-weight:500">192.168.1.33</td></tr>
+    </table>
+  </div>
+
+  <div style="background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:1rem">
+    <div style="font-size:11px;color:var(--text-muted);letter-spacing:.05em;margin-bottom:10px">LLM STACK — PENDIENTE</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="color:var(--text-muted);padding:3px 0;width:44%">Ollama</td><td><span style="color:var(--text-danger)">✗</span> <span style="color:var(--text-muted)">no instalado aún</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">vLLM</td><td><span style="color:var(--text-danger)">✗</span> <span style="color:var(--text-muted)">Paso 15 pendiente</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">Open WebUI</td><td><span style="color:var(--text-danger)">✗</span> <span style="color:var(--text-muted)">Paso 12 pendiente</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">PyTorch</td><td><span style="color:var(--text-danger)">✗</span> <span style="color:var(--text-muted)">Paso 13 pendiente</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">venv llm</td><td><span style="color:var(--text-danger)">✗</span> <span style="color:var(--text-muted)">no creado aún</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">NemoClaw</td><td><span style="color:var(--text-danger)">✗</span> <span style="color:var(--text-muted)">Paso 16 pendiente</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">GitHub SSH</td><td><span style="color:var(--text-danger)">✗</span> <span style="color:var(--text-muted)">Paso 9 pendiente</span></td></tr>
+      <tr><td style="color:var(--text-muted);padding:3px 0">HF Models</td><td><span style="color:var(--text-danger)">✗</span> <span style="color:var(--text-muted)">sin descargar</span></td></tr>
+    </table>
+  </div>
+
+</div>
+
+<div style="background:var(--bg-warning);border:0.5px solid var(--border-warning);border-radius:8px;padding:.75rem 1rem;margin-bottom:12px">
+  <div style="font-size:12px;color:var(--text-warning);font-weight:500;margin-bottom:4px">⚠ Fix requerido: CUDA PATH</div>
+  <div style="font-size:12px;color:var(--text-secondary);font-family:var(--font-mono)">sudo apt install nvidia-cuda-dev -y<br>echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc && source ~/.bashrc</div>
+</div>
+
+<div style="background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:1rem">
+  <div style="font-size:11px;color:var(--text-muted);letter-spacing:.05em;margin-bottom:10px">REFERENCIA PARA PROMPTS FUTUROS</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div><span style="color:var(--text-muted);font-size:12px">GPU arch</span><br><span style="color:var(--text-accent);font-weight:500">sm_87 (Ampere)</span></div>
+    <div><span style="color:var(--text-muted);font-size:12px">CUDA target</span><br><span style="color:var(--text-accent);font-weight:500">CUDA 13.2.1</span></div>
+    <div><span style="color:var(--text-muted);font-size:12px">Python wheels</span><br><span style="color:var(--text-accent);font-weight:500">cp312 / v72</span></div>
+    <div><span style="color:var(--text-muted);font-size:12px">torch arch list</span><br><span style="color:var(--text-accent);font-weight:500">"8.7"</span></div>
+    <div><span style="color:var(--text-muted);font-size:12px">VRAM disponible</span><br><span style="color:var(--text-accent);font-weight:500">~57 GB libres</span></div>
+    <div><span style="color:var(--text-muted);font-size:12px">Power mode actual</span><br><span style="color:var(--text-accent);font-weight:500">MODE_30W (modo 2)</span></div>
+  </div>
+</div>
+
+</div>

@@ -1,0 +1,53 @@
+Para evitar confusiones de tu parte, frente a todos los cambios listados, tanto de carácter general, como específico de cada capítulo, (para que no pierdas los index y secuencia lógica de las observaciones) una vez realices todos los cambios necesitamos re-organizar todo el libro para que quede de la siguiente manera:
+"""
+Prólogo
+Introducción
+
+Parte A - (Genera un titulo profesional, minimalista, pero llamativo en español como "Getting started")
+Capítulo 1 — Inicio rápido y especificaciones del Hardware
+Capítulo 2 — Configuración Inicial y Primer Arranque
+Capítulo 3 — Configuración Base del Sistema
+Capítulo 4 — Memoria y Almacenamiento: Swap, ZRAM y NVMe
+Capítulo 5 — Ajuste de Rendimiento: nvpmodel y jetson_clocks
+Capítulo 6 — Entorno de Shell y Herramientas de Desarrollo
+Capítulo 7 — Optimización de Red
+Capítulo 8 — IDE Remoto y Transferencia de Archivos: VSCode, PyCharm y SSH
+Capítulo 9 — Docker y NVIDIA Container Toolkit
+Capítulo 10 - Motores de Inferencia (llama.cpp, vLLM y Ollama)
+Capítulo 11 — Stack de Inteligencia Artificial Agéntica: OpenClaw, NemoClaw, Jetson Agent Skills y Open WebUI
+Capítulo 11A — OpenClaw: Bot de Telegram con IA Local en el Jetson AGX Orin
+Capítulo 11B — NemoClaw: Capa de Seguridad L7 sobre OpenClaw
+Capítulo 11C — Open WebUI: Interfaz Gráfica para Todos los Motores del Jetson
+Capítulo 11D — Tool Calling: Herramientas Personalizadas para los Modelos del Jetson
+Capítulo 12 — Computer Vision y OCR: Visión Artificial con GPU en el Jetson AGX Orin 64GB
+Capítulo 13 — Generación de Imágenes y Videos: ComfyUI, SD WebUI y AnimateDiff
+Capítulo 14 — N8N: Automatización de Flujos de Trabajo con IA Local
+Capítulo 15 — Testing y Benchmarking de los 10 Mejores Modelos para Jetson AGX Orin 64GB
+Capítulo 16 — Despliegue en Producción: Endurecimiento, Watchdogs, Firewall y Automatización
+Capítulo 17 — Troubleshooting y Mejores Prácticas
+
+Parte B - (Genera un titulo profesional, minimalista, pero llamativo en español como "Hands On")
+Capítulo 18 — Entorno de Desarrollo Python con VSCode Remote SSH
+Capítulo 19 — jetson-containers: El Ecosistema de Contenedores de NVIDIA
+Capítulo 20 — Pipeline PDF a Pódcast: Conversión Offline de Documentos a Audio
+Capítulo 21 — Bot de Transcripción y Análisis de Reuniones
+Capítulo 22 — Agencia de Turismo Virtual con OpenClaw/NemoClaw
+Capítulo 23 — Automatización de Embudo de Ventas para Redes Sociales
+Capítulo 24 — Generador de Contenido para LinkedIn
+Capítulo 25 — Asistente de Voz Offline Completo
+Capítulo 26 — Sistema RAG para Documentos Empresariales
+Capítulo 27 — Microservicios y Despliegue SAAS: Exponer el Jetson a Internet
+
+Parte C - (Genera un titulo profesional, minimalista, pero llamativo en español como "Capstone projects")
+Capstone Project 01 - Agencia de IA con Presencia Web
+Capstone Project 02 — Automatización de YouTube Shorts y TikTok
+
+Conclusiones
+Apéndices y anexos...
+"""
+
+
+
+
+
+

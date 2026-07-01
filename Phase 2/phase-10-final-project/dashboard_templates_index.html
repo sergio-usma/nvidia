@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INNOVALABS — Mission Control</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-0:#0a0b0d;--bg-1:#12141a;--bg-2:#1a1d26;--bg-3:#232730;
+  --tx-0:#e8e6e1;--tx-1:#a09d94;--tx-2:#6b6860;
+  --accent:#c97d3a;--accent-dim:#8b5928;--accent-glow:rgba(201,125,58,.15);
+  --green:#4ade80;--green-dim:#166534;
+  --red:#f87171;--red-dim:#7f1d1d;
+  --blue:#60a5fa;--blue-dim:#1e3a5f;
+  --amber:#fbbf24;--amber-dim:#78350f;
+  --border:#2a2d36;--border-hover:#3a3d46;
+  --font:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;
+  --radius:6px;
+}
+html{font-size:14px}
+body{font-family:var(--font);background:var(--bg-0);color:var(--tx-0);min-height:100vh;line-height:1.5}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Header */
+.header{
+  background:var(--bg-1);border-bottom:1px solid var(--border);
+  padding:12px 24px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.header-left{display:flex;align-items:center;gap:14px}
+.logo{
+  width:10px;height:10px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;
+}
+.logo.offline{background:var(--red);box-shadow:0 0 8px var(--red)}
+.logo.busy{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.brand{font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--tx-1)}
+.brand span{color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--tx-2)}
+.header-right .clock{color:var(--tx-1);font-variant-numeric:tabular-nums}
+
+/* Main grid */
+.main{padding:16px 24px 32px;max-width:1400px;margin:0 auto}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.grid-full{grid-column:1/-1}
+
+/* Cards */
+.card{
+  background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;transition:border-color .2s;
+}
+.card:hover{border-color:var(--border-hover)}
+.card-header{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx-2);
+}
+.card-header .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px}
+.card-header .dot.green{background:var(--green)}
+.card-header .dot.red{background:var(--red)}
+.card-header .dot.amber{background:var(--amber)}
+.card-body{padding:14px}
+
+/* Metrics */
+.metric-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0}
+.metric-label{color:var(--tx-2);font-size:12px}
+.metric-value{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.metric-value.good{color:var(--green)}
+.metric-value.warn{color:var(--amber)}
+.metric-value.bad{color:var(--red)}
+
+/* Progress bars */
+.bar-track{height:4px;background:var(--bg-3);border-radius:2px;margin-top:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.bar-fill.green{background:var(--green)}
+.bar-fill.amber{background:var(--amber)}
+.bar-fill.red{background:var(--red)}
+
+/* Phase indicator */
+.phase-display{text-align:center;padding:20px 14px}
+.phase-icon{font-size:28px;margin-bottom:6px}
+.phase-label{font-size:18px;font-weight:600;color:var(--accent)}
+.phase-sub{font-size:12px;color:var(--tx-2);margin-top:4px}
+.phase-idle .phase-label{color:var(--tx-2)}
+
+/* Temperature grid */
+.temp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.temp-item{
+  background:var(--bg-2);border-radius:4px;padding:6px 10px;
+  display:flex;justify-content:space-between;align-items:center;font-size:12px;
+}
+.temp-name{color:var(--tx-2);text-overflow:ellipsis;overflow:hidden;white-space:nowrap;max-width:100px}
+.temp-val{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* Models list */
+.model-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--bg-3);font-size:12px;
+}
+.model-item:last-child{border-bottom:none}
+.model-name{color:var(--tx-0);font-weight:500}
+.model-size{color:var(--tx-2)}
+
+/* Stories list */
+.story-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--bg-3);font-size:12px;cursor:pointer;
+  transition:background .15s;margin:0 -14px;padding-left:14px;padding-right:14px;
+}
+.story-item:hover{background:var(--bg-2)}
+.story-item:last-child{border-bottom:none}
+.story-meta{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.story-tema{color:var(--tx-0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.story-date{color:var(--tx-2);font-size:11px}
+.story-words{color:var(--tx-2);white-space:nowrap;margin-left:12px}
+
+/* Control buttons */
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 12px;color:var(--tx-1);font-family:var(--font);font-size:12px;
+  cursor:pointer;transition:all .15s;text-align:left;display:flex;align-items:center;gap:8px;
+}
+.btn:hover{background:var(--bg-3);border-color:var(--border-hover);color:var(--tx-0)}
+.btn:active{transform:scale(.98)}
+.btn.danger{border-color:var(--red-dim)}
+.btn.danger:hover{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+.btn .ico{font-size:14px;width:20px;text-align:center;flex-shrink:0}
+.btn-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Log viewer */
+.log-box{
+  background:var(--bg-0);border:1px solid var(--border);border-radius:4px;
+  padding:10px;max-height:300px;overflow-y:auto;font-size:11px;line-height:1.6;
+  color:var(--tx-2);white-space:pre-wrap;word-break:break-all;
+}
+.log-box .err{color:var(--red)}
+.log-box .warn{color:var(--amber)}
+.log-box .info{color:var(--blue)}
+
+/* Log filter tabs */
+.log-tabs{display:flex;gap:4px;margin-bottom:8px}
+.log-tab{
+  padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;
+  background:var(--bg-2);color:var(--tx-2);border:1px solid transparent;
+  font-family:var(--font);transition:all .15s;
+}
+.log-tab:hover{color:var(--tx-1)}
+.log-tab.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent-dim)}
+
+/* Modal */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;
+  align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--bg-1);border:1px solid var(--border);border-radius:8px;
+  max-width:700px;width:90%;max-height:80vh;display:flex;flex-direction:column;
+}
+.modal-header{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.modal-title{font-size:14px;font-weight:600}
+.modal-close{
+  background:none;border:none;color:var(--tx-2);font-size:18px;cursor:pointer;
+  padding:4px 8px;font-family:var(--font);
+}
+.modal-close:hover{color:var(--tx-0)}
+.modal-body{padding:18px;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--tx-1)}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:20px;right:20px;z-index:300;
+  background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 16px;font-size:12px;color:var(--tx-1);
+  transform:translateY(100px);opacity:0;transition:all .3s ease;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:var(--green-dim);color:var(--green)}
+.toast.error{border-color:var(--red-dim);color:var(--red)}
+
+/* Responsive */
+@media(max-width:768px){
+  .main{padding:12px}
+  .grid{grid-template-columns:1fr}
+  .header{padding:10px 12px}
+  .controls{grid-template-columns:1fr}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg-1)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo" id="statusLed"></div>
+    <div class="brand">Innova<span>labs</span> — Mission Control</div>
+  </div>
+  <div class="header-right">
+    <span id="hostInfo">—</span>
+    <span>|</span>
+    <span id="uptimeDisplay">—</span>
+    <span>|</span>
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</header>
+
+<!-- Main content -->
+<div class="main">
+<div class="grid">
+
+  <!-- Pipeline Status -->
+  <div class="card">
+    <div class="card-header">
+      <span><span class="dot" id="pipelineDot"></span>Pipeline</span>
+      <span id="pipelineStories">—</span>
+    </div>
+    <div class="card-body">
+      <div class="phase-display" id="phaseDisplay">
+        <div class="phase-icon" id="phaseIcon">⏸</div>
+        <div class="phase-label" id="phaseLabel">Cargando...</div>
+        <div class="phase-sub" id="phaseSub">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CPU -->
+  <div class="card">
+    <div class="card-header">
+      <span><span class="dot green" id="cpuDot"></span>CPU</span>
+      <span id="cpuFreq">—</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Uso</span>
+        <span class="metric-value" id="cpuUsage">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill green" id="cpuBar" style="width:0%"></div></div>
+      <div class="metric-row" style="margin-top:8px">
+        <span class="metric-label">Load avg (1/5/15)</span>
+        <span class="metric-value" id="cpuLoad" style="font-size:12px">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Memory -->
+  <div class="card">
+    <div class="card-header">
+      <span><span class="dot green" id="memDot"></span>Memoria</span>
+      <span id="memTotal">—</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Usada</span>
+        <span class="metric-value" id="memUsed">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill green" id="memBar" style="width:0%"></div></div>
+      <div class="metric-row" style="margin-top:8px">
+        <span class="metric-label">Disponible</span>
+        <span class="metric-value" id="memAvail">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Swap</span>
+        <span class="metric-value" id="memSwap" style="font-size:12px">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GPU -->
+  <div class="card">
+    <div class="card-header">
+      <span><span class="dot green" id="gpuDot"></span>GPU Orin</span>
+      <span id="gpuFreq">—</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Carga GPU</span>
+        <span class="metric-value" id="gpuLoad">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill green" id="gpuBar" style="width:0%"></div></div>
+      <div style="margin-top:10px">
+        <div class="metric-label" style="margin-bottom:6px">Temperaturas</div>
+        <div class="temp-grid" id="tempGrid">
+          <div class="temp-item"><span class="temp-name">cargando...</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disk -->
+  <div class="card">
+    <div class="card-header">
+      <span><span class="dot green" id="diskDot"></span>Disco</span>
+      <span id="diskTotal">—</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Usado</span>
+        <span class="metric-value" id="diskUsed">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill green" id="diskBar" style="width:0%"></div></div>
+      <div class="metric-row" style="margin-top:8px">
+        <span class="metric-label">Libre</span>
+        <span class="metric-value" id="diskFree">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Historias en disco</span>
+        <span class="metric-value" id="diskHistorias" style="font-size:12px">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Services -->
+  <div class="card">
+    <div class="card-header">
+      <span>Servicios</span>
+      <span id="servicesCount">—</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Ollama</span>
+        <span class="metric-value" id="svcOllama">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Modelos cargados</span>
+        <span class="metric-value" id="svcModels" style="font-size:12px">—</span>
+      </div>
+      <div class="metric-row" style="margin-top:4px">
+        <span class="metric-label">n8n</span>
+        <span class="metric-value" id="svcN8n">—</span>
+      </div>
+      <div id="modelsList" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- Stories -->
+  <div class="card">
+    <div class="card-header">
+      <span>Últimas historias</span>
+      <span id="storyCount">—</span>
+    </div>
+    <div class="card-body" id="storiesBody" style="max-height:260px;overflow-y:auto">
+      <div style="color:var(--tx-2);font-size:12px">Cargando...</div>
+    </div>
+  </div>
+
+  <!-- Remote Control -->
+  <div class="card">
+    <div class="card-header">
+      <span>Control remoto</span>
+      <span style="color:var(--accent)">LAN</span>
+    </div>
+    <div class="card-body">
+      <div class="controls">
+        <button class="btn" onclick="doAction('restart_ollama')">
+          <span class="ico">↻</span><span class="btn-label">Reiniciar Ollama</span>
+        </button>
+        <button class="btn" onclick="doAction('restart_n8n')">
+          <span class="ico">↻</span><span class="btn-label">Reiniciar n8n</span>
+        </button>
+        <button class="btn" onclick="doAction('trigger_pipeline')">
+          <span class="ico">▶</span><span class="btn-label">Disparar pipeline</span>
+        </button>
+        <button class="btn" onclick="doAction('clear_vram')">
+          <span class="ico">⎋</span><span class="btn-label">Liberar VRAM</span>
+        </button>
+        <button class="btn" onclick="doAction('jetson_clocks')">
+          <span class="ico">⚡</span><span class="btn-label">Max performance</span>
+        </button>
+        <button class="btn danger" onclick="doAction('kill_writer')">
+          <span class="ico">■</span><span class="btn-label">Detener escritor</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="card grid-full">
+    <div class="card-header">
+      <span>Logs</span>
+      <span id="logCount">—</span>
+    </div>
+    <div class="card-body">
+      <div class="log-tabs">
+        <button class="log-tab active" onclick="switchLog('all',this)">Sistema</button>
+        <button class="log-tab" onclick="switchLog('n8n',this)">n8n</button>
+        <button class="log-tab" onclick="switchLog('ollama',this)">Ollama</button>
+        <button class="log-tab" onclick="switchLog('writer',this)">Writer</button>
+      </div>
+      <div class="log-box" id="logBox">Cargando logs...</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Story Modal -->
+<div class="modal-overlay" id="storyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Historia</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a id="modalDownload" href="#" download style="font-size:12px">descargar .md</a>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Config ───
+const API = window.location.origin;
+const REFRESH_MS = 5000;
+let currentLogService = 'all';
+
+// ─── Utilities ───
+function $(id) { return document.getElementById(id) }
+function barColor(pct) { return pct > 85 ? 'red' : pct > 60 ? 'amber' : 'green' }
+function dotColor(pct) { return pct > 85 ? 'red' : pct > 60 ? 'amber' : 'green' }
+function setDot(el, color) { el.className = 'dot ' + color }
+function tempColor(t) { return t > 80 ? 'bad' : t > 60 ? 'warn' : 'good' }
+
+function showToast(msg, type = '') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ─── Clock ───
+setInterval(() => {
+  const now = new Date();
+  $('clock').textContent = now.toLocaleTimeString('es-CO', { hour12: false });
+}, 1000);
+
+// ─── Fetch helpers ───
+async function fetchJSON(endpoint) {
+  try {
+    const r = await fetch(API + endpoint, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch(e) {
+    return null;
+  }
+}
+
+// ─── System metrics ───
+async function updateSystem() {
+  const d = await fetchJSON('/api/system');
+  if (!d) { $('statusLed').className = 'logo offline'; return; }
+
+  $('statusLed').className = 'logo';
+  $('hostInfo').textContent = d.hostname + ' · ' + d.ip;
+  $('uptimeDisplay').textContent = 'up ' + d.uptime.formatted;
+
+  // CPU
+  const cpu = d.cpu;
+  $('cpuUsage').textContent = cpu.usage_percent.toFixed(1) + '%';
+  $('cpuUsage').className = 'metric-value ' + dotColor(cpu.usage_percent);
+  $('cpuFreq').textContent = cpu.freq_mhz + ' MHz';
+  $('cpuBar').style.width = cpu.usage_percent + '%';
+  $('cpuBar').className = 'bar-fill ' + barColor(cpu.usage_percent);
+  setDot($('cpuDot'), dotColor(cpu.usage_percent));
+  $('cpuLoad').textContent = `${cpu.load_1m} / ${cpu.load_5m} / ${cpu.load_15m}`;
+
+  // Memory
+  const mem = d.memory;
+  $('memUsed').textContent = (mem.used_mb / 1024).toFixed(1) + ' GB';
+  $('memUsed').className = 'metric-value ' + dotColor(mem.usage_percent);
+  $('memTotal').textContent = (mem.total_mb / 1024).toFixed(0) + ' GB total';
+  $('memAvail').textContent = (mem.available_mb / 1024).toFixed(1) + ' GB';
+  $('memAvail').className = 'metric-value good';
+  $('memSwap').textContent = `${(mem.swap_used_mb / 1024).toFixed(1)} / ${(mem.swap_total_mb / 1024).toFixed(0)} GB`;
+  $('memBar').style.width = mem.usage_percent + '%';
+  $('memBar').className = 'bar-fill ' + barColor(mem.usage_percent);
+  setDot($('memDot'), dotColor(mem.usage_percent));
+
+  // GPU
+  const gpu = d.gpu;
+  const gpuPct = gpu.gpu_load_percent || 0;
+  $('gpuLoad').textContent = gpuPct.toFixed(0) + '%';
+  $('gpuLoad').className = 'metric-value ' + (gpuPct > 80 ? 'warn' : 'good');
+  $('gpuFreq').textContent = gpu.gpu_freq_mhz + ' MHz';
+  $('gpuBar').style.width = gpuPct + '%';
+  $('gpuBar').className = 'bar-fill ' + barColor(gpuPct);
+  setDot($('gpuDot'), dotColor(gpuPct));
+
+  // Temps
+  const temps = gpu.temperatures || {};
+  const keys = Object.keys(temps).slice(0, 8);
+  $('tempGrid').innerHTML = keys.map(k => {
+    const v = temps[k];
+    const cls = tempColor(v);
+    return `<div class="temp-item"><span class="temp-name">${k}</span><span class="temp-val ${cls}">${v}°C</span></div>`;
+  }).join('') || '<div class="temp-item"><span class="temp-name">sin datos</span></div>';
+
+  // Disk
+  const disk = d.disk;
+  $('diskUsed').textContent = disk.used_gb + ' GB';
+  $('diskUsed').className = 'metric-value ' + dotColor(disk.usage_percent);
+  $('diskTotal').textContent = disk.total_gb + ' GB total';
+  $('diskFree').textContent = disk.free_gb + ' GB';
+  $('diskFree').className = 'metric-value good';
+  $('diskBar').style.width = disk.usage_percent + '%';
+  $('diskBar').className = 'bar-fill ' + barColor(disk.usage_percent);
+  setDot($('diskDot'), dotColor(disk.usage_percent));
+  $('diskHistorias').textContent = disk.historias_size;
+}
+
+// ─── Pipeline ───
+async function updatePipeline() {
+  const d = await fetchJSON('/api/pipeline');
+  if (!d) return;
+
+  const phases = {
+    idle:         { icon: '⏸', label: 'En espera', sub: 'Próximo ciclo automático en el cron' },
+    scouting:     { icon: '🔍', label: 'Scout', sub: 'Extrayendo tendencias de Google...' },
+    inferencing:  { icon: '🧠', label: 'Inferencia', sub: 'Agentes procesando via Ollama...' },
+    writing:      { icon: '✍️', label: 'Escribiendo', sub: 'Qwen3.5-27B generando historia...' },
+  };
+  const p = phases[d.current_phase] || phases.idle;
+
+  $('phaseIcon').textContent = p.icon;
+  $('phaseLabel').textContent = p.label;
+  $('phaseSub').textContent = p.sub;
+  $('phaseDisplay').className = 'phase-display' + (d.current_phase === 'idle' ? ' phase-idle' : '');
+
+  setDot($('pipelineDot'), d.current_phase === 'idle' ? 'green' : 'amber');
+  if (d.current_phase === 'writing') {
+    $('statusLed').className = 'logo busy';
+  }
+
+  $('pipelineStories').textContent = `${d.stories_today} hoy · ${d.stories_total} total`;
+}
+
+// ─── Services ───
+async function updateServices() {
+  const [ollama, n8n] = await Promise.all([
+    fetchJSON('/api/ollama'),
+    fetchJSON('/api/n8n'),
+  ]);
+
+  let onlineCount = 0;
+
+  if (ollama) {
+    const online = ollama.online;
+    $('svcOllama').textContent = online ? 'ONLINE' : 'OFFLINE';
+    $('svcOllama').className = 'metric-value ' + (online ? 'good' : 'bad');
+    $('svcModels').textContent = ollama.model_count + ' modelos';
+    if (online) onlineCount++;
+
+    $('modelsList').innerHTML = (ollama.models || []).map(m =>
+      `<div class="model-item"><span class="model-name">${m.name}</span><span class="model-size">${m.size_gb} GB</span></div>`
+    ).join('');
+  }
+
+  if (n8n) {
+    const online = n8n.online;
+    $('svcN8n').textContent = online ? 'ONLINE' : 'OFFLINE';
+    $('svcN8n').className = 'metric-value ' + (online ? 'good' : 'bad');
+    if (online) onlineCount++;
+  }
+
+  $('servicesCount').textContent = onlineCount + '/2 online';
+}
+
+// ─── Stories ───
+async function updateStories() {
+  const d = await fetchJSON('/api/stories');
+  if (!d) return;
+
+  $('storyCount').textContent = d.stories.length + ' historias';
+  const container = $('storiesBody');
+
+  if (d.stories.length === 0) {
+    container.innerHTML = '<div style="color:var(--tx-2);font-size:12px;text-align:center;padding:20px">Sin historias generadas aún</div>';
+    return;
+  }
+
+  container.innerHTML = d.stories.slice(0, 15).map(s => {
+    const date = new Date(s.created).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `<div class="story-item" onclick="openStory('${s.id}')">
+      <div class="story-meta">
+        <span class="story-tema">${s.tema || s.id}</span>
+        <span class="story-date">${date}</span>
+      </div>
+      <span class="story-words">${s.palabras || '?'} palabras</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── Logs ───
+async function updateLogs() {
+  const d = await fetchJSON(`/api/logs?service=${currentLogService}&lines=80`);
+  if (!d) return;
+
+  $('logCount').textContent = d.count + ' líneas';
+  const box = $('logBox');
+  const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 50;
+
+  box.innerHTML = d.lines.map(line => {
+    let cls = '';
+    if (/error|fail|exception/i.test(line)) cls = 'err';
+    else if (/warn|timeout/i.test(line)) cls = 'warn';
+    else if (/info|start|ready|healthy/i.test(line)) cls = 'info';
+    return `<span class="${cls}">${escapeHtml(line)}</span>`;
+  }).join('\n');
+
+  if (wasAtBottom) box.scrollTop = box.scrollHeight;
+}
+
+function switchLog(service, el) {
+  currentLogService = service;
+  document.querySelectorAll('.log-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  updateLogs();
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Story modal ───
+async function openStory(id) {
+  const d = await fetchJSON(`/api/stories/${id}`);
+  if (!d) { showToast('Error cargando historia', 'error'); return; }
+
+  $('modalTitle').textContent = 'Historia ' + id;
+  $('modalDownload').href = `${API}/api/stories/${id}/download`;
+  $('modalBody').innerHTML = '<pre style="white-space:pre-wrap;font-family:inherit">' + escapeHtml(d.content) + '</pre>';
+  $('storyModal').classList.add('open');
+}
+
+function closeModal() { $('storyModal').classList.remove('open') }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal() });
+
+// ─── Control actions ───
+async function doAction(action) {
+  const names = {
+    restart_ollama: 'Reiniciar Ollama',
+    restart_n8n: 'Reiniciar n8n',
+    trigger_pipeline: 'Disparar pipeline',
+    kill_writer: 'Detener escritor',
+    clear_vram: 'Liberar VRAM',
+    jetson_clocks: 'Max performance',
+  };
+
+  if (!confirm(`¿Ejecutar "${names[action] || action}"?`)) return;
+
+  showToast('Ejecutando ' + (names[action] || action) + '...', '');
+
+  try {
+    const r = await fetch(API + '/api/control', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, confirm: true }),
+    });
+    const d = await r.json();
+    if (d.status === 'executed') {
+      showToast(d.description + ' — OK', 'success');
+    } else {
+      showToast('Error: ' + JSON.stringify(d), 'error');
+    }
+  } catch(e) {
+    showToast('Error de conexión: ' + e.message, 'error');
+  }
+}
+
+// ─── Refresh loop ───
+async function refreshAll() {
+  await Promise.allSettled([
+    updateSystem(),
+    updatePipeline(),
+    updateServices(),
+    updateStories(),
+    updateLogs(),
+  ]);
+}
+
+refreshAll();
+setInterval(refreshAll, REFRESH_MS);
+</script>
+</body>
+</html>

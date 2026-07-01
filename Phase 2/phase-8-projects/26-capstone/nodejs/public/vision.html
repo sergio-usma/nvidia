@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision - Project Nexus</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary: #00d9ff;
+            --bg-dark: #0d1117;
+            --bg-card: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+        
+        .logo h1 {
+            font-size: 1.25rem;
+            color: var(--primary);
+        }
+        
+        .nav-links { display: flex; gap: 0.5rem; }
+        
+        .nav-link {
+            padding: 0.5rem 1rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        
+        .nav-link:hover, .nav-link.active { background: var(--border); color: var(--text); }
+        
+        main {
+            padding: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .vision-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .card h3 {
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+        
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .drop-zone:hover {
+            border-color: var(--primary);
+            background: rgba(0, 217, 255, 0.05);
+        }
+        
+        .drop-zone input {
+            display: none;
+        }
+        
+        #preview {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        
+        .btn:hover { opacity: 0.9; }
+        
+        #result {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            white-space: pre-wrap;
+            min-height: 100px;
+        }
+        
+        .analyzing {
+            color: var(--primary);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="14" stroke="#00d9ff" stroke-width="2"/>
+                <circle cx="16" cy="16" r="6" fill="#00d9ff"/>
+            </svg>
+            <h1>Project Nexus</h1>
+        </a>
+        
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/chat.html" class="nav-link">Chat</a>
+            <a href="/vision.html" class="nav-link active">Vision</a>
+            <a href="/voice.html" class="nav-link">Voice</a>
+            <a href="/rag.html" class="nav-link">RAG</a>
+            <a href="/monitor.html" class="nav-link">Monitor</a>
+        </nav>
+    </header>
+    
+    <main>
+        <h2 style="margin-bottom: 1.5rem;">Vision Analysis</h2>
+        
+        <div class="vision-grid">
+            <div class="card">
+                <h3>Upload Image</h3>
+                <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+                    <p>Click to upload or drag and drop</p>
+                    <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">PNG, JPG, JPEG up to 10MB</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+                <img id="preview" alt="Preview">
+                <button class="btn" onclick="analyzeImage()" id="analyzeBtn" style="display: none;">Analyze Image</button>
+            </div>
+            
+            <div class="card">
+                <h3>Analysis Result</h3>
+                <div id="result">Upload an image to begin analysis...</div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        const socket = io();
+        let selectedFile = null;
+        
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('preview').src = e.target.result;
+                    document.getElementById('preview').style.display = 'block';
+                    document.getElementById('analyzeBtn').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        function analyzeImage() {
+            if (!selectedFile) return;
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<span class="analyzing">Analyzing image...</span>';
+            
+            socket.emit('vision_analyze', { image: selectedFile.name });
+        }
+        
+        socket.on('vision_result', (data) => {
+            document.getElementById('result').textContent = data.description || 'Analysis complete';
+        });
+    </script>
+</body>
+</html>

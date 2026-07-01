@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor - Project Nexus</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #00d9ff;
+            --bg-dark: #0d1117;
+            --bg-card: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+            --success: #238636;
+            --warning: #9e6a03;
+            --danger: #da3633;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+        
+        .logo h1 { font-size: 1.25rem; color: var(--primary); }
+        
+        .nav-links { display: flex; gap: 0.5rem; }
+        
+        .nav-link {
+            padding: 0.5rem 1rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        
+        .nav-link:hover, .nav-link.active { background: var(--border); color: var(--text); }
+        
+        main { padding: 1.5rem; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-top: 0.25rem;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        
+        .card h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+        
+        .service-list {
+            margin-top: 1rem;
+        }
+        
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        .status-dot.online { background: var(--success); }
+        .status-dot.warning { background: var(--warning); }
+        .status-dot.offline { background: var(--danger); }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="14" stroke="#00d9ff" stroke-width="2"/>
+                <circle cx="16" cy="16" r="6" fill="#00d9ff"/>
+            </svg>
+            <h1>Project Nexus</h1>
+        </a>
+        
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/chat.html" class="nav-link">Chat</a>
+            <a href="/vision.html" class="nav-link">Vision</a>
+            <a href="/voice.html" class="nav-link">Voice</a>
+            <a href="/rag.html" class="nav-link">RAG</a>
+            <a href="/monitor.html" class="nav-link active">Monitor</a>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">GPU Usage</div>
+                <div class="stat-value" id="gpuUsage">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Memory Usage</div>
+                <div class="stat-value" id="memoryUsage">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">CPU Temperature</div>
+                <div class="stat-value" id="cpuTemp">--°C</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Uptime</div>
+                <div class="stat-value" id="uptime">0h</div>
+            </div>
+        </div>
+        
+        <div class="charts-grid">
+            <div class="card">
+                <h3>System Resources</h3>
+                <div class="chart-container">
+                    <canvas id="resourceChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Service Status</h3>
+                <div class="service-list">
+                    <div class="service-item">
+                        <span><span class="status-dot online"></span>Ollama</span>
+                        <span style="color: var(--success)">Running</span>
+                    </div>
+                    <div class="service-item">
+                        <span><span class="status-dot online"></span>Vision API</span>
+                        <span style="color: var(--success)">Ready</span>
+                    </div>
+                    <div class="service-item">
+                        <span><span class="status-dot online"></span>Voice API</span>
+                        <span style="color: var(--success)">Ready</span>
+                    </div>
+                    <div class="service-item">
+                        <span><span class="status-dot online"></span>RAG Pipeline</span>
+                        <span style="color: var(--success)">Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        const socket = io();
+        
+        const resourceChart = new Chart(document.getElementById('resourceChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'GPU %',
+                    data: [],
+                    borderColor: '#00d9ff',
+                    backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Memory %',
+                    data: [],
+                    borderColor: '#7b2cbf',
+                    backgroundColor: 'rgba(123, 44, 191, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#30363d' },
+                        ticks: { color: '#8b949e' }
+                    },
+                    x: {
+                        grid: { color: '#30363d' },
+                        ticks: { color: '#8b949e' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#c9d1d9' } }
+                }
+            }
+        });
+        
+        let dataPoints = 0;
+        
+        function updateStats() {
+            fetch('/api/v1/system/stats')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.gpu) {
+                        document.getElementById('gpuUsage').textContent = data.gpu.utilization + '%';
+                        document.getElementById('cpuTemp').textContent = data.gpu.temperature + '°C';
+                    }
+                    document.getElementById('memoryUsage').textContent = data.memory.percent + '%';
+                    document.getElementById('uptime').textContent = Math.floor(data.uptime / 3600) + 'h';
+                    
+                    const now = new Date().toLocaleTimeString();
+                    resourceChart.data.labels.push(now);
+                    resourceChart.data.datasets[0].data.push(data.gpu?.utilization || 0);
+                    resourceChart.data.datasets[1].data.push(parseFloat(data.memory.percent));
+                    
+                    if (resourceChart.data.labels.length > 20) {
+                        resourceChart.data.labels.shift();
+                        resourceChart.data.datasets[0].data.shift();
+                        resourceChart.data.datasets[1].data.shift();
+                    }
+                    resourceChart.update();
+                });
+        }
+        
+        setInterval(updateStats, 2000);
+        updateStats();
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+[FIX] SECCIÓN 1 — Modelo 1: Qwen3.5 35B-A3B (MoE) - Jetson orin jp72 top10 modelos · MD
+
+"""
+Opción A: Sin especulative decoding (más estable, inicio más rápido)
+
+bashdocker run --runtime nvidia -d \
+  --name qwen35-35b \
+  --restart no \
+  --network host \
+  --ipc host \
+  --shm-size 8g \
+  -e NVIDIA_VISIBLE_DEVICES=all \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  bash -c "cd /opt && source venv/bin/activate && \
+    vllm serve Kbenkhaled/Qwen3.5-35B-A3B-quantized.w4a16 \
+      --gpu-memory-utilization 0.80 \
+      --enable-prefix-caching \
+      --reasoning-parser qwen3 \
+      --enable-auto-tool-choice \
+      --tool-call-parser qwen3_coder \
+      --host 0.0.0.0 \
+      --port 8000"
+"""
+
+Posibles errores:
+"""
+´(APIServer pid=44) RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}´
+"""
+El modelo Qwen3.5 35B es bastante denso (incluso cuantizado). Para forzarlo a entrar sin problemas en el espacio que tienes disponible de inmediato (40.8 GiB), solo tenemos que bajar la utilización de memoria al 0.63. Esto le indicará a vLLM que asigne aproximadamente 38.6 GiB para los pesos y la caché de contexto, ajustándose perfectamente a tu entorno actual.
+
+Vamos a limpiar de raíz la Jetson Orin para recuperar hasta el último megabyte de memoria unificada.
+
+Paso 1: Identificar qué está consumiendo la memoria
+Primero, vamos a ver exactamente qué procesos (Docker o nativos) tienen secuestrada la GPU/RAM. Ejecuta este comando:
+
+Bash
+sudo fuser -v /dev/nvidia*
+Esto te mostrará una lista de los PIDs (IDs de proceso) que están tocando el chip gráfico de NVIDIA ahora mismo.
+
+Paso 2: Comandos de liberación absoluta (The Kill Switch)
+Ejecuta los siguientes comandos en orden para matar cualquier proceso zombi, limpiar la caché del sistema y liberar la memoria unificada de la Jetson:
+
+Bash
+# 1. Detener a la fuerza TODOS los contenedores de Docker activos que puedan revivir
+docker stop vllm vllm-openclaw open-webui qwen35-35b 2>/dev/null
+docker rm qwen35-35b 2>/dev/null
+
+# 2. Matar cualquier proceso de Python o vLLM oculto en el host
+sudo pkill -9 -f vllm
+sudo pkill -9 -f python
+sudo pkill -9 -f python3
+
+# 3. Forzar al Kernel de Linux a vaciar la memoria caché, buffers y swap unificada
+sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches
+sudo swapoff -a && sudo swapon -a
+Paso 3: Verificar la memoria real disponible
+Para asegurarnos de que la limpieza funcionó y que superamos el umbral crítico, revisa la memoria libre del sistema:
+
+Bash
+free -h
+(Como la Jetson Orin usa memoria unificada, el espacio disponible en la sección available de este comando se traduce directamente en tu VRAM utilizable. Necesitamos ver idealmente más de 48 GB disponibles).
+
+Paso 4: Lanzar Qwen de forma segura con margen de maniobra
+Si por alguna razón el sistema operativo de tu Jetson consume mucha memoria base y no logras subir de los 45 GB libres en el paso anterior, el modelo no va a abrir con 0.75.
+
+Para asegurar el tiro y que no vuelvas a ver el error, lanza el contenedor bajando la reserva al 0.65 (aprox. 39.8 GiB requeridos), lo cual entra perfectamente en tu peor escenario:
+
+Bash
+docker run --runtime nvidia -d \
+  --name qwen35-35b \
+  --restart no \
+  --network host \
+  --ipc host \
+  --shm-size 8g \
+  -e NVIDIA_VISIBLE_DEVICES=all \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  bash -c "cd /opt && source venv/bin/activate && \
+    vllm serve Kbenkhaled/Qwen3.5-35B-A3B-quantized.w4a16 \
+      --gpu-memory-utilization 0.65 \
+      --enable-prefix-caching \
+      --reasoning-parser qwen3 \
+      --enable-auto-tool-choice \
+      --tool-call-parser qwen3_coder \
+      --host 0.0.0.0 \
+      --port 8000"
+Monitorea el arranque con:
+
+Bash
+docker logs -f qwen35-35b
+"""
+
+
+

@@ -1,0 +1,168 @@
+“Necesito que mi NVIDIA Jetson Orin AGX 64 GB con JetPack 7.2 arranque siempre en un estado mínimo y predecible, sin servicios de inferencia residuales ni procesos en segundo plano asociados a vLLM, Ollama o llama.cpp. Solo deben levantarse los servicios indispensables para administración remota, como SSH y NoMachine, mientras que cualquier motor de inferencia se iniciará manualmente según el pipeline que vaya a ejecutar.”
+
+# Especificación técnica formal
+
+## 1. Problema
+
+La NVIDIA Jetson Orin AGX 64 GB con JetPack 7.2 se utilizará como plataforma de inferencia local dinámica para alternar entre vLLM, Ollama y `llama.cpp` según el pipeline requerido. El problema principal es que estas herramientas y sus wrappers pueden dejar servicios de arranque automático, demonios residentes, políticas de reinicio y scripts de sesión que consumen memoria y mantienen procesos activos incluso después del reinicio. [docs.vllm](https://docs.vllm.ai/en/stable/getting_started/quickstart/)
+
+Ese comportamiento es ineficiente para cargas dinámicas porque reduce la memoria disponible, introduce procesos fantasma y puede interferir con la ejecución de otra instancia de modelo o con otra herramienta de inferencia que el usuario quiera lanzar posteriormente. En Ollama, además, su documentación oficial incluye explícitamente la creación de un servicio `ollama.service` con `Restart=always`, lo cual confirma que su instalación puede orientar el sistema hacia disponibilidad continua y no hacia arranque limpio. [docs.ollama](https://docs.ollama.com/linux)
+
+## 2. Objetivos
+
+### 2.1 Objetivo general
+Definir una arquitectura de arranque mínimo y controlado para que la Jetson inicie siempre en un estado limpio, sin LLM cargados, sin contenedores activos y sin servicios de inferencia persistentes, manteniendo solo los servicios indispensables.
+
+### 2.2 Objetivos específicos
+- Evitar el autoarranque de servicios asociados a vLLM, Ollama y `llama.cpp`.
+- Mantener activos solo SSH y los componentes necesarios para NoMachine.
+- Asegurar que el sistema arranque en un target no gráfico por defecto.
+- Eliminar políticas de reinicio automático en contenedores y unidades no esenciales.
+- Reemplazar el autolaunch por scripts y aliases controlados por el usuario.
+- Permitir que el usuario active de forma explícita vLLM, Ollama, `llama.cpp` o combinaciones entre ellos.
+
+## 3. Arquitectura deseada
+
+### 3.1 Estado de arranque
+El sistema debe iniciar en `multi-user.target`, es decir, en modo texto y sin entorno gráfico local por defecto. Esto reduce la carga base del sistema y evita el arranque innecesario de la pila de escritorio. [dev](https://dev.to/vonusma/headless-mode-on-nvidia-jetson-agx-orin-64gb-with-jetpack-72-448a)
+
+### 3.2 Servicios indispensables
+Los únicos servicios que deben permanecer habilitados por defecto son:
+- SSH, para administración remota.
+- NoMachine, para acceso gráfico remoto cuando sea necesario.
+- Servicios estrictamente necesarios de red y sistema.
+
+### 3.3 Servicios no deseados
+Deben permanecer deshabilitados o eliminados:
+- `ollama.service` y cualquier override que lo reactive. [docs.ollama](https://docs.ollama.com/linux)
+- Unidades personalizadas de `systemd` creadas para vLLM o `llama.cpp` si no son indispensables.
+- Contenedores Docker con reinicio automático.
+- Cualquier script de inicio de sesión que lance procesos de inferencia sin orden explícita.
+
+### 3.4 Principio operativo
+La Jetson no debe iniciar ningún motor de inferencia por sí sola. La activación de vLLM, Ollama o `llama.cpp` debe ocurrir solo mediante comandos o scripts del usuario, nunca por arranque del sistema. [github](https://github.com/ollama/ollama/issues/5165)
+
+## 4. Procedimiento de hardening
+
+### 4.1 Preparación inicial
+Se recomienda partir de una instalación limpia de JetPack 7.2. Si el dispositivo tuvo configuraciones anteriores, debe hacerse una depuración completa para evitar residuos de servicios, archivos de usuario o unidades persistentes.
+
+### 4.2 Cambio de objetivo de arranque
+Configurar el sistema para arrancar en modo texto:
+
+```bash
+sudo systemctl set-default multi-user.target
+sudo reboot
+```
+
+Ese ajuste evita el entorno gráfico completo al iniciar y hace que el sistema arranque en un estado mucho más liviano. [eteo.tistory](https://eteo.tistory.com/997)
+
+### 4.3 Habilitación de acceso remoto
+Instalar y habilitar SSH:
+
+```bash
+sudo apt install -y openssh-server
+sudo systemctl enable --now ssh
+```
+
+SSH debe ser el canal principal de administración remota. Si se requiere GUI remota, NoMachine debe quedar preparado como servicio o componente disponible, pero no como entorno local permanente. [stereolabs](https://www.stereolabs.com/docs/development/zed-sdk/virtual-display)
+
+### 4.4 Configuración de NoMachine
+NoMachine debe operar como acceso gráfico remoto bajo demanda. En escenarios headless, conviene una configuración compatible con X11 o pantalla virtual, para evitar dependencia de una sesión gráfica local completa. [forums.developer.nvidia](https://forums.developer.nvidia.com/t/problem-while-attempting-use-gui-in-headless-mode/167307)
+
+### 4.5 Desactivación de persistencias de LLM
+Auditar servicios del sistema y del usuario:
+
+```bash
+systemctl list-unit-files --type=service | grep -E '(ollama|vllm|llama|docker)'
+systemctl --user list-unit-files --type=service | grep -E '(ollama|vllm|llama)'
+```
+
+Si existe `ollama.service`, debe ser detenido, deshabilitado y eliminado:
+
+```bash
+sudo systemctl stop ollama
+sudo systemctl disable ollama
+sudo rm -f /etc/systemd/system/ollama.service
+sudo systemctl daemon-reload
+```
+
+Esto es especialmente importante porque Ollama documenta explícitamente la instalación de su servicio de arranque y su configuración con `Restart=always`. [docs.ollama](https://docs.ollama.com/linux)
+
+### 4.6 Control de Docker
+Si Docker no debe quedar activo permanentemente, deshabilítalo:
+
+```bash
+sudo systemctl disable docker
+```
+
+Si hay contenedores ya creados, neutraliza su política de reinicio:
+
+```bash
+docker update --restart=no $(docker ps -a -q)
+```
+
+Con ello se evita que contenedores olvidados o configurados como `always` consuman recursos al reiniciar Docker o el sistema. [stackoverflow](https://stackoverflow.com/questions/37599128/docker-how-do-you-disable-auto-restart-on-a-container)
+
+### 4.7 Limpieza de residuos de usuario
+Revisar rutas de sesión y arranque del usuario:
+- `~/.config/systemd/user/`
+- `~/.bashrc`
+- `~/.profile`
+
+La meta es eliminar cualquier script o unidad que lance procesos de inferencia al iniciar sesión.
+
+## 5. Criterios de verificación
+
+La implementación se considera correcta si, después de reiniciar:
+- El sistema arranca en `multi-user.target`.
+- SSH está activo.
+- NoMachine está disponible para acceso remoto cuando se requiera.
+- No existen servicios de Ollama, vLLM o `llama.cpp` habilitados automáticamente.
+- Docker no levanta contenedores por sí solo.
+- No hay procesos de inferencia residuales consumiendo memoria al inicio.
+
+## 6. Regla de operación
+
+Toda carga de inferencia debe ejecutarse bajo demanda. Ningún motor debe quedar residente por defecto tras un reboot. El sistema debe comportarse como base limpia de ejecución, no como servidor persistente de LLM.
+
+## 7. Resultado esperado
+
+Con esta arquitectura, la Jetson arranca con la mayor cantidad posible de recursos libres y sin contaminación de servicios anteriores. Esto permite alternar entre vLLM, Ollama y `llama.cpp` sin comprometer memoria ni estabilidad del sistema. [github](https://github.com/ollama/ollama/issues/7161)
+
+## 8. Lanzamiento bajo demanda de motores de inferencia
+
+Los servicios, motores y pipelines de inferencia local deben ejecutarse únicamente a voluntad del usuario. Se prohíbe el autolaunch en el arranque del sistema y se reemplaza por scripts de inicio mantenidos por el usuario, expuestos mediante `alias` en `.bashrc` u otro mecanismo equivalente de shell. [github](https://github.com/royborgen/llama)
+
+Cada script debe encargarse de cargar dependencias, variables de entorno, rutas de modelos, bibliotecas y parámetros de ejecución necesarios para vLLM, Ollama, `llama.cpp` o combinaciones entre ellos. El sistema debe iniciar siempre en estado limpio, sin LLM cargados, sin contenedores activos y sin procesos persistentes de inferencia, reservando únicamente los servicios indispensables de conectividad remota, como SSH, y los componentes necesarios para NoMachine cuando se requiera acceso gráfico remoto. [stereolabs](https://www.stereolabs.com/docs/development/zed-sdk/virtual-display)
+
+### 8.1 Principio de ejecución
+Cada herramienta debe contar con su propio script de arranque. El usuario invocará ese script a través de un alias o función en `.bashrc`, de manera que el lanzamiento sea rápido pero siga siendo explícito y controlado. [linkedin](https://www.linkedin.com/posts/omarebnelkhattab-hosney-9a931b3_for-lunix-or-macos-user-a-tip-for-integrating-activity-7200644690881241088-DD1J)
+
+### 8.2 Política de alias
+Se recomienda usar alias o funciones como:
+- `alias vllm_start=...`
+- `alias llama_start=...`
+- `alias ollama_start=...`
+
+Cada alias debe apuntar a un script que levante el entorno correspondiente y no a un servicio habilitado en boot. Esa separación permite alternar entre motores según el pipeline, o incluso correr varios en simultánea si la carga y la memoria lo permiten. [github](https://github.com/royborgen/llama)
+
+### 8.3 Requisito de limpieza al reinicio
+Al reiniciar, no debe quedar ningún modelo residente, ningún contenedor automático y ningún proceso persistente de inferencia. Solo deben permanecer activos SSH y, si se requiere interfaz remota, los componentes necesarios para NoMachine. Todo lo demás debe reactivarse manualmente mediante scripts del usuario. [oneuptime](https://oneuptime.com/blog/post/2026-01-16-docker-restart-policies/view)
+
+## 9. Anexo de implementación operativa
+
+Ejemplo de base mínima de hardening:
+
+```bash
+sudo systemctl set-default multi-user.target
+sudo apt install -y openssh-server
+sudo systemctl enable --now ssh
+sudo systemctl disable docker
+sudo systemctl stop ollama 2>/dev/null || true
+sudo systemctl disable ollama 2>/dev/null || true
+sudo rm -f /etc/systemd/system/ollama.service
+sudo systemctl daemon-reload
+```
+
+Luego, cada motor debe iniciarse desde un script propio del usuario, no desde el boot del sistema. Eso preserva la dinámica de uso que se necesita: un día vLLM, otro `llama.cpp`, otro Ollama, o una combinación de los tres para pipelines complejos, pero siempre con arranque limpio y control explícito. [docs.vllm](https://docs.vllm.ai/en/v0.5.0/getting_started/installation.html)

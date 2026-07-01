@@ -1,0 +1,822 @@
+{
+  "name": "INNOVALABS — Autonomous Literature Factory v1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000001",
+      "name": "⏰ Cron 6h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "notes": "FASE 1 — TRIGGER\nDispara cada 6 horas (00:00, 06:00, 12:00, 18:00).\nTimezone configurado en settings globales: America/Bogota."
+    },
+    {
+      "parameters": {
+        "command": "python3 /opt/innovalabs/scripts/scout_trends.py",
+        "timeout": 120
+      },
+      "id": "a1000000-0000-0000-0000-000000000002",
+      "name": "🔍 Scout — Extraer Tendencias",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "notes": "FASE 1 — SCOUT\nEjecuta el script Python que consulta Google Trends (región CO).\nEl script DEBE imprimir un JSON a stdout con la estructura:\n{\"tema\": \"...\", \"contexto\": \"...\", \"fecha\": \"YYYY-MM-DD\"}\n\nTimeout: 120s (pytrends puede ser lento)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parsear stdout del comando anterior\nconst raw = $input.first().json.stdout;\nlet data;\n\ntry {\n  data = JSON.parse(raw.trim());\n} catch (e) {\n  throw new Error(`Scout output inválido. Raw: ${raw}`);\n}\n\n// Generar ID único basado en timestamp\nconst id = `H-${Date.now()}`;\n\nreturn [{\n  json: {\n    id: id,\n    fecha: data.fecha || new Date().toISOString().split('T')[0],\n    tema: data.tema,\n    contexto: data.contexto,\n    estado: 'PENDING',\n    path_archivo: '',\n    moraleja: '',\n    blueprint_json: '',\n    error_log: ''\n  }\n}];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000003",
+      "name": "⚙️ Parsear Scout Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "notes": "Parsea el JSON de stdout del Scout.\nGenera un ID único (H-timestamp).\nPrepara el objeto completo para insertar en Google Sheets."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{/* REEMPLAZAR CON TU SPREADSHEET ID */}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Queue_Historias"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.id }}",
+            "Fecha": "={{ $json.fecha }}",
+            "Tema": "={{ $json.tema }}",
+            "Contexto": "={{ $json.contexto }}",
+            "Estado": "={{ $json.estado }}",
+            "Path_Archivo": "",
+            "Moraleja": "",
+            "Blueprint_JSON": "",
+            "Error_Log": ""
+          }
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000004",
+      "name": "📋 Sheets — Append Queue",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        720,
+        300
+      ],
+      "notes": "FASE 1 — PERSISTENCIA\nInserta una nueva fila en la hoja 'Queue_Historias'.\nEstado inicial: PENDING.\n\n⚠️ REQUIERE: Google Sheets credential configurada en n8n.\n⚠️ REQUIERE: Reemplazar documentId con el ID real del spreadsheet."
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{/* REEMPLAZAR CON TU SPREADSHEET ID */}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Queue_Historias"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Estado",
+              "lookupValue": "PENDING"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000005",
+      "name": "📖 Sheets — Leer PENDING",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        960,
+        300
+      ],
+      "notes": "FASE 2 — LECTURA\nObtiene la primera fila con Estado == PENDING.\nSi no hay filas pendientes, el flujo se detiene naturalmente (sin items)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-pending-check",
+              "leftValue": "={{ $json.Estado }}",
+              "rightValue": "PENDING",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000006",
+      "name": "🔀 ¿Hay Pendientes?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "notes": "Guard clause: Verifica que efectivamente hay un item PENDING.\nSi no hay items, la rama FALSE termina el flujo silenciosamente."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{/* REEMPLAZAR CON TU SPREADSHEET ID */}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Queue_Historias"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.ID }}",
+            "Estado": "PROCESSING"
+          }
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000007",
+      "name": "🔒 Sheets — Lock PROCESSING",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1440,
+        300
+      ],
+      "notes": "FASE 2 — BLOQUEO\nCambia estado a PROCESSING para evitar que otra ejecución\ntome el mismo item (mutex via Sheets)."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"glm-4.7-flash:latest\",\n  \"prompt\": \"Eres un estratega narrativo experto en fábulas y cuentos con moraleja. Tu tarea es analizar una tendencia social y derivar una premisa ética universal.\\n\\n### TENDENCIA ACTUAL:\\n- Tema: {{ $json.Tema }}\\n- Contexto: {{ $json.Contexto }}\\n\\n### INSTRUCCIONES:\\n1. Identifica el conflicto humano subyacente detrás de esta tendencia.\\n2. Formula una moraleja atemporal (1 oración, máximo 25 palabras).\\n3. Define el conflicto central de la historia en 1 oración.\\n4. Sugiere un escenario/ambientación (época, lugar, tipo de mundo).\\n\\n### FORMATO DE RESPUESTA (JSON estricto, sin markdown):\\n{\\n  \\\"moraleja\\\": \\\"...\\\",\\n  \\\"conflicto\\\": \\\"...\\\",\\n  \\\"escenario\\\": \\\"...\\\",\\n  \\\"tema_original\\\": \\\"...\\\",\\n  \\\"tono_sugerido\\\": \\\"...\\\"\\n}\",\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.7,\n    \"num_ctx\": 4096\n  }\n}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000008",
+      "name": "🧠 Estratega — Moraleja (GLM-4.7)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "notes": "FASE 2 — AGENTE ESTRATEGA\nModelo: glm-4.7-flash via Ollama API.\nEntrada: Tema + Contexto del Scout.\nSalida esperada: JSON con moraleja, conflicto, escenario.\n\nTimeout: 600s (10 min) para absorber carga de modelo en VRAM.\nTemperature: 0.7 (balance creatividad/coherencia).\nstream: false → respuesta completa en un solo bloque."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer el JSON de la respuesta de Ollama\nconst ollamaResponse = $input.first().json.response;\nlet estrategia;\n\ntry {\n  // Ollama devuelve el texto en 'response'. Intentar parsear JSON.\n  const cleaned = ollamaResponse\n    .replace(/```json\\n?/g, '')\n    .replace(/```\\n?/g, '')\n    .trim();\n  estrategia = JSON.parse(cleaned);\n} catch (e) {\n  // Fallback: intentar extraer JSON con regex\n  const match = ollamaResponse.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    estrategia = JSON.parse(match[0]);\n  } else {\n    throw new Error(`No se pudo parsear respuesta del Estratega: ${ollamaResponse.substring(0, 200)}`);\n  }\n}\n\n// Propagar datos del item original + estrategia\nconst prevData = $('🔒 Sheets — Lock PROCESSING').first().json;\n\nreturn [{\n  json: {\n    ...prevData,\n    moraleja: estrategia.moraleja || '',\n    conflicto: estrategia.conflicto || '',\n    escenario: estrategia.escenario || '',\n    tono_sugerido: estrategia.tono_sugerido || 'reflexivo',\n    estrategia_raw: JSON.stringify(estrategia)\n  }\n}];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000009",
+      "name": "⚙️ Parsear Estrategia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ],
+      "notes": "Extrae y valida el JSON de la respuesta de Ollama.\nIncluye fallback con regex por si el modelo envuelve la respuesta en markdown.\nPropaga todos los datos del item original."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"deepseek-r1:8b\",\n  \"prompt\": \"Eres un arquitecto narrativo experto en la estructura del Viaje del Héroe (Joseph Campbell, 12 pasos). Tu tarea es crear el blueprint completo de una historia.\\n\\n### PREMISA:\\n- Moraleja: {{ $json.moraleja }}\\n- Conflicto Central: {{ $json.conflicto }}\\n- Escenario: {{ $json.escenario }}\\n- Tono: {{ $json.tono_sugerido }}\\n\\n### INSTRUCCIONES:\\nDiseña los 12 pasos del Viaje del Héroe. Para CADA paso incluye:\\n1. Nombre del paso (Campbell).\\n2. Título del capítulo/escena.\\n3. Resumen de lo que ocurre (3-5 oraciones).\\n4. Personajes involucrados.\\n5. Emoción dominante.\\n\\n### FORMATO DE RESPUESTA (JSON array estricto, sin markdown, sin texto adicional):\\n[\\n  {\\n    \\\"paso\\\": 1,\\n    \\\"nombre_campbell\\\": \\\"El Mundo Ordinario\\\",\\n    \\\"titulo_capitulo\\\": \\\"...\\\",\\n    \\\"resumen\\\": \\\"...\\\",\\n    \\\"personajes\\\": [\\\"...\\\"],\\n    \\\"emocion\\\": \\\"...\\\"\\n  },\\n  ...\\n]\",\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.6,\n    \"num_ctx\": 8192\n  }\n}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000010",
+      "name": "📐 Arquitecto — Blueprint (DeepSeek-R1)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        300
+      ],
+      "notes": "FASE 2 — AGENTE ARQUITECTO\nModelo: deepseek-r1:8b via Ollama API.\nEntrada: Moraleja + Conflicto + Escenario del Estratega.\nSalida esperada: JSON array con 12 pasos del Viaje del Héroe.\n\nTemperature: 0.6 (más determinista para estructura).\nContexto: 8192 tokens (el blueprint puede ser extenso)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer el JSON array de los 12 pasos\nconst ollamaResponse = $input.first().json.response;\nlet blueprint;\n\ntry {\n  const cleaned = ollamaResponse\n    .replace(/```json\\n?/g, '')\n    .replace(/```\\n?/g, '')\n    .replace(/<think>[\\s\\S]*?<\\/think>/g, '')\n    .trim();\n  blueprint = JSON.parse(cleaned);\n} catch (e) {\n  const match = ollamaResponse.match(/\\[[\\s\\S]*\\]/);\n  if (match) {\n    blueprint = JSON.parse(match[0]);\n  } else {\n    throw new Error(`No se pudo parsear blueprint del Arquitecto: ${ollamaResponse.substring(0, 300)}`);\n  }\n}\n\nif (!Array.isArray(blueprint) || blueprint.length < 10) {\n  throw new Error(`Blueprint inválido: se esperaban 12 pasos, se obtuvieron ${Array.isArray(blueprint) ? blueprint.length : 0}`);\n}\n\n// Propagar datos\nconst prevData = $('⚙️ Parsear Estrategia').first().json;\n\nreturn [{\n  json: {\n    ...prevData,\n    blueprint: blueprint,\n    blueprint_json: JSON.stringify(blueprint)\n  }\n}];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000011",
+      "name": "⚙️ Parsear Blueprint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        300
+      ],
+      "notes": "Extrae y valida el JSON array de 12 pasos.\nFiltra tags <think> de DeepSeek-R1.\nValida mínimo 10 pasos (tolerancia para modelos pequeños).\nPropaga todos los datos acumulados."
+    },
+    {
+      "parameters": {
+        "jsCode": "// COMPILAR EL MEGA-PROMPT PARA EL ESCRITOR (Qwen 3.5 27B)\nconst data = $input.first().json;\nconst blueprint = data.blueprint;\n\n// Construir la narrativa paso a paso\nlet pasosTexto = '';\nfor (const paso of blueprint) {\n  pasosTexto += `\\n### PASO ${paso.paso}: ${paso.nombre_campbell}\\n`;\n  pasosTexto += `**Capítulo:** ${paso.titulo_capitulo}\\n`;\n  pasosTexto += `**Resumen:** ${paso.resumen}\\n`;\n  pasosTexto += `**Personajes:** ${paso.personajes.join(', ')}\\n`;\n  pasosTexto += `**Emoción dominante:** ${paso.emocion}\\n`;\n}\n\nconst megaPrompt = `Eres un novelista galardonado. Tu tarea es escribir una historia completa en español, de alta calidad literaria, siguiendo EXACTAMENTE el blueprint narrativo proporcionado.\n\n## PREMISA DE LA HISTORIA\n- **Moraleja:** ${data.moraleja}\n- **Conflicto Central:** ${data.conflicto}\n- **Escenario:** ${data.escenario}\n- **Tono:** ${data.tono_sugerido}\n\n## BLUEPRINT NARRATIVO (12 Pasos del Viaje del Héroe)\n${pasosTexto}\n\n## INSTRUCCIONES DE ESCRITURA:\n1. Escribe la historia completa como PROSA CONTINUA (no como lista de pasos).\n2. Cada paso del blueprint corresponde a un capítulo o sección.\n3. Usa descripciones vívidas, diálogos naturales y transiciones fluidas.\n4. La moraleja debe ser implícita, nunca declarada explícitamente.\n5. Extensión objetivo: 3000-5000 palabras.\n6. NO incluyas metadatos, títulos de pasos de Campbell ni comentarios.\n7. Comienza directamente con la narración.\n\n/no_think\n\n---\n\n`;\n\n// Escapar comillas y caracteres problemáticos para la línea de comandos\nconst escapedPrompt = megaPrompt\n  .replace(/\\\\/g, '\\\\\\\\')\n  .replace(/\"/g, '\\\\\"')\n  .replace(/\\$/g, '\\\\$')\n  .replace(/`/g, '\\\\`');\n\nconst outputFile = `/tmp/historia_${data.ID}_raw.txt`;\n\nconst command = `llama-cli -m ~/.cache/llama.cpp/unsloth_Qwen3.5-27B-GGUF_Qwen3.5-27B-UD-Q4_K_XL.gguf -ngl 999 -c 8192 -n 8000 --temp 0.8 --repeat-penalty 1.1 -p \"${escapedPrompt}\" > ${outputFile} 2>/dev/null`;\n\nreturn [{\n  json: {\n    ...data,\n    llama_command: command,\n    output_file: outputFile\n  }\n}];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000012",
+      "name": "📝 Compilar Prompt del Escritor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ],
+      "notes": "FASE 3 — COMPILACIÓN\nTransforma el blueprint JSON en un mega-prompt de prosa.\nEscapa caracteres especiales para bash.\nGenera el comando llama-cli con todos los parámetros.\n\nParámetros de generación:\n  -ngl 999 → offload todas las capas a GPU\n  -c 8192  → ventana de contexto\n  -n 8000  → máximo tokens de salida\n  --temp 0.8 → creatividad alta para prosa\n  --repeat-penalty 1.1 → evitar repeticiones\n  /no_think → desactiva cadena de pensamiento de Qwen3.5"
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.llama_command }}",
+        "timeout": 1800
+      },
+      "id": "a1000000-0000-0000-0000-000000000013",
+      "name": "✍️ Escritor — Qwen3.5-27B (llama-cli)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        300
+      ],
+      "notes": "FASE 3 — ESCRITOR (NODO PESADO)\n⚠️ Este nodo BLOQUEA el hilo principal de n8n.\nConsumo estimado: ~18 GB RAM.\nTiempo estimado: 15-30 minutos dependiendo de longitud.\n\nTimeout: 1800s (30 min).\nstderr redirigido a /dev/null para evitar pollution de logs de llama.cpp.\n\n⚠️ HARD CONSTRAINT: No paralelizar. Workflow concurrency = 1."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Leer el archivo de historia generado\nconst fs = require('fs');\nconst prevData = $('📝 Compilar Prompt del Escritor').first().json;\nconst outputFile = prevData.output_file;\n\nlet rawStory;\ntry {\n  rawStory = fs.readFileSync(outputFile, 'utf-8');\n} catch (e) {\n  throw new Error(`No se pudo leer el archivo de historia: ${outputFile}. Error: ${e.message}`);\n}\n\n// Limpiar el prompt del inicio si llama-cli lo incluyó\nconst storyLines = rawStory.split('\\n');\nconst startIndex = storyLines.findIndex(line => line.startsWith('---'));\nconst cleanStory = startIndex >= 0 \n  ? storyLines.slice(startIndex + 1).join('\\n').trim()\n  : rawStory.trim();\n\nif (cleanStory.length < 500) {\n  throw new Error(`Historia demasiado corta (${cleanStory.length} caracteres). Posible error de generación.`);\n}\n\nreturn [{\n  json: {\n    ...prevData,\n    historia_raw: cleanStory,\n    longitud_caracteres: cleanStory.length,\n    longitud_palabras: cleanStory.split(/\\s+/).length\n  }\n}];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000014",
+      "name": "📄 Leer Historia Raw",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ],
+      "notes": "Lee el archivo .txt generado por llama-cli.\nLimpia el eco del prompt si existe.\nValida longitud mínima (500 chars) como sanity check."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"nemotron-3-nano:latest\",\n  \"prompt\": \"Eres un editor literario profesional. Tu tarea es revisar y pulir el siguiente texto narrativo.\\n\\n### REGLAS DE EDICIÓN:\\n1. Corrige TODOS los errores ortográficos y gramaticales.\\n2. Mejora la puntuación y el ritmo de las oraciones.\\n3. Elimina repeticiones innecesarias de palabras o frases.\\n4. Asegúrate de que los diálogos tengan formato correcto (guiones largos —).\\n5. NO alteres el argumento, los personajes ni los eventos.\\n6. NO añadas ni elimines escenas.\\n7. NO agregues comentarios, notas ni metadatos.\\n8. Devuelve ÚNICAMENTE el texto corregido, sin explicaciones.\\n\\n### TEXTO A EDITAR:\\n{{ $json.historia_raw }}\",\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.3,\n    \"num_ctx\": 8192\n  }\n}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000015",
+      "name": "🔎 Editor — Nemotron-3-Nano",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        300
+      ],
+      "notes": "FASE 4 — AGENTE EDITOR\nModelo: nemotron-3-nano via Ollama API.\nTemperature: 0.3 (alta fidelidad al texto original).\n\nEl Editor NO debe alterar la trama, solo:\n  - Ortografía y gramática\n  - Puntuación y formato de diálogos\n  - Repeticiones y ritmo\n\nTimeout: 600s."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar el texto final editado\nconst ollamaResponse = $input.first().json.response;\nconst prevData = $('📄 Leer Historia Raw').first().json;\n\n// Si el editor devolvió contenido válido, usarlo; sino, usar el raw\nconst historiaFinal = (ollamaResponse && ollamaResponse.trim().length > 500)\n  ? ollamaResponse.trim()\n  : prevData.historia_raw;\n\n// Componer el archivo Markdown final con metadatos\nconst fechaHoy = new Date().toISOString().split('T')[0];\nconst markdown = `---\\ntitle: \"Historia ${prevData.ID}\"\\nfecha_generacion: ${fechaHoy}\\ntema: \"${prevData.Tema}\"\\nmoraleja: \"${prevData.moraleja}\"\\nescenario: \"${prevData.escenario}\"\\npalabras: ${historiaFinal.split(/\\s+/).length}\\nagente_escritor: Qwen3.5-27B-UD-Q4\\nagente_editor: nemotron-3-nano\\n---\\n\\n${historiaFinal}\\n`;\n\nconst finalPath = `/var/opt/innovalabs/historias/Historia_${prevData.ID}.md`;\n\nreturn [{\n  json: {\n    ...prevData,\n    historia_final: markdown,\n    final_path: finalPath,\n    palabras_final: historiaFinal.split(/\\s+/).length\n  }\n}];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000016",
+      "name": "⚙️ Componer Markdown Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        300
+      ],
+      "notes": "Compone el archivo .md final con front-matter YAML:\n  - Metadatos de generación\n  - Tema, moraleja, escenario\n  - Conteo de palabras\n  - Modelos utilizados\n\nFallback: si el Editor devolvió basura, se usa la versión raw."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Guardar historia en el filesystem\nconst fs = require('fs');\nconst path = require('path');\nconst data = $input.first().json;\n\nconst dirPath = '/var/opt/innovalabs/historias';\nconst filePath = data.final_path;\n\n// Crear directorio si no existe\ntry {\n  fs.mkdirSync(dirPath, { recursive: true });\n} catch(e) {\n  // Directorio ya existe, OK\n}\n\n// Escribir el archivo\ntry {\n  fs.writeFileSync(filePath, data.historia_final, 'utf-8');\n} catch(e) {\n  throw new Error(`No se pudo guardar la historia en ${filePath}: ${e.message}`);\n}\n\nconst stats = fs.statSync(filePath);\n\nreturn [{\n  json: {\n    ...data,\n    saved: true,\n    file_size_bytes: stats.size,\n    saved_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000017",
+      "name": "💾 Guardar Historia .md",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3840,
+        300
+      ],
+      "notes": "FASE 4 — ALMACENAMIENTO\nUsa fs.writeFileSync para evitar problemas de escape en shell.\nCrea el directorio si no existe.\nGuarda en /var/opt/innovalabs/historias/Historia_[ID].md"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{/* REEMPLAZAR CON TU SPREADSHEET ID */}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Queue_Historias"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.ID }}",
+            "Estado": "COMPLETED",
+            "Path_Archivo": "={{ $json.final_path }}",
+            "Moraleja": "={{ $json.moraleja }}",
+            "Blueprint_JSON": "={{ $json.blueprint_json }}"
+          }
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "id": "a1000000-0000-0000-0000-000000000018",
+      "name": "✅ Sheets — COMPLETED",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4080,
+        300
+      ],
+      "notes": "FASE 4 — CIERRE\nActualiza la fila en Google Sheets:\n  - Estado → COMPLETED\n  - Path_Archivo → ruta del .md\n  - Moraleja → la moraleja generada\n  - Blueprint_JSON → el blueprint completo para auditoría"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Limpieza post-ejecución\nconst prevData = $input.first().json;\n\n// Log de resumen\nconst summary = {\n  id: prevData.ID,\n  tema: prevData.Tema,\n  moraleja: prevData.moraleja,\n  palabras: prevData.palabras_final,\n  archivo: prevData.final_path,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('✅ Historia generada:', JSON.stringify(summary, null, 2));\n\nreturn [{ json: summary }];"
+      },
+      "id": "a1000000-0000-0000-0000-000000000019",
+      "name": "📊 Log de Resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        300
+      ],
+      "notes": "Nodo terminal del flujo principal.\nImprime un resumen en los logs de n8n para monitoreo."
+    },
+    {
+      "parameters": {},
+      "id": "a1000000-0000-0000-0000-0000000000E1",
+      "name": "🚨 Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        600
+      ],
+      "notes": "SUB-FLUJO DE ERRORES\nSe activa cuando CUALQUIER nodo del flujo principal falla.\nCaptura: OOM de llama-cli, timeouts de Ollama, errores de parsing, etc."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer información del error\nconst errorData = $input.first().json;\n\n// Intentar recuperar el ID del item que estaba siendo procesado\nlet itemId = 'UNKNOWN';\nlet errorMsg = 'Error desconocido';\n\ntry {\n  // n8n pasa la info del error en la ejecución\n  if (errorData.execution) {\n    errorMsg = errorData.execution.error?.message || JSON.stringify(errorData.execution.error || {});\n  }\n  // Intentar obtener el ID del contexto\n  const allData = errorData.workflow?.nodes || [];\n  // Buscar en los datos del nodo que falló\n  itemId = errorData.execution?.lastNodeExecuted || 'UNKNOWN';\n} catch(e) {\n  errorMsg = `Error en recovery: ${e.message}`;\n}\n\n// Detectar si fue OOM\nconst isOOM = errorMsg.toLowerCase().includes('out of memory') || \n              errorMsg.toLowerCase().includes('oom') ||\n              errorMsg.toLowerCase().includes('killed');\n\nreturn [{\n  json: {\n    itemId: itemId,\n    errorMessage: errorMsg.substring(0, 500),\n    isOOM: isOOM,\n    timestamp: new Date().toISOString(),\n    estadoFinal: isOOM ? 'FAILED_OOM' : 'FAILED'\n  }\n}];"
+      },
+      "id": "a1000000-0000-0000-0000-0000000000E2",
+      "name": "⚙️ Diagnosticar Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        600
+      ],
+      "notes": "Analiza el error capturado.\nClasifica: OOM vs error genérico.\nPrepara los datos para actualizar Google Sheets."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{/* REEMPLAZAR CON TU SPREADSHEET ID */}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Queue_Historias"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "={{ $json.estadoFinal }}",
+            "Error_Log": "={{ $json.errorMessage }}"
+          }
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "id": "a1000000-0000-0000-0000-0000000000E3",
+      "name": "❌ Sheets — FAILED",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3120,
+        600
+      ],
+      "notes": "Actualiza Google Sheets con el estado de fallo:\n  FAILED_OOM → si fue error de memoria\n  FAILED → cualquier otro error\n\nGuarda el mensaje de error en Error_Log."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-oom-check",
+              "leftValue": "={{ $json.isOOM }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a1000000-0000-0000-0000-0000000000E4",
+      "name": "🔀 ¿Es OOM?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        600
+      ],
+      "notes": "Bifurcación de recuperación.\nSi fue OOM → reiniciar Ollama preventivamente.\nSi no → solo loguear."
+    },
+    {
+      "parameters": {
+        "command": "docker restart ollama && sleep 10 && echo 'Ollama reiniciado exitosamente'",
+        "timeout": 120
+      },
+      "id": "a1000000-0000-0000-0000-0000000000E5",
+      "name": "🔄 Reiniciar Ollama",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3600,
+        520
+      ],
+      "notes": "RECUPERACIÓN OOM\nReinicia el contenedor de Ollama para liberar VRAM.\nEspera 10s para que el servicio se estabilice.\n\n⚠️ Requiere que n8n tenga acceso al socket de Docker\n   o permisos para ejecutar 'docker restart'."
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log('⚠️ Error no-OOM registrado:', $json.errorMessage);\nconsole.log('Timestamp:', $json.timestamp);\nreturn [$input.first()];"
+      },
+      "id": "a1000000-0000-0000-0000-0000000000E6",
+      "name": "📋 Log Error Genérico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        700
+      ],
+      "notes": "Rama para errores no-OOM.\nSimplemente loguea para auditoría."
+    },
+    {
+      "parameters": {},
+      "id": "a1000000-0000-0000-0000-000000000099",
+      "name": "⛔ No Hay Pendientes",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        520
+      ],
+      "notes": "Termina silenciosamente cuando no hay items PENDING en la cola.\nEsto es comportamiento normal entre ciclos."
+    }
+  ],
+  "connections": {
+    "⏰ Cron 6h": {
+      "main": [
+        [
+          {
+            "node": "🔍 Scout — Extraer Tendencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Scout — Extraer Tendencias": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Parsear Scout Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Parsear Scout Output": {
+      "main": [
+        [
+          {
+            "node": "📋 Sheets — Append Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Sheets — Append Queue": {
+      "main": [
+        [
+          {
+            "node": "📖 Sheets — Leer PENDING",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📖 Sheets — Leer PENDING": {
+      "main": [
+        [
+          {
+            "node": "🔀 ¿Hay Pendientes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 ¿Hay Pendientes?": {
+      "main": [
+        [
+          {
+            "node": "🔒 Sheets — Lock PROCESSING",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⛔ No Hay Pendientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔒 Sheets — Lock PROCESSING": {
+      "main": [
+        [
+          {
+            "node": "🧠 Estratega — Moraleja (GLM-4.7)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Estratega — Moraleja (GLM-4.7)": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Parsear Estrategia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Parsear Estrategia": {
+      "main": [
+        [
+          {
+            "node": "📐 Arquitecto — Blueprint (DeepSeek-R1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📐 Arquitecto — Blueprint (DeepSeek-R1)": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Parsear Blueprint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Parsear Blueprint": {
+      "main": [
+        [
+          {
+            "node": "📝 Compilar Prompt del Escritor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Compilar Prompt del Escritor": {
+      "main": [
+        [
+          {
+            "node": "✍️ Escritor — Qwen3.5-27B (llama-cli)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✍️ Escritor — Qwen3.5-27B (llama-cli)": {
+      "main": [
+        [
+          {
+            "node": "📄 Leer Historia Raw",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📄 Leer Historia Raw": {
+      "main": [
+        [
+          {
+            "node": "🔎 Editor — Nemotron-3-Nano",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔎 Editor — Nemotron-3-Nano": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Componer Markdown Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Componer Markdown Final": {
+      "main": [
+        [
+          {
+            "node": "💾 Guardar Historia .md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Guardar Historia .md": {
+      "main": [
+        [
+          {
+            "node": "✅ Sheets — COMPLETED",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Sheets — COMPLETED": {
+      "main": [
+        [
+          {
+            "node": "📊 Log de Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Diagnosticar Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Diagnosticar Error": {
+      "main": [
+        [
+          {
+            "node": "❌ Sheets — FAILED",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "❌ Sheets — FAILED": {
+      "main": [
+        [
+          {
+            "node": "🔀 ¿Es OOM?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 ¿Es OOM?": {
+      "main": [
+        [
+          {
+            "node": "🔄 Reiniciar Ollama",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📋 Log Error Genérico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "America/Bogota",
+    "maxConcurrency": 1
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "INNOVALABS",
+      "id": "tag-innovalabs"
+    },
+    {
+      "name": "Literature-Factory",
+      "id": "tag-lit-factory"
+    },
+    {
+      "name": "Jetson-Orin",
+      "id": "tag-jetson"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1.0.0"
+}

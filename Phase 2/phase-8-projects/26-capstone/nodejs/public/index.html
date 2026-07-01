@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Nexus - Unified AI Platform</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #00d9ff;
+            --secondary: #7b2cbf;
+            --bg-dark: #0d1117;
+            --bg-card: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+            --success: #238636;
+            --danger: #da3633;
+            --warning: #9e6a03;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+        }
+        
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .nav-link {
+            padding: 0.5rem 1rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: var(--border);
+            color: var(--text);
+        }
+        
+        main {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-top: 0.25rem;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        
+        .card h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover { opacity: 0.9; }
+        
+        .model-selector select {
+            padding: 0.4rem 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+        }
+        
+        footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <circle cx="16" cy="16" r="14" stroke="#00d9ff" stroke-width="2"/>
+                    <circle cx="16" cy="16" r="6" fill="#00d9ff"/>
+                </svg>
+                <h1>Project Nexus</h1>
+            </div>
+            
+            <nav class="nav-links">
+                <a href="/" class="nav-link active">Dashboard</a>
+                <a href="/chat.html" class="nav-link">Chat</a>
+                <a href="/vision.html" class="nav-link">Vision</a>
+                <a href="/voice.html" class="nav-link">Voice</a>
+                <a href="/rag.html" class="nav-link">RAG</a>
+                <a href="/monitor.html" class="nav-link">Monitor</a>
+            </nav>
+            
+            <div class="model-selector">
+                <select id="modelSelect">
+                    <option value="llama3.2">Llama 3.2</option>
+                    <option value="mistral">Mistral</option>
+                    <option value="codeqwen">CodeQwen</option>
+                    <option value="mathstral">MathStral</option>
+                </select>
+            </div>
+        </header>
+        
+        <main>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">GPU Usage</div>
+                    <div class="stat-value" id="gpuUsage">0%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Memory</div>
+                    <div class="stat-value" id="memoryUsage">0%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Sessions</div>
+                    <div class="stat-value" id="sessionCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Messages Today</div>
+                    <div class="stat-value" id="messageCount">0</div>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>Quick Actions</h3>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn" onclick="location.href='/chat.html'">New Chat</button>
+                        <button class="btn" onclick="location.href='/vision.html'">Analyze Image</button>
+                        <button class="btn" onclick="location.href='/voice.html'">Voice Input</button>
+                        <button class="btn" onclick="location.href='/rag.html'">Upload Document</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>System Status</h3>
+                    <div id="systemStatus">
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                            <span>Ollama</span>
+                            <span style="color: var(--success)">● Online</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                            <span>Vision</span>
+                            <span style="color: var(--success)">● Ready</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                            <span>Voice</span>
+                            <span style="color: var(--success)">● Ready</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            Project Nexus v1.0.0 | NVIDIA Jetson AGX Orin | <span id="uptime">Running</span>
+        </footer>
+    </div>
+    
+    <script>
+        const socket = io();
+        
+        socket.on('connect', () => {
+            console.log('Connected to Nexus');
+        });
+        
+        function updateStats() {
+            fetch('/api/v1/system/stats')
+                .then(r => r.json())
+                .then(data => {
+                    if(data.gpu) {
+                        document.getElementById('gpuUsage').textContent = data.gpu.utilization + '%';
+                        document.getElementById('memoryUsage').textContent = data.memory.percent + '%';
+                    }
+                    document.getElementById('sessionCount').textContent = data.sessions || 0;
+                })
+                .catch(console.error);
+        }
+        
+        setInterval(updateStats, 5000);
+        updateStats();
+        
+        const startTime = Date.now();
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const hours = Math.floor(elapsed / 3600);
+            const mins = Math.floor((elapsed % 3600) / 60);
+            document.getElementById('uptime').textContent = `${hours}h ${mins}m`;
+        }, 60000);
+    </script>
+</body>
+</html>
