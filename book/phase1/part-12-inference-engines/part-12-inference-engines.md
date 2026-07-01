@@ -622,7 +622,25 @@ vLLM 0.22.0 utiliza **PagedAttention** y *continuous batching* para maximizar el
 
 ### 12.3.1 Token de HuggingFace — Configuración permanente (obligatorio)
 
-vLLM descarga los modelos dentro del contenedor al arrancar. Sin un token válido, las descargas están limitadas en velocidad y verá advertencias. El token debe configurarse en **tres ubicaciones** para garantizar que siempre esté disponible:
+vLLM descarga los modelos dentro del contenedor al arrancar. Sin un token válido, las descargas están limitadas en velocidad y verá advertencias.
+
+> **NOTA — Dos tipos de token de HuggingFace:**
+>
+> HuggingFace maneja dos mecanismos de autenticación distintos, y ambos son **complementarios** — tener ambos es lo correcto:
+>
+> - **Token estático** (`hf_xxxx...`): Se genera manualmente en `huggingface.co/settings/tokens` y se copia en la variable `HF_TOKEN`. Este token tiene permisos que usted define (lectura, escritura) y no expira a menos que lo revoque explícitamente.
+>
+> - **Token OAuth** (`hf auth login`): Es el token que genera el CLI interactivo de HuggingFace. Crea el archivo `~/.cache/huggingface/token` y permite que herramientas como `huggingface-cli` y `transformers` accedan automáticamente sin necesitar la variable `HF_TOKEN`.
+>
+> En la práctica ambos pueden apuntar al mismo token: genere uno estático en la web → ejecútelo en `hf auth login` → queda guardado en `~/.cache/huggingface/token` Y disponible como variable de entorno. **Si aún no ejecutó `hf auth login`, hágalo ahora:**
+>
+> ```bash
+> source ~/venvs/llm/bin/activate
+> hf auth login
+> # Pegue su token estático cuando lo solicite, o autorice via navegador
+> ```
+
+El token debe configurarse en **tres ubicaciones** para garantizar que siempre esté disponible:
 
 **Ubicación 1: `~/.bashrc`**
 
@@ -858,6 +876,26 @@ sudo ufw allow 8000/tcp comment "vLLM API"
 ```
 
 ### 12.3.6 vLLM como servicio systemd
+
+Un **servicio systemd** es un proceso gestionado por el sistema operativo que puede configurarse para iniciarse automáticamente al arrancar el Jetson, sin intervención del usuario. `systemd` es el gestor de servicios de Ubuntu 24.04 — el mismo sistema que controla Docker, SSH y el servidor de NoMachine.
+
+Convertir vLLM en un servicio systemd significa que cada vez que el Jetson se encienda (o reinicie), vLLM arrancará solo y estará listo antes de que inicie sesión.
+
+> **ADVERTENCIA — Cuándo activar (y cuándo NO) el inicio automático:**
+>
+> Habilitar `vllm-container.service` con `systemctl enable` tiene una consecuencia directa: vLLM **reservará 10–15 GB de RAM unificada en el arranque**, antes de que usted abra cualquier aplicación.
+>
+> **Active el inicio automático solo si:**
+> - El Jetson está dedicado exclusivamente a servir vLLM (servidor de producción 24/7)
+> - No ejecuta otros modelos LLM en paralelo (Ollama, llama.cpp)
+> - Tiene scripts de monitoreo de memoria activos (ver Capítulo 15)
+>
+> **No active el inicio automático si:**
+> - Usa el Jetson para múltiples proyectos (benchmarking, TTS, Computer Vision, etc.)
+> - Tiene otros contenedores que también consumen VRAM (Open WebUI, Whisper, etc.)
+> - Experimenta con diferentes modelos — en ese caso, use el alias `vllm-start` del Capítulo 15 para lanzar vLLM bajo demanda
+>
+> La guía en este capítulo **no habilita** el inicio automático. El `systemctl enable` queda comentado intencionalmente.
 
 ```bash
 # Crear archivo de variables de entorno (seguro: solo legible por root)

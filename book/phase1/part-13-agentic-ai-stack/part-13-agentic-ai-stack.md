@@ -21,6 +21,8 @@ Este capítulo cubre las cuatro capas del stack:
 
 OpenClaw actúa como intermediario inteligente entre los canales de entrada (WhatsApp, navegador, terminal) y los backends de inferencia (vLLM, llama.cpp, Ollama). El modelo de lenguaje es el "cerebro"; OpenClaw es el "sistema nervioso" que conecta ese cerebro con el mundo.
 
+<!-- INFOGRAFÍA: Arquitectura de OpenClaw en el Jetson AGX Orin 64GB — diagrama de flujo mostrando canales de entrada (WhatsApp, Navegador, Terminal) → OpenClaw Gateway :18789 → router de solicitudes → backends (vLLM :8000, llama.cpp :8080, Ollama :11434) → modelo LLM activo. Paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light — pendiente de diseño gráfico -->
+
 ```
 Arquitectura de OpenClaw en el Jetson AGX Orin 64GB
 ════════════════════════════════════════════════════
