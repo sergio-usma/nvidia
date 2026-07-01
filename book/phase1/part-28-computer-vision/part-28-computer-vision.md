@@ -7,7 +7,7 @@ El Jetson AGX Orin 64GB tiene una GPU Ampere (sm_87) con 2048 CUDA cores diseña
 Este capítulo cubre cuatro categorías de visión artificial:
 
 1. **OCR (Reconocimiento Óptico de Caracteres):** pytesseract y EasyOCR para extracción de texto de imágenes y documentos
-2. **Modelos de visión-lenguaje:** contenedores VILA y Gemma 4 E4B para image captioning y VQA (Visual Question Answering)
+2. **Modelos de visión-lenguaje:** Gemma 4 E4B para image captioning y VQA (Visual Question Answering)
 3. **Detección de objetos:** nanoowl para detección zero-shot en tiempo real con cámara USB/CSI
 4. **Procesamiento de video:** OpenCV para captura, preprocesamiento y análisis fotograma por fotograma
 
@@ -18,12 +18,12 @@ Este capítulo cubre cuatro categorías de visión artificial:
 | OS base | ~12 GB |
 | + EasyOCR (GPU) | +2 GB = ~14 GB |
 | + Gemma 4 E4B via llama.cpp (GGUF Q4_K_M) | +3 GB = ~17 GB |
-| + VILA container (`dustynv/vila:r39.2.0`) | +8 GB = ~20 GB |
+| + Gemma 4 E4B llama.cpp + EasyOCR simultáneos | ~17 GB total |
 | + nanoowl (detección en tiempo real) | +1.5 GB = ~13.5 GB solo |
 
 **Modos energéticos:**
 - OCR puro (pytesseract, EasyOCR texto): **30W**
-- Modelos de visión-lenguaje (VILA, Gemma 4 E4B): **MAXN**
+- Modelos de visión-lenguaje (Gemma 4 E4B): **MAXN**
 - Detección en tiempo real con nanoowl: **30W** (modelo CLIP optimizado con TensorRT)
 
 > **Prerrequisito:** Docker activo (`docker-on`). Los modelos de visión más grandes requieren `pwr-maxn` y `check-ready` con al menos 40 GB libres.
@@ -381,69 +381,9 @@ if __name__ == "__main__":
     print("Descripción:", describir_imagen(ruta))
 ```
 
-### 28.3.2 VILA Container (Comprensión Visual Avanzada con Video)
-
-> **[REQUIERE VERIFICACIÓN]** El tag `dustynv/vila:r39.2.0` para JetPack 7.2 puede no estar disponible aún. Verifique antes de ejecutar:
-> ```bash
-> curl -s "https://hub.docker.com/v2/repositories/dustynv/vila/tags/?page_size=10" \
->   | python3 -c "import json,sys; [print(t['name']) for t in json.load(sys.stdin)['results']]"
-> ```
-> Si `r39.2.0` no aparece en la lista, omita esta sección y use Gemma 4 E4B (§28.3.1) que es más eficiente de todas formas.
-
-VILA (Visual Language Model) de NVIDIA soporta análisis de imágenes y secuencias de video frames:
-
-```bash
-# Descargar imagen VILA para JP 7.2 [REQUIERE VERIFICACIÓN — verificar tag r39.2.0]
-# Nota: tarda 15-20 minutos (~8 GB de descarga)
-pwr-maxn
-check-ready 40 "VILA"   # necesita ~40 GB libres
-
-docker pull dustynv/vila:r39.2.0 2>/dev/null \
-  || docker pull dustynv/vila:r36.4.0  # fallback JP 6.2 si r39.2.0 no está disponible
-
-# Iniciar VILA (requiere modelo activo — se descarga al iniciar el contenedor la primera vez)
-docker run --runtime nvidia -d \
-  --name vila-server \
-  --restart no \
-  --network host \
-  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
-  dustynv/vila:r39.2.0 \
-  python3 -m fastchat.serve.model_worker \
-    --model-path Efficient-Large-Model/Llama-3-VILA1.5-3B \
-    --port 8090 \
-    --host 0.0.0.0
-
-echo -n "Esperando VILA (~5-8 min en primera descarga)"
-until curl -sf http://localhost:8090/v1/models > /dev/null; do echo -n "."; sleep 30; done
-echo " [OK] VILA activo en :8090"
-
-# Monitorear
-docker logs vila-server --follow
-```
-
-```bash
-# Test de análisis de imagen con VILA [REQUIERE VERIFICACIÓN]
-curl -s http://localhost:8090/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "Efficient-Large-Model/Llama-3-VILA1.5-3B",
-    "messages": [{
-      "role": "user",
-      "content": [
-        {"type": "image_url", "image_url": {"url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Medellin.jpg/800px-Medellin.jpg"}},
-        {"type": "text", "text": "Describe el paisaje urbano de esta imagen y menciona las características arquitectónicas visibles."}
-      ]
-    }],
-    "max_tokens": 400
-  }' | python3 -c "import sys,json; print(json.load(sys.stdin)['choices'][0]['message']['content'])"
-```
-
-```bash
-# Limpieza VILA
-docker stop vila-server && docker rm vila-server
-```
-
 ---
+
+> **NOTA:** VILA (Visual Language Model) de NVIDIA no está verificado en el Jetson AGX Orin 64GB con JetPack 7.2. La imagen `dustynv/vila:r39.2.0` no estaba disponible en Docker Hub al momento de escritura. Para comprensión visual avanzada en JP 7.2, use Gemma 4 E4B (§28.3.1) — es más eficiente y completamente verificada. Consulte los releases futuros de NVIDIA para soporte oficial de VILA en JetPack 7.x.
 
 ## 28.4 Detección de Objetos con nanoowl
 
@@ -850,20 +790,77 @@ print('[OK] Motor TensorRT regenerado')
 # Tarda 3-5 minutos en compilar
 ```
 
-### VILA container: imagen no disponible para r39.2.0
+---
+
+## Casos de Uso Reales
+
+Las herramientas de este capítulo se combinan para resolver problemas concretos en entornos empresariales:
+
+### Caso 1: Lectura automática de facturas en bodega
+
+Una bodega recibe facturas en papel. El operario las fotografía con su teléfono y las envía por WhatsApp. El Jetson (via OpenClaw) usa EasyOCR para extraer el texto y vLLM para parsear el JSON estructurado:
 
 ```bash
-# Verificar tags disponibles para el Jetson JP 7.2
-curl -s "https://hub.docker.com/v2/repositories/dustynv/vila/tags/?page_size=10" \
-  | python3 -c "
-import sys,json
-data=json.load(sys.stdin)
-tags=[t['name'] for t in data['results']]
-print('Tags disponibles:', tags)
-"
+# Pipeline completo: imagen → EasyOCR → vLLM → JSON de factura
+python3 ~/scripts/ocr_easyocr.py /tmp/factura.jpg \
+  | python3 ~/scripts/llm_structure_ocr.py \
+      --schema '{"proveedor": "", "total": 0.0, "items": [], "fecha": ""}'
+```
 
-# Si r39.2.0 no existe, usar el tag más reciente disponible para r36 y documentarlo
-# con [REQUIERE VERIFICACIÓN] — el container puede no ser compatible con JP 7.2 / CUDA 13
+```
+# Salida esperada:
+{
+  "proveedor": "Distribuidora XYZ S.A.S.",
+  "total": 1250000.0,
+  "items": [
+    {"desc": "Tornillos M6x20mm", "cant": 500, "precio": 450},
+    {"desc": "Tuercas M6", "cant": 500, "precio": 400}
+  ],
+  "fecha": "2026-06-28"
+}
+```
+
+### Caso 2: Vigilancia perimetral con nanoowl
+
+Sistema de seguridad que detecta personas o vehículos en cámara de parking y envía alerta por Telegram:
+
+```bash
+# Detectar personas Y vehículos en stream de cámara USB
+source ~/venvs/llm/bin/activate
+python3 ~/scripts/nanoowl_detect.py \
+  --input /dev/video0 \
+  --labels "a person, a car, a truck, a motorcycle" \
+  --threshold 0.3 \
+  --on-detect "~/scripts/send-telegram-alert.sh 'Detección: {label} ({confidence:.0%})'"
+```
+
+```
+# Salida esperada en consola:
+[11:42:03] Detección: a person (87%) — guardado /tmp/detections/20260628_114203.jpg
+[11:42:15] Detección: a car (91%) — guardado /tmp/detections/20260628_114215.jpg
+```
+
+### Caso 3: Catalogación automática de productos con VLM
+
+Sistema para e-commerce que genera descripciones automáticas de productos a partir de fotos:
+
+```bash
+# Fotos de productos → descripciones en español con Gemma 4 E4B
+for foto in ~/productos/*.jpg; do
+  echo "=== $(basename "$foto") ==="
+  python3 ~/scripts/gemma_vision.py "$foto" \
+    "Describe este producto para una tienda online: nombre, características, materiales visibles, colores."
+  echo ""
+done
+```
+
+```
+# Salida esperada (por imagen):
+=== silla_ergonomica_01.jpg ===
+Silla ergonómica de oficina con respaldo en malla negra transpirable,
+asiento tapizado en tela gris, apoyabrazos ajustables en altura,
+base de 5 ruedas en nylon, mecanismo de inclinación lumbar regulable.
+Ideal para trabajo prolongado frente a computador.
 ```
 
 ---
@@ -872,10 +869,10 @@ print('Tags disponibles:', tags)
 
 El Jetson AGX Orin 64GB procesa visión artificial directamente en GPU con tres capas complementarias:
 
-- **OCR clásico** (Tesseract/EasyOCR): extracción de texto rápida, sin GPU necesaria para Tesseract
+- **OCR clásico** (Tesseract/EasyOCR): extracción de texto rápida; Tesseract sin GPU, EasyOCR con GPU
 - **VLM local** (Gemma 4 E4B via llama.cpp: ~3 GB): image captioning y VQA sin conexión a internet
 - **Detección zero-shot** (nanoowl + TensorRT): detecta cualquier objeto descrito en texto en tiempo real
 - **OCR → LLM pipeline**: combina EasyOCR para extracción y vLLM para análisis estructurado (JSON)
-- **Modo energético**: 30W para OCR y nanoowl; MAXN para VILA y modelos de visión grandes
+- **Modo energético**: 30W para OCR y nanoowl; MAXN para modelos de visión grandes
 
 El siguiente capítulo (Capítulo 29) cubre el stack TTS+STT unificado: transcripción de voz en español con faster-whisper y síntesis de voz con kokoro-tts y piper, incluyendo diarización de hablantes y timestamps a nivel de palabra.

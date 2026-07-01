@@ -88,13 +88,39 @@ docker logs faster-whisper --follow &
 
 ### 29.1.3 Transcripción de Audio
 
+El método más efectivo para probar faster-whisper es usar **su propia voz** en vez de archivos de prueba genéricos: así verifica que el sistema reconoce su acento y cadencia de habla real.
+
 ```bash
-# Descargar audio de prueba en español
+# Opción A (recomendada): Grabar su propia voz con el micrófono USB del Jetson
 mkdir -p ~/jetson-ai-data/audio
-# Usar un archivo WAV de prueba propio (16kHz, mono, recomendado para Whisper)
-# Ejemplo: grabar desde el micrófono USB
-arecord -D hw:0,0 -f S16_LE -r 16000 -c 1 -d 10 ~/jetson-ai-data/audio/prueba.wav
-echo "[OK] Audio grabado: ~/jetson-ai-data/audio/prueba.wav"
+
+# Verificar que hay micrófono disponible
+arecord -l
+# Salida esperada (ejemplo):
+# **** List of CAPTURE Hardware Devices ****
+# card 2: USB [USB Audio Device], device 0: USB Audio [USB Audio]
+
+# Grabar 15 segundos en español (hable con naturalidad, no demasiado rápido)
+arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 -d 15 ~/jetson-ai-data/audio/mi_voz.wav
+# ⚠ Cambie hw:2,0 por el número de card que aparezca en "arecord -l"
+echo "[OK] Audio grabado: ~/jetson-ai-data/audio/mi_voz.wav"
+
+# Verificar el archivo grabado
+aplay ~/jetson-ai-data/audio/mi_voz.wav
+ls -lh ~/jetson-ai-data/audio/mi_voz.wav
+# Esperado: ~480 KB por 15 segundos @ 16kHz mono 16bit
+```
+
+```bash
+# Opción B: Transferir un audio MP3 de su teléfono via SCP (desde Windows)
+# En Windows PowerShell:
+# scp C:\Users\TuUsuario\Downloads\reunión.mp3 jetson:~/jetson-ai-data/audio/
+
+# Convertir MP3 a WAV 16kHz (formato óptimo para Whisper)
+sudo apt install -y ffmpeg
+ffmpeg -i ~/jetson-ai-data/audio/reunion.mp3 \
+  -ar 16000 -ac 1 -f wav \
+  ~/jetson-ai-data/audio/reunion.wav
 ```
 
 ```bash
@@ -500,15 +526,17 @@ if __name__ == "__main__":
 
 ## 29.4 Pipeline Completo: STT → LLM → TTS (Asistente de Voz)
 
+<!-- INFOGRAFÍA: Pipeline STT→LLM→TTS en el Jetson AGX Orin — diagrama de flujo mostrando: Micrófono USB → pyaudio (VAD) → faster-whisper (STT) → texto → vLLM Qwen3.5-4B (LLM) → respuesta de texto → piper-tts (TTS) → WAV → altavoz USB. Incluir latencias de cada etapa: grabación ~1s, STT ~0.5s, LLM ~1-2s, TTS <200ms. Total: <3s. Paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light — pendiente de diseño gráfico -->
+
 Este es el pipeline de asistente de voz offline completo del Jetson. Para la latencia mínima, combine faster-whisper (large-v3 para calidad) + Qwen3.5-4B via vLLM + piper-tts para respuestas:
 
 ```
 Micrófono USB
-    ↓ grabación con pyaudio (VAD — detección de voz)
-    ↓ faster-whisper → texto transcrito
-    ↓ vLLM Qwen3.5-4B (→ qwen4b, ~50 tok/s a 30W)
+    ↓ grabación con pyaudio (VAD — detección de voz)      ~1.0s
+    ↓ faster-whisper → texto transcrito                   ~0.5s
+    ↓ vLLM Qwen3.5-4B (→ qwen4b, ~50 tok/s a 30W)        ~1.0s
     ↓ respuesta de texto
-    ↓ piper-tts → WAV (<200ms)
+    ↓ piper-tts → WAV                                     <0.2s
     ↓ aplay → altavoz USB
 Latencia total objetivo: < 3 segundos
 ```
@@ -858,6 +886,84 @@ time curl -s http://localhost:8001/v1/chat/completions \
 # Si > 1s: usar max_tokens más bajo o cambiar a pwr-maxn temporal
 
 # piper es siempre < 200ms y no necesita optimización
+```
+
+---
+
+## Casos de Uso Reales
+
+### Caso 1: Dictado de informes de campo (STT)
+
+Un técnico de campo dicta observaciones directamente desde el teléfono vía WhatsApp. El bot (OpenClaw + faster-whisper) transcribe el audio a texto estructurado y lo guarda en un informe:
+
+```bash
+# Script que recibe un audio WAV y retorna JSON estructurado
+# Útil para integrarse con el bot de Telegram del Capítulo 20
+~/scripts/transcribe_and_structure.sh ~/jetson-ai-data/audio/informe_campo.wav
+```
+
+```json
+{
+  "fecha": "2026-06-28",
+  "tecnico": "Carlos Martínez",
+  "ubicacion": "Bodega Norte, estante 3",
+  "observacion": "Se detecta humedad en la pared izquierda, posible filtración desde el techo. Requiere revisión de impermeabilización en zona A-3.",
+  "prioridad": "alta",
+  "tokens_whisper": 42,
+  "tiempo_transcripcion_seg": 0.8
+}
+```
+
+### Caso 2: Narración automática de contenido (TTS)
+
+Sistema que convierte artículos de blog o documentos PDF en audio MP3 para consumo en el carro o durante el ejercicio:
+
+```bash
+# Convertir un PDF a audio narrado en español con kokoro-tts
+python3 -c "
+import subprocess, requests
+from pathlib import Path
+
+# Extraer texto del PDF
+texto = subprocess.check_output(['pdftotext', 'articulo.pdf', '-'], text=True)
+
+# Dividir en párrafos (kokoro maneja hasta ~300 palabras por request)
+parrafos = [p.strip() for p in texto.split('\n\n') if p.strip()]
+
+with open('narración.mp3', 'wb') as out:
+    for i, parrafo in enumerate(parrafos[:10]):  # primeros 10 párrafos
+        print(f'Narando párrafo {i+1}/{len(parrafos)}...')
+        r = requests.post('http://localhost:8880/v1/audio/speech',
+                         json={'model': 'kokoro', 'input': parrafo, 'voice': 'es_ES-mls_10246-medium'})
+        out.write(r.content)
+"
+```
+
+```
+# Salida esperada:
+Narrando párrafo 1/10...
+Narrando párrafo 2/10...
+...
+[OK] narración.mp3 generado — 4.2 MB, ~8 minutos de audio
+```
+
+### Caso 3: Asistente de idiomas (STT + LLM + TTS)
+
+Corrector de pronunciación en inglés: el usuario habla en inglés, faster-whisper transcribe, el LLM evalúa la gramática y pronunciación, y piper responde con la versión correcta en voz:
+
+```bash
+# Activar el pipeline de asistente de idiomas
+python3 ~/scripts/voice_assistant_pipeline.py \
+  --system "Eres un profesor de inglés. El usuario está practicando inglés. Corrige cualquier error gramatical o de vocabulario de forma amigable y breve. Responde SIEMPRE en inglés." \
+  --language en \
+  --voice en_US-amy-medium
+```
+
+```
+[ESCUCHANDO] Habla ahora...
+[STT] You transcript: "Yesterday I go to the market"
+[LLM] Correction: "Good try! The correct form is 'Yesterday I went to the market' — 'went' is the past tense of 'go'. Keep practicing!"
+[TTS] Reproduciendo respuesta (0.18s)...
 ```
 
 ---
