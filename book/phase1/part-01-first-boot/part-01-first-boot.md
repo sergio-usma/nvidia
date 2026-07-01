@@ -45,7 +45,8 @@ ls -la ~/jp62_backup/
 ```bash
 # Copiar el backup a Windows desde PowerShell
 # Ejecute este comando en Windows PowerShell, NO en el Jetson:
-scp -r jetson@192.168.1.100:~/jp62_backup/ C:\Users\sergi\jetson_backup\
+# Reemplace "TuUsuario" con su nombre de usuario de Windows
+scp -r jetson@192.168.1.100:~/jp62_backup/ C:\Users\TuUsuario\jetson_backup\
 ```
 
 > **ADVERTENCIA:** Los modelos de HuggingFace en `~/.cache/huggingface/` y los modelos GGUF en `~/models/` pueden ocupar 15–100 GB. Si tiene un SSD USB externo, cópielos antes de flashear para evitar re-descargarlos. Si no tiene SSD externo, deberá descargarlos nuevamente desde internet.
@@ -71,17 +72,19 @@ El archivo descargado tendrá un nombre similar a `jetpack_7.2_agx_orin.iso` y o
 
 ### 1.2.2 Crear el USB booteable desde Windows
 
-Utilice **Rufus** (rufus.ie), que es gratuito y maneja correctamente las ISOs de JetPack:
+La herramienta **recomendada oficialmente por NVIDIA** es **Balena Etcher** (etcher.balena.io), disponible gratuitamente para Windows, macOS y Linux:
 
-1. Inserte un USB de mínimo **16 GB** (se borrará todo su contenido).
-2. Abra Rufus y configure:
-   - **Device:** su USB
-   - **Boot selection:** seleccione la ISO descargada de JetPack 7.2
-   - **Partition scheme:** GPT
-   - **Target system:** UEFI (non CSM)
-   - **File system:** FAT32
-3. Haga clic en **START** y confirme la advertencia de borrado.
-4. Espere a que Rufus termine (3–5 minutos).
+1. Descargue e instale Balena Etcher.
+2. **Importante:** Ejecútelo como administrador en Windows (clic derecho → "Ejecutar como administrador") para evitar errores al escribir en el USB.
+3. Inserte un USB de mínimo **16 GB** (se borrará todo su contenido).
+4. En Balena Etcher:
+   - Haga clic en **"Flash from file"** y seleccione la ISO descargada de JetPack 7.2.
+   - Si Etcher no muestra la ISO al navegar, seleccione "All files (*.*)" en el filtro del explorador.
+   - En **"Select target"**, elija su USB.
+   - Haga clic en **"Flash!"** y confirme.
+5. Espere a que Etcher termine y valide el USB (5–8 minutos).
+
+> **ALTERNATIVA — Rufus:** Si prefiere usar Rufus (rufus.ie), configure: Device = su USB, Boot selection = ISO de JetPack 7.2, Partition scheme = GPT, Target system = UEFI (non CSM), File system = FAT32, y haga clic en START. Ambas herramientas producen un resultado equivalente.
 
 ### 1.2.3 Poner el Jetson en modo Force Recovery
 
@@ -112,6 +115,19 @@ Posición de los botones en el Developer Kit:
 ```
 
 > **ADVERTENCIA:** Si suelta FORCE RECOVERY antes de que el sistema detecte el USB, el Jetson arrancará normalmente desde el sistema interno. Repita el proceso si no ve la pantalla de instalación.
+
+#### Método alternativo — Boot por menú UEFI
+
+Si el método de Force Recovery no le funciona o no está seguro de qué puerto USB detecta, puede iniciar el Jetson normalmente y seleccionar el USB desde el menú de arranque:
+
+1. Conecte el USB con la ISO al Jetson.
+2. Encienda el Jetson normalmente (sin mantener ningún botón).
+3. Inmediatamente, presione la tecla **`Esc`** repetidamente en el teclado conectado.
+4. Se abrirá el menú de opciones de arranque UEFI.
+5. Seleccione su USB como dispositivo de inicio.
+6. El instalador de JetPack 7.2 cargará normalmente.
+
+> **NOTA:** Este método alternativo puede funcionar mejor en algunos kits de desarrollo. Consulte también la guía oficial del fabricante en `docs.nvidia.com/jetson/agx-orin-devkit/user-guide/latest/quick_start.html` si tiene dudas sobre el procedimiento específico de su hardware.
 
 ### 1.2.4 Proceso de flash
 
@@ -273,8 +289,9 @@ jtop --version
 ```
 
 ```
-# Salida esperada
-7.x.x
+# Salida esperada (versión 4.x.x o superior)
+jetson@jetson-orin:~$ jtop --version
+jtop 4.3.2
 ```
 
 ```bash

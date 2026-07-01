@@ -144,8 +144,6 @@ multi-user.target
 
 
 
-```bash
-
 ---
 
 ## 2.3 NoMachine — Acceso Gráfico Remoto de Alta Calidad
@@ -167,7 +165,7 @@ wget -q --show-progress \
   -O nomachine_arm64.deb
 
 # O bien, descargar en Windows y subir al Jetson via scp:
-# [En Windows PowerShell]: scp C:\Users\sergi\Downloads\nomachine_9.7.3_1_arm64.deb jetson:~/Downloads/
+# [En Windows PowerShell]: scp C:\Users\TuUsuario\Downloads\nomachine_9.7.3_1_arm64.deb jetson:~/Downloads/
 
 # Instalar
 sudo dpkg -i ~/Downloads/nomachine_*.deb
@@ -195,8 +193,10 @@ sudo /usr/NX/bin/nxserver --status
 
 ```
 # Salida esperada
-NX> 111 NXSERVER - Version 9.7.3 ...
-NX> 500 Running server at port: 4000
+NX> 111 New connections to NoMachine server are enabled.
+NX> 161 Enabled service: nxserver.
+NX> 162 Disabled service: nxnode.
+NX> 161 Enabled service: nxd.
 ```
 
 ```bash
@@ -250,7 +250,14 @@ Descargue e instale el cliente NoMachine desde [nomachine.com](https://www.nomac
 ```bash
 # Verificar que NoMachine está activo desde el Jetson
 sudo /usr/NX/bin/nxserver --status
-# Salida esperada: NX> 500 Running server at port: 4000
+```
+
+```
+# Salida esperada
+NX> 111 New connections to NoMachine server are enabled.
+NX> 161 Enabled service: nxserver.
+NX> 162 Disabled service: nxnode.
+NX> 161 Enabled service: nxd.
 ```
 
 > **Si la sesión no abre escritorio:** Ejecute `startxfce4` desde una terminal SSH mientras el cliente NoMachine está conectado. Esto inicia XFCE4 en la sesión virtual ya creada.
@@ -507,23 +514,71 @@ Esta sección configura el cliente SSH de Windows para conectar al Jetson con el
 
 ### 2.7.1 Configurar `~/.ssh/config` en Windows
 
-El archivo `~/.ssh/config` en Windows define un host nombrado para no tener que escribir la IP completa cada vez:
+El archivo `~/.ssh/config` en Windows define hosts nombrados con sus configuraciones. En lugar de escribir `ssh jetson@192.168.1.100 -i ~/.ssh/jetson_orin` cada vez, basta con `ssh jetson`.
+
+A continuación, el archivo de configuración completo recomendado. Incluye tres perfiles para el Jetson (conexión estándar, reenvío gráfico X11 y tunnels de servicios) y el perfil de GitHub:
 
 ```
 # [EN WINDOWS] Abrir con bloc de notas:
-# notepad C:\Users\TU_USUARIO\.ssh\config
-# IMPORTANTE: reemplaza 192.168.1.100 con la IP estatica del Jetson (seccion 2.1.3)
+# notepad $HOME\.ssh\config
+# O en PowerShell: code $HOME\.ssh\config
+# IMPORTANTE: reemplace 192.168.1.100 con la IP estática de su Jetson
 
+# ─────────────────────────────────────────────
+#  Jetson AGX Orin — Conexión SSH estándar
+# ─────────────────────────────────────────────
 Host jetson
     HostName 192.168.1.100
     User jetson
-    Port 22
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile ~/.ssh/jetson_orin
+    IdentitiesOnly yes
     ServerAliveInterval 60
-    ServerAliveCountMax 3
+    ServerAliveCountMax 10
+    TCPKeepAlive yes
+    Compression yes
+
+# ─────────────────────────────────────────────
+#  Jetson — Con reenvío gráfico X11 via SSH
+# ─────────────────────────────────────────────
+Host jetson-x11
+    HostName 192.168.1.100
+    User jetson
+    IdentityFile ~/.ssh/jetson_orin
+    IdentitiesOnly yes
+    ForwardX11 yes
+    ForwardX11Trusted yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 10
+
+# ─────────────────────────────────────────────
+#  Jetson — Con tunnels para todos los servicios
+# ─────────────────────────────────────────────
+Host jetson-tunnels
+    HostName 192.168.1.100
+    User jetson
+    IdentityFile ~/.ssh/jetson_orin
+    IdentitiesOnly yes
+    LocalForward 11434 localhost:11434    # Ollama API
+    LocalForward 8000  localhost:8000     # vLLM API
+    LocalForward 8888  localhost:8888     # Jupyter Lab
+    LocalForward 3000  localhost:3000     # Open WebUI
+    ServerAliveInterval 30
+    ServerAliveCountMax 6
+    ExitOnForwardFailure yes
+
+# ─────────────────────────────────────────────
+#  GitHub (configurado en el Capítulo 2, §2.4)
+# ─────────────────────────────────────────────
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github_key
+    IdentitiesOnly yes
 ```
 
-> **NOTA:** Si no tiene par de claves SSH en Windows, genérelas primero con `ssh-keygen -t ed25519` en PowerShell y copie la clave pública al Jetson con `ssh-copy-id`. Después podrá conectar con `ssh jetson` sin contraseña.
+> **NOTA:** Si aún no tiene el par de claves `jetson_orin` en Windows, genérelo con `ssh-keygen -t ed25519 -f $HOME\.ssh\jetson_orin` en PowerShell y copie la clave pública al Jetson con `ssh-copy-id -i ~/.ssh/jetson_orin.pub jetson@192.168.1.100`. Luego podrá conectar con `ssh jetson` sin contraseña.
+
+> **NOTA sobre GitHub:** El archivo de clave para GitHub (`github_key`) se configura en la sección 2.4 de este mismo capítulo. Si todavía no lo ha creado, aparecerá como error al hacer `ssh -T git@github.com` — es normal en este punto.
 
 ```bash
 # [EN WINDOWS POWERSHELL] Probar conexion con alias:
@@ -541,15 +596,16 @@ SCP usa el canal SSH — no requiere configuración adicional:
 
 ```bash
 # [EN WINDOWS POWERSHELL] Copiar archivo de Windows al Jetson
-scp C:\Users\sergi\Downloads\modelo.gguf jetson:~/data/models/
+# Reemplace "TuUsuario" con su usuario de Windows
+scp C:\Users\TuUsuario\Downloads\modelo.gguf jetson:~/data/models/
 
 # Copiar directorio completo
-scp -r C:\Users\sergi\proyecto\ jetson:~/projects/
+scp -r C:\Users\TuUsuario\proyecto\ jetson:~/projects/
 
 # Descargar archivo del Jetson a Windows
-scp jetson:~/logs/resultado.txt C:\Users\sergi\Desktop\
+scp jetson:~/logs/resultado.txt C:\Users\TuUsuario\Desktop\
 
-# Ver tamano de un directorio en el Jetson antes de descargar
+# Ver tamaño de un directorio en el Jetson antes de descargar
 ssh jetson "du -sh ~/data/models/"
 ```
 
@@ -613,6 +669,36 @@ echo "── Variables de entorno ──"
 [ -n "$TORCH_CUDA_ARCH_LIST" ] && echo "[OK] TORCH_CUDA_ARCH_LIST: $TORCH_CUDA_ARCH_LIST" || echo "[ERROR] TORCH_CUDA_ARCH_LIST no configurado"
 nvcc --version 2>/dev/null | grep "release" && echo "[OK] nvcc en PATH" || echo "[ERROR] nvcc no en PATH"
 ```
+
+```
+# Salida esperada al completar el Capítulo 2 correctamente:
+=== VERIFICACION CAPITULO 2 ===
+
+-- Boot target --
+multi-user.target
+
+-- Servicios de acceso remoto --
+[sudo] password for jetson:
+active
+[OK] NoMachine activo (:4000)
+
+── Display virtual ──
+/etc/X11/xorg.conf.d/30-tegra-headless.conf
+[OK] Config headless presente
+
+── GitHub SSH ──
+Hi <tu_usuario>! You've successfully authenticated, but GitHub does not provide shell access.
+[OK] GitHub SSH funciona
+
+── Variables de entorno ──
+[OK] HF_TOKEN configurado
+[OK] VLLM_API_KEY: vllm-local
+[ERROR] TORCH_CUDA_ARCH_LIST no configurado
+Cuda compilation tools, release 13.2, V13.2.78
+[OK] nvcc en PATH
+```
+
+> **NOTA sobre `[ERROR] TORCH_CUDA_ARCH_LIST`:** Este error es **esperado y normal** en este punto del libro. La variable `TORCH_CUDA_ARCH_LIST` se configura en el Capítulo 17 (entorno Python con PyTorch). No se preocupe por este mensaje — todo lo demás debe mostrar `[OK]`.
 
 | Error | Causa probable | Solución |
 |-------|---------------|---------|
