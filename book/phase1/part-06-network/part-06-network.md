@@ -264,11 +264,17 @@ ls -lh ~/data/models/gguf/
 
 Los modelos "gated" (como Gemma 4 E4B, Llama 3, Mistral) requieren un token de HuggingFace. Este script gestiona la autenticacion automaticamente.
 
+> **NOTA:** Si configuró el entorno de shell en el Capítulo 5, es posible que `HF_TOKEN` ya esté definido en su `~/.bash_aliases`. Verifique antes de duplicar la variable:
+> ```bash
+> grep "HF_TOKEN" ~/.bash_aliases ~/.bashrc 2>/dev/null
+> ```
+> Si aparece una línea con su token, salte el bloque de configuración siguiente y pase directamente a instalar `huggingface-hub`.
+
 ```bash
+# Solo si HF_TOKEN NO está en ~/.bash_aliases todavía:
 # Obtener token gratuito en: huggingface.co/settings/tokens
 # Crear token de tipo "Read" y copiarlo
 
-# Configurar la variable HF_TOKEN en ~/.bash_aliases
 echo 'export HF_TOKEN="hf_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"' >> ~/.bash_aliases
 # ⚠ Reemplaza hf_XXXX... con tu token real de HuggingFace
 source ~/.bash_aliases
@@ -288,66 +294,74 @@ cat > ~/scripts/dl-model.sh << 'EOF'
 #!/usr/bin/env bash
 # dl-model.sh — Descarga modelos con soporte HF_TOKEN y aria2
 # Uso:
-#   dl-model.sh https://hf.co/.../model.gguf      archivo GGUF (aria2)
-#   dl-model.sh hf:org/modelo                       repo completo (huggingface-cli)
-#   dl-model.sh hf:org/modelo archivo.gguf          archivo especifico del repo
+#   dl-model.sh <url|hf:org/modelo> [archivo] [directorio-destino]
+#
+#   dl-model.sh https://hf.co/.../model.gguf            archivo GGUF (aria2)
+#   dl-model.sh hf:org/modelo                            repo completo (huggingface-cli)
+#   dl-model.sh hf:org/modelo archivo.gguf               archivo especifico del repo
+#   dl-model.sh hf:org/modelo "" /data/models/custom    destino personalizado
 set -euo pipefail
 
 URL="${1:-}"
 ARCHIVO="${2:-}"
-DESTINO="${DESTINO:-$HOME/data/models/gguf}"
+DESTINO="${3:-${DESTINO:-$HOME/data/models/gguf}}"
 mkdir -p "$DESTINO"
 
+LOG_FILE="$DESTINO/downloads.log"
+log_msg() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
+
 if [[ -z "$URL" ]]; then
-    echo "Uso: dl-model.sh <url|hf:org/modelo> [archivo]"
+    echo "Uso: dl-model.sh <url|hf:org/modelo> [archivo] [directorio-destino]"
     echo "  Ejemplos:"
     echo "    dl-model.sh https://huggingface.co/.../model.gguf"
     echo "    dl-model.sh hf:unsloth/gemma-4-E2B-GGUF gemma-4-E2B-Q4_K_M.gguf"
     echo "    dl-model.sh hf:google/gemma-4-E4B-it  (repo completo)"
+    echo "    dl-model.sh https://hf.co/.../model.gguf \"\" /data/models/custom"
     exit 1
 fi
+
+log_msg "Iniciando descarga: $URL ${ARCHIVO:+(archivo: $ARCHIVO)} → $DESTINO"
 
 # ── Descarga de repositorio HF completo ──────────────────────────
 if [[ "$URL" == hf:* ]]; then
     REPO="${URL#hf:}"
-    echo "=== Descargando repo HuggingFace: $REPO ==="
+    log_msg "=== Descargando repo HuggingFace: $REPO ==="
     source ~/venvs/llm/bin/activate 2>/dev/null || true
     HF_ARGS=(--local-dir-use-symlinks false)
     [ -n "${HF_TOKEN:-}" ] && HF_ARGS+=(--token "$HF_TOKEN")
     if [[ -n "$ARCHIVO" ]]; then
-        # Un solo archivo del repo
-        echo "  Archivo: $ARCHIVO"
+        log_msg "  Archivo: $ARCHIVO"
         huggingface-cli download "$REPO" "$ARCHIVO" \
             --local-dir "$DESTINO" "${HF_ARGS[@]}"
     else
-        # Repo completo al directorio con nombre del repo
         NOMBRE_REPO=$(echo "$REPO" | tr '/' '_')
         huggingface-cli download "$REPO" \
             --local-dir "$DESTINO/$NOMBRE_REPO" "${HF_ARGS[@]}"
     fi
-    echo "[OK] Descarga completada en: $DESTINO"
+    log_msg "[OK] Descarga completada en: $DESTINO"
     ls -lh "$DESTINO"/*.gguf 2>/dev/null || ls -lh "$DESTINO/" | tail -5
     exit 0
 fi
 
 # ── Descarga directa de archivo (URL HTTP) ───────────────────────
-echo "=== Descargando archivo: $(basename "$URL") ==="
+log_msg "=== Descargando archivo: $(basename "$URL") ==="
 ARIA_ARGS=(
     --conf-path="$HOME/.config/aria2/aria2.conf"
     --max-connection-per-server=16
     --split=16
     --dir="$DESTINO"
     --continue=true
+    --summary-interval=5
 )
 
 # Anadir header de autenticacion si HF_TOKEN esta disponible
 if [[ -n "${HF_TOKEN:-}" ]]; then
     ARIA_ARGS+=(--header="Authorization: Bearer $HF_TOKEN")
-    echo "  Usando HF_TOKEN para autenticacion"
+    log_msg "  Usando HF_TOKEN para autenticacion"
 fi
 
 aria2c "${ARIA_ARGS[@]}" "$URL"
-echo "[OK] Archivo guardado en: $DESTINO/$(basename "$URL")"
+log_msg "[OK] Archivo guardado en: $DESTINO/$(basename "$URL") — $(ls -lh "$DESTINO/$(basename "$URL")" | awk '{print $5}')"
 ls -lh "$DESTINO/$(basename "$URL")"
 EOF
 
@@ -374,6 +388,93 @@ dl-model "https://huggingface.co/Qwen/Qwen2.5-4B-Instruct-GGUF/resolve/main/qwen
 ```
 
 > **CONSEJO:** Si la descarga se interrumpe, vuelva a ejecutar el mismo comando. `aria2` reanuda desde donde se detuvo (`--continue=true`). Para ver el progreso en tiempo real desde otra terminal use `dl-status`.
+
+---
+
+### 6.4.5 aria2 para Descargas Generales
+
+`aria2` no es solo para modelos de IA — es un gestor de descargas de propósito general. Con múltiples conexiones simultáneas acelera cualquier descarga grande: imágenes ISO de Linux, datasets, videos, firmware, etc.
+
+```bash
+# Agregar aliases de descarga general a ~/.bash_aliases
+cat >> ~/.bash_aliases << 'EOF'
+
+# ── Descargas generales con aria2 ─────────────────────────────────
+# Descarga cualquier archivo con 16 hilos y reanudación automática
+# Uso: dl <url> [directorio-destino]
+dl() {
+    local url="${1:-}"
+    local dest="${2:-$HOME/Downloads}"
+    if [[ -z "$url" ]]; then
+        echo "Uso: dl <url> [directorio-destino]"
+        return 1
+    fi
+    mkdir -p "$dest"
+    aria2c \
+        --max-connection-per-server=16 \
+        --split=16 \
+        --continue=true \
+        --dir="$dest" \
+        --summary-interval=5 \
+        "$url"
+}
+
+# Descarga una imagen ISO (destino: ~/iso/)
+# Uso: dl-iso https://ubuntu.com/...iso
+alias dl-iso='dl_iso() { dl "$1" "$HOME/iso"; }; dl_iso'
+
+# Descarga un dataset (destino: /data/datasets/)
+# Uso: dl-dataset https://example.com/dataset.zip
+alias dl-dataset='dl_ds() { dl "$1" "/data/datasets"; }; dl_ds'
+
+# Descarga múltiples URLs desde un archivo de texto (un URL por línea)
+# Uso: dl-list lista.txt [directorio-destino]
+dl-list() {
+    local lista="${1:-}"
+    local dest="${2:-$HOME/Downloads}"
+    if [[ -z "$lista" || ! -f "$lista" ]]; then
+        echo "Uso: dl-list <archivo-con-urls.txt> [directorio-destino]"
+        return 1
+    fi
+    mkdir -p "$dest"
+    aria2c \
+        --input-file="$lista" \
+        --max-connection-per-server=8 \
+        --split=8 \
+        --continue=true \
+        --dir="$dest" \
+        --summary-interval=10
+}
+EOF
+
+source ~/.bash_aliases || source ~/.bashrc
+echo "[OK] Aliases de descarga general disponibles: dl, dl-iso, dl-dataset, dl-list"
+```
+
+**Ejemplos de uso:**
+
+```bash
+# Descargar una imagen ISO de Ubuntu 24.04 (~2.6 GB)
+dl-iso "https://releases.ubuntu.com/24.04/ubuntu-24.04.2-desktop-amd64.iso"
+
+# Descargar un dataset público de Kaggle (tras exportar su URL de descarga)
+dl-dataset "https://storage.googleapis.com/download.tensorflow.org/data/mnist.npz"
+
+# Descargar múltiples modelos GGUF desde un archivo de lista
+cat > /tmp/modelos.txt << 'EOF'
+https://huggingface.co/Qwen/Qwen2.5-4B-Instruct-GGUF/resolve/main/qwen2.5-4b-instruct-q4_k_m.gguf
+https://huggingface.co/lmstudio-community/Phi-4-mini-instruct-GGUF/resolve/main/Phi-4-mini-instruct-Q4_K_M.gguf
+EOF
+dl-list /tmp/modelos.txt ~/data/models/gguf
+```
+
+```
+# Salida esperada (dl-list con 2 archivos):
+[#1 28%][#2 12%] 2 archivos en paralelo
+[DL:38.2MiB/s] ETA: 3m12s
+```
+
+> **NOTA:** Para descargas de video (YouTube, Vimeo, etc.) instale `yt-dlp` (`pip install yt-dlp`) — `aria2` solo descarga URLs directas, no páginas con reproductores JavaScript.
 
 ---
 
