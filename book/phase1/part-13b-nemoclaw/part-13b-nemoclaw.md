@@ -244,6 +244,31 @@ nemoclaw config set network.outbound.mode permissive
 nemoclaw config get network.outbound.mode
 ```
 
+> **RECOMENDACIONES DE IMPLEMENTACIÓN — Balance entre privacidad y funcionalidad:**
+>
+> Antes de activar el modo `offline` total, considere qué servicios externos usa su stack:
+>
+> - **Telegram / WhatsApp:** Requieren acceso a las APIs de Telegram (`api.telegram.org`) y de WhatsApp Business. El modo `offline` total **romperá** estos canales.
+> - **Búsqueda web con Brave:** Requiere acceso a `api.search.brave.com`. Sin acceso, el tool calling de búsqueda falla silenciosamente.
+> - **HuggingFace / modelos remotos:** Si usa descarga de modelos dinámica, también requiere acceso.
+>
+> **Recomendación práctica:** Use el modo `allowlist` en lugar del modo `offline` total. Configure una whitelist específica con los IPs y dominios que realmente necesita:
+>
+> ```bash
+> # Whitelist mínima recomendada para stack completo con Telegram + Brave
+> nemoclaw config set network.outbound.mode allowlist
+> nemoclaw config set network.outbound.allowlist '[
+>   "localhost",
+>   "127.0.0.1",
+>   "192.168.0.0/16",
+>   "api.telegram.org",
+>   "api.search.brave.com",
+>   "huggingface.co"
+> ]'
+> ```
+>
+> El modo `offline` total solo es apropiado cuando el Jetson opera en una red aislada (laboratorio, entorno corporativo sin internet) y todos los modelos están ya descargados localmente. Asegúrese de que estas políticas sean coherentes con los demás stacks del libro — por ejemplo, el bot de Telegram del Capítulo 20 y el agente RAG del Capítulo 25 requieren acceso a APIs externas.
+
 ### 13B.5.3 Aislamiento del Sistema de Archivos
 
 ```bash

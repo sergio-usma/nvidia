@@ -2,7 +2,19 @@
 
 ## Introducción
 
-Open WebUI proporciona una interfaz web estilo ChatGPT que conecta simultáneamente con Ollama, vLLM y llama.cpp desde cualquier navegador de la red local. Funciona como PWA (Progressive Web App) en móviles y soporta subida de documentos, RAG, pipelines Python y entrada de voz.
+Open WebUI proporciona una interfaz web estilo ChatGPT que conecta simultáneamente con Ollama, vLLM y llama.cpp desde cualquier navegador de la red local. Funciona como **PWA** en móviles y soporta subida de documentos, **RAG**, pipelines Python y entrada de voz.
+
+> **NOTA — Glosario de conceptos de este capítulo:**
+>
+> - **PWA (Progressive Web App):** Aplicación web que puede instalarse en el teléfono como si fuera una app nativa. No se descarga desde la tienda de apps — se instala directamente desde el navegador. Funciona sin internet cuando el Jetson está en la misma red local.
+>
+> - **RAG (Retrieval-Augmented Generation):** Técnica que permite al modelo de lenguaje consultar documentos propios como contexto antes de generar su respuesta. En lugar de depender únicamente de su conocimiento de entrenamiento, el modelo puede "leer" archivos PDF, DOCX o TXT que usted suba.
+>
+> - **Embeddings:** Representaciones numéricas del texto (vectores de alta dimensión) que permiten búsqueda por similitud semántica. Son fundamentales para el RAG: el texto del documento se convierte en embeddings y se busca cuáles son más similares a la pregunta del usuario.
+>
+> - **Certificado SSL / TLS:** El mecanismo criptográfico que convierte HTTP en HTTPS. Garantiza que la comunicación entre el navegador y el servidor está cifrada. Los navegadores modernos bloquean el acceso al micrófono en conexiones HTTP sin certificado.
+>
+> - **CA local (Certificate Authority local):** Entidad que firma certificados TLS en la red local, sin necesidad de un dominio público ni de pagar a una CA externa. `mkcert` (sección 13C.11) crea una CA local en el Jetson cuyo certificado raíz puede instalarse en Windows para que el navegador confíe en él.
 
 Este capítulo cubre dos partes: la **configuración con SSL local** (necesaria para habilitar el micrófono en el navegador) y un **proyecto práctico de aprendizaje de inglés** usando el modelo multimodal Nemotron Omni.
 
@@ -97,6 +109,12 @@ INFO:     Application startup complete.
 
 Los modelos disponibles en cada motor aparecen automáticamente en el selector de modelos de la interfaz web.
 
+> **NOTA — Coherencia de API Keys:** Los valores `vllm-local` y `llama-local` en `OPENAI_API_KEYS` deben coincidir exactamente con los argumentos `--api-key` usados al lanzar vLLM y llama.cpp en el Capítulo 12. Si en su `~/.bash_aliases` definió `VLLM_API_KEY` con un valor distinto de `vllm-local`, reemplace la línea correspondiente en el comando `docker run`:
+> ```bash
+> -e OPENAI_API_KEYS="${VLLM_API_KEY:-vllm-local};llama-local"
+> ```
+> Si no definió `VLLM_API_KEY`, el valor por defecto `vllm-local` es correcto y no necesita cambiar nada.
+
 **Alternativa — configurar desde la interfaz gráfica:**
 - Configuración (icono engranaje) → Connections → OpenAI API
 - Agregar URL: `http://localhost:8000/v1` con API Key: `vllm-local`
@@ -122,16 +140,26 @@ docker exec open-webui ls /app/backend/data/uploads/ 2>/dev/null \
 4. Hacer preguntas sobre el documento en la misma conversación
 
 **Configurar el motor de embeddings:**
+
+> **NOTA — El RAG requiere un modelo de embeddings:** Sin un modelo de embeddings activo, la indexación de documentos en Open WebUI falla silenciosamente — el documento se "sube" pero no se indexa y el modelo no puede consultarlo. **Instale `nomic-embed-text` antes de subir cualquier documento para RAG.**
+
 - Configuración → Documents → Embedding Model
 - Para Jetson: seleccionar `nomic-embed-text` (disponible via Ollama) — consume ~1 GB de RAM
 
 ```bash
-# Instalar modelo de embeddings (si Ollama está activo)
-ollama pull nomic-embed-text
+# Paso 1: Asegurarse de que Ollama está activo
+sudo systemctl start ollama || docker-on
 
-# Verificar
+# Paso 2: Instalar el modelo de embeddings
+ollama pull nomic-embed-text
+# Tarda ~2 minutos — modelo de 274 MB
+
+# Verificar que quedó instalado
 ollama list | grep nomic
+# Salida esperada: nomic-embed-text    latest    ...    274 MB
 ```
+
+> **CONSEJO:** El modelo `nomic-embed-text` es muy liviano (~274 MB) y compatible con el Jetson. Una vez instalado, Ollama lo mantiene disponible permanentemente sin necesidad de reinstalarlo. Si usó el troubleshooting del Capítulo 12 y ya lo instaló ahí, omita el paso anterior.
 
 ---
 
@@ -180,13 +208,15 @@ echo "Para activar: Settings → Pipelines → Upload pipeline file"
 
 Open WebUI funciona como Progressive Web App — puede instalarse en el teléfono como una app nativa:
 
+> **NOTA — SSL requerido para el micrófono en PWA:** La instalación de la app PWA funciona con HTTP simple (`http://...`). Sin embargo, si desea usar la **entrada de voz** (micrófono) desde el teléfono, el navegador móvil exige HTTPS. En ese caso, configure primero el certificado SSL con `mkcert` (sección 13C.11) y acceda vía `https://192.168.1.100:3000`. Sin SSL, el ícono del micrófono en la interfaz simplemente no aparecerá en dispositivos móviles.
+
 **Android (Chrome):**
-1. Abrir `http://192.168.1.100:3000` en Chrome del teléfono
+1. Abrir `http://192.168.1.100:3000` en Chrome del teléfono (o `https://` si ya configuró SSL)
 2. Menú (3 puntos) → "Añadir a pantalla de inicio"
 3. Confirmar → La app aparece en el home del teléfono
 
 **iOS (Safari):**
-1. Abrir `http://192.168.1.100:3000` en Safari del iPhone
+1. Abrir `http://192.168.1.100:3000` en Safari del iPhone (o `https://` si ya configuró SSL)
 2. Botón compartir → "Añadir a inicio"
 3. Confirmar → La app aparece en el home del iPhone
 

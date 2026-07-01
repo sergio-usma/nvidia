@@ -54,33 +54,33 @@ OpenClaw actúa como un router inteligente: recibe la solicitud del canal de ent
 
 ## 13A.2 Prerrequisitos
 
-### 13A.2.1 Node.js v22
+### 13A.2.1 Node.js v26
 
-OpenClaw requiere Node.js v22. JetPack 7.2 puede incluirlo, pero verifique antes de instalar:
+OpenClaw requiere Node.js v26 o superior. JetPack 7.2 puede incluir una versión más antigua, así que verifique primero:
 
 ```bash
-# Verificar Node.js
+# Verificar Node.js actual
 node --version
 npm --version
 ```
 
 ```
-# Salida esperada:
-v22.23.1
-10.9.x
+# Salida esperada (versión mínima requerida):
+v26.4.0
+11.17.0
 ```
 
 ```bash
-# Si Node.js no está disponible o es una versión <20:
+# Si Node.js no está disponible o la versión reportada es anterior a v26:
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Verificar instalación (tarda ~2 minutos)
-node --version   # v22.23.1
-npm --version    # 10.x.x
+# Verificar instalación actualizada (tarda ~2 minutos)
+node --version   # v26.4.0
+npm --version    # 11.17.0
 ```
 
-> **IMPORTANTE:** No use el Node.js del repositorio de Ubuntu 24.04 (`apt install nodejs` sin NodeSource). Ese paquete instala la versión 18.x, incompatible con OpenClaw.
+> **IMPORTANTE:** No use el Node.js del repositorio de Ubuntu 24.04 (`apt install nodejs` sin NodeSource). Ese paquete instala la versión 18.x, incompatible con OpenClaw. Si ya tiene Node.js instalado pero en versión anterior a v26, actualice con el mismo comando `setup_22.x` de NodeSource — el repositorio incluye las últimas versiones LTS.
 
 ### 13A.2.2 Motor de inferencia activo
 
@@ -258,6 +258,11 @@ cat > ~/.openclaw/openclaw.json << EOF
   "commands": {
     "ownerAllowFrom": ["whatsapp:+57XXXXXXXXXX"]
   },
+  "skills": {
+    "enabled": true,
+    "registry": "https://registry.openclaw.dev",
+    "installed": []
+  },
   "hooks": {
     "internal": {
       "enabled": true,
@@ -278,6 +283,12 @@ python3 -m json.tool ~/.openclaw/openclaw.json > /dev/null \
   && echo "[OK] Config JSON válida" \
   || echo "[ERROR] Error en JSON — revisar con: python3 -m json.tool ~/.openclaw/openclaw.json"
 ```
+
+> **ADVERTENCIA — Campos del JSON de OpenClaw:**
+>
+> El archivo `openclaw.json` acepta exactamente las secciones mostradas arriba: `agents`, `gateway`, `session`, `tools`, `plugins`, `models`, `auth`, `channels`, `commands`, `skills`, `hooks`. **No añada campos adicionales** no listados en esta configuración — OpenClaw puede rechazarlos silenciosamente o fallar en el arranque sin mensaje de error claro.
+>
+> Note también que `models.providers.vllm.apiKey` está fijado en `"vllm-local"`. Este valor debe coincidir exactamente con la variable `$VLLM_API_KEY` definida en su `~/.bash_aliases` o con el argumento `--api-key` del comando `docker run vllm`. Si en el Capítulo 12 configuró un `VLLM_API_KEY` diferente, actualice este campo para que coincida.
 
 ```bash
 # Aplicar configuración y arrancar el gateway
@@ -744,20 +755,32 @@ chmod +x ~/scripts/switch-model.sh
 
 ```bash
 # Aliases para el cambio de modo (agregar a ~/.bash_aliases)
+cat >> ~/.bash_aliases << 'EOF'
+
+# ── Modos de backend OpenClaw ──────────────────────────────────────
 alias mode-vllm='~/scripts/switch-model.sh vllm-gemma'
 alias mode-lite='~/scripts/switch-model.sh lite-gemma'
 alias mode-longdoc='~/scripts/switch-model.sh longdoc'
 alias mode-ollama='~/scripts/switch-model.sh ollama'
 alias mode-stop='~/scripts/switch-model.sh stop'
+# mode-multimodal: disponible en Capítulo 13D (Tool Calling multimodal)
+# alias mode-multimodal='~/scripts/switch-model.sh multimodal'
+EOF
+source ~/.bash_aliases || source ~/.bashrc
+echo "[OK] aliases mode-vllm, mode-lite, mode-longdoc, mode-ollama, mode-stop definidos"
 ```
 
 ```bash
-source ~/.bash_aliases || source ~/.bashrc
-
 # Ejemplo de uso:
 mode-vllm      # Activar vLLM + Gemma (modo por defecto para Telegram bot)
 mode-stop      # Liberar toda la RAM (15W idle)
 ```
+
+> **NOTA — Comportamiento del cambio de backend:**
+>
+> El script `switch-model.sh` cambia únicamente la sección `agents.defaults.model.primary` en `openclaw.json` y reinicia el gateway. **No modifica** el historial de mensajes, los hooks activos, ni ninguna otra sección de la configuración. El historial de conversación persiste entre cambios de backend — el nuevo modelo retoma la sesión donde la dejó el anterior (aunque puede necesitar el contexto inicial que se provee vía `boot-md`).
+>
+> Si ve mensajes extraños de "contexto perdido" tras cambiar de backend, reinicie la sesión completa con `openclaw session reset` en lugar de reiniciar el gateway.
 
 ---
 
