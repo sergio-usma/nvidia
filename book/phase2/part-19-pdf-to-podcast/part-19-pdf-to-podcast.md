@@ -930,4 +930,123 @@ echo ""
 echo "═════════════════════════════════════════════════════════════"
 ```
 
+---
+
+## 19.10 Escalabilidad y Extensiones
+
+El pipeline PDF-to-Podcast puede integrarse con plataformas de mensajería y APIs externas para operar de forma completamente autónoma.
+
+### 19.10.1 Bot de Telegram para PDF-to-Podcast
+
+Con **N8N** (ver Capítulo 14) u **OpenClaw** (ver Capítulo 11A), cualquier usuario puede enviar un PDF a un bot de Telegram y recibir el episodio de audio sin tocar el Jetson.
+
+**Flujo de integración:**
+
+```
+Usuario → envía PDF por Telegram
+         ↓
+N8N / OpenClaw recibe el archivo
+         ↓
+Guarda en ~/projects/pdf2podcast/input/
+         ↓
+Ejecuta pdf2podcast.sh (3–8 min según tamaño)
+         ↓
+Envía MP3 resultante de vuelta al chat de Telegram
+```
+
+**Implementación con N8N:**
+
+```yaml
+# Flujo N8N: Telegram → Jetson → Audio
+Nodo 1 — Telegram Trigger:
+  tipo: telegram_trigger
+  evento: message_received
+  filtro: documentos (.pdf)
+
+Nodo 2 — Save File:
+  tipo: write_binary_file
+  ruta: /home/jetson/projects/pdf2podcast/input/{{filename}}
+
+Nodo 3 — Execute Command:
+  tipo: execute_command
+  comando: /home/jetson/projects/pdf2podcast/pdf2podcast.sh \
+           /home/jetson/projects/pdf2podcast/input/{{filename}}
+  timeout: 600   # segundos — PDFs largos pueden tardar
+
+Nodo 4 — Send Audio:
+  tipo: telegram_send_audio
+  chat_id: {{chat_id}}
+  archivo: /home/jetson/projects/pdf2podcast/output/{{titulo}}.mp3
+  caption: "Podcast generado con IA en el Jetson"
+```
+
+**Implementación con OpenClaw:**
+
+Añada este bloque de hooks en su `openclaw.json` (ver §11A.4.2 para la estructura completa):
+
+```json
+"hooks": {
+  "on_file_receive": {
+    "filter": "*.pdf",
+    "action": "shell",
+    "command": "/home/jetson/projects/pdf2podcast/pdf2podcast.sh {{file_path}}",
+    "reply_with_file": "{{output_dir}}/{{titulo}}.mp3"
+  }
+}
+```
+
+> **NOTA:** El tiempo de procesamiento depende del tamaño del PDF y del modelo elegido. Para PDFs de 10–20 páginas espere entre 3 y 8 minutos. Configure el timeout del bot en consecuencia para evitar que el usuario reciba un error por tiempo de espera antes de que el audio esté listo.
+
+### 19.10.2 Modo Mixto Offline + Online con OpenRouter
+
+Para PDFs extensos o cuando se requiera mayor calidad narrativa en el guión, puede alternar entre el LLM local (Ollama o vLLM en el Jetson) y modelos externos gratuitos vía **OpenRouter**.
+
+**Configurar las credenciales de OpenRouter:**
+
+```bash
+# Registrarse en https://openrouter.ai y generar una API key
+# Añadir al ~/.bash_aliases (ver Capítulo 6):
+export OPENROUTER_API_KEY="sk-or-v1-xxxxxxxxxxxxxxxx"
+export OPENROUTER_URL="https://openrouter.ai/api/v1"
+
+# Aliases para alternar el backend del pipeline
+alias pdf2podcast-local="USE_LOCAL_LLM=true  ~/projects/pdf2podcast/pdf2podcast.sh"
+alias pdf2podcast-cloud="USE_LOCAL_LLM=false ~/projects/pdf2podcast/pdf2podcast.sh"
+```
+
+**Modificar `02_generate_script.py` para soportar ambos backends:**
+
+```python
+import os
+from openai import OpenAI
+
+USE_LOCAL = os.getenv("USE_LOCAL_LLM", "true").lower() == "true"
+
+if USE_LOCAL:
+    # Backend: Ollama en el Jetson (sin costo, sin red)
+    client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    MODEL  = "qwen2.5:14b"
+else:
+    # Backend: OpenRouter — modelos de alta calidad con cuota gratuita
+    client = OpenAI(
+        base_url=os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    )
+    MODEL = "meta-llama/llama-3.3-70b-instruct:free"  # gratuito en OpenRouter
+```
+
+> **CONSEJO:** Use el modo local para PDFs técnicos de menos de 30 páginas. Cambie al modo cloud para documentos extensos o cuando necesite mayor coherencia narrativa. La lista de modelos con cuota gratuita vigente está en `https://openrouter.ai/models?order=top-weekly&max_price=0`.
+
+**Comparativa de configuraciones:**
+
+| Configuración | Calidad de guión | Velocidad (20 pág.) | Costo |
+|---|---|---|---|
+| Ollama local — qwen2.5:14b | Alta | 3–5 min | Gratis |
+| vLLM local — mistral-7b | Media-Alta | 1–2 min | Gratis |
+| OpenRouter — llama-3.3-70b | Muy Alta | 30–60 seg | Cuota gratuita |
+
+> **ADVERTENCIA:** El modo cloud requiere conexión a Internet y que el PDF no contenga información confidencial, ya que el texto extraído se envía a servidores externos.
+
+---
+
 > **Próximo paso:** El Capítulo 20 extiende el uso de faster-whisper para construir un bot de transcripción y análisis automático de reuniones, entregando el resultado por email.

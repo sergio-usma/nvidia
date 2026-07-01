@@ -577,4 +577,124 @@ echo ""
 echo "═════════════════════════════════════════════════════════"
 ```
 
+---
+
+## 23.8 Escalabilidad y Extensiones
+
+### 23.8.1 Bot de Telegram para Generar y Publicar en LinkedIn
+
+El pipeline puede integrarse con Telegram para recibir temas o ideas por chat y publicar automáticamente en LinkedIn sin acceso directo al Jetson.
+
+**Flujo con N8N** (ver Capítulo 14):
+
+```yaml
+Nodo 1 — Telegram Trigger:
+  tipo: telegram_trigger
+  evento: message_received
+  filtro: texto (tema o instrucción de publicación)
+  # Ejemplo: "publica sobre inteligencia artificial en manufactura"
+
+Nodo 2 — Execute Command:
+  tipo: execute_command
+  comando: |
+    python3 ~/projects/linkedin-content/scripts/pipeline.py \
+      --topic "{{message_text}}" \
+      --style-file ~/projects/linkedin-content/data/mi_estilo.json
+  timeout: 90
+
+Nodo 3 — Send Message:
+  tipo: telegram_send_message
+  chat_id: {{chat_id}}
+  texto: "Post publicado en LinkedIn: {{post_url}}"
+```
+
+**Flujo con OpenClaw** (ver Capítulo 11A):
+
+```json
+"agents": {
+  "linkedin": {
+    "description": "Genera y publica contenido en LinkedIn con estilo personal",
+    "command": "python3 ~/projects/linkedin-content/scripts/pipeline.py --topic {{input}}",
+    "channels": ["telegram"]
+  }
+}
+```
+
+### 23.8.2 Evaluación del Hermes Agent para Aprendizaje Adaptativo de Tendencias
+
+**Hermes Agent** (NVIDIA NIM / local) es un modelo especializado en **function calling** y memoria episódica a largo plazo. Para el pipeline de LinkedIn, resulta especialmente útil porque puede:
+
+- Aprender el vocabulario y los temas que generan más engagement en el perfil del usuario
+- Almacenar en memoria las publicaciones anteriores y sus métricas para refinar el estilo
+- Adaptar automáticamente el tono según el contexto (formal para artículos técnicos, conversacional para anécdotas)
+
+**Comparativa para este caso de uso:**
+
+| Modelo | Aprendizaje adaptativo | Creatividad | Memoria episódica | Uso de VRAM |
+|---|---|---|---|---|
+| qwen3:7b (actual) | No (few-shot manual) | Alta | No | ~5.5 GB |
+| deepseek-r1:7b (refinamiento) | No | Alta | No | ~5.5 GB |
+| **Hermes-3 (8B)** | Parcial (via RAG) | Alta | Sí (via tool calls) | ~6 GB |
+| Hermes-3 (70B) vía OpenRouter | Sí | Muy Alta | Sí | Externo |
+
+**Implementación con Hermes-3 local (8B):**
+
+```bash
+# Descargar Hermes-3 via Ollama
+ollama pull hermes3:8b
+
+# Verificar
+ollama list | grep hermes
+```
+
+```python
+# En pipeline.py — cambiar modelo según modo
+import os
+
+MODELO = os.getenv("LINKEDIN_MODEL", "qwen3:7b")
+# Opciones:
+#   "qwen3:7b"         — rapidez, creatividad
+#   "deepseek-r1:7b"   — razonamiento estructurado
+#   "hermes3:8b"       — function calling, seguimiento de contexto largo
+
+cliente = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+```
+
+```bash
+# Alias para cambiar de modelo sin editar código
+alias linkedin-qwen="LINKEDIN_MODEL=qwen3:7b    python3 ~/projects/linkedin-content/scripts/pipeline.py"
+alias linkedin-deep="LINKEDIN_MODEL=deepseek-r1:7b python3 ~/projects/linkedin-content/scripts/pipeline.py"
+alias linkedin-hermes="LINKEDIN_MODEL=hermes3:8b  python3 ~/projects/linkedin-content/scripts/pipeline.py"
+```
+
+> **EVALUACIÓN:** Hermes-3 es viable para este pipeline en el Jetson AGX Orin 64GB (8B cabe en ~6 GB VRAM). Su ventaja real aparece al implementar un sistema de memoria episódica que almacene las publicaciones anteriores en ChromaDB y las recupere como contexto — combinación RAG + Hermes que supera el few-shot manual de los otros modelos para mantener consistencia de estilo a lo largo del tiempo.
+
+### 23.8.3 Modo Mixto con OpenRouter
+
+Para publicaciones de gran visibilidad (artículos, noticias de empresa), use modelos de mayor capacidad vía OpenRouter:
+
+```python
+import os
+from openai import OpenAI
+
+USE_LOCAL = os.getenv("USE_LOCAL_LLM", "true").lower() == "true"
+
+if USE_LOCAL:
+    cliente = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    MODELO  = os.getenv("LINKEDIN_MODEL", "qwen3:7b")
+else:
+    cliente = OpenAI(
+        base_url=os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    )
+    MODELO = "meta-llama/llama-3.3-70b-instruct:free"
+```
+
+```bash
+alias linkedin-local="USE_LOCAL_LLM=true  python3 ~/projects/linkedin-content/scripts/pipeline.py"
+alias linkedin-cloud="USE_LOCAL_LLM=false python3 ~/projects/linkedin-content/scripts/pipeline.py"
+```
+
+---
+
 > **Próximo paso:** El Capítulo 24 construye el asistente de voz offline completo — faster-whisper + LLM + kokoro-tts — con latencia menor a 3 segundos desde que termina de hablar hasta que escucha la respuesta.

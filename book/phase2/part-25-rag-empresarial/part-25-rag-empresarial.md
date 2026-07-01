@@ -729,4 +729,108 @@ echo ""
 echo "═════════════════════════════════════════════════════════"
 ```
 
+---
+
+## 25.9 Escalabilidad y Extensiones
+
+### 25.9.1 Consulta de Documentos vía Telegram
+
+El sistema RAG puede integrarse con Telegram para que cualquier miembro del equipo consulte documentos empresariales desde su teléfono, sin acceso directo al Jetson.
+
+**Flujo con N8N** (ver Capítulo 14):
+
+```yaml
+Nodo 1 — Telegram Trigger:
+  tipo: telegram_trigger
+  evento: message_received
+  filtro: texto (pregunta sobre documentos)
+
+Nodo 2 — HTTP Request (API RAG):
+  tipo: http_request
+  metodo: POST
+  url: http://localhost:9000/query
+  body:
+    query: "{{message_text}}"
+    top_k: 5
+  timeout: 30
+
+Nodo 3 — Send Message:
+  tipo: telegram_send_message
+  chat_id: {{chat_id}}
+  texto: "{{response.answer}}\n\n_Fuentes: {{response.sources}}_"
+  parse_mode: Markdown
+```
+
+**Flujo con OpenClaw** (ver Capítulo 11A):
+
+```json
+"agents": {
+  "rag": {
+    "description": "Consulta documentos empresariales con RAG",
+    "endpoint": "http://localhost:9000/query",
+    "method": "POST",
+    "input_field": "query",
+    "channels": ["telegram"]
+  }
+}
+```
+
+> **NOTA:** La API REST del sistema RAG (§25.5) ya está diseñada para recibir consultas HTTP, lo que simplifica la integración con N8N y OpenClaw — no se requiere modificar el código del RAG.
+
+### 25.9.2 Modo Mixto con OpenRouter
+
+Para preguntas que requieran síntesis de información dispersa en múltiples documentos o razonamiento complejo, use OpenRouter como alternativa al modelo local:
+
+```python
+import os
+from openai import OpenAI
+
+USE_LOCAL = os.getenv("USE_LOCAL_LLM", "true").lower() == "true"
+
+if USE_LOCAL:
+    cliente = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    MODELO  = "qwen3:7b"
+else:
+    cliente = OpenAI(
+        base_url=os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    )
+    MODELO = "meta-llama/llama-3.3-70b-instruct:free"
+```
+
+> **NOTA:** Los embeddings (`nomic-embed-text`) siempre se generan localmente en el Jetson, independientemente del backend elegido para el chat. Esto garantiza que los documentos privados no salgan de la red local.
+
+```bash
+alias rag-local="USE_LOCAL_LLM=true  python3 ~/projects/rag-empresarial/scripts/query.py"
+alias rag-cloud="USE_LOCAL_LLM=false python3 ~/projects/rag-empresarial/scripts/query.py"
+```
+
+### 25.9.3 Evaluación de Backend para Alta Concurrencia
+
+El sistema RAG vía API REST puede recibir múltiples consultas simultáneas de distintos usuarios. El backend de inferencia impacta directamente en la capacidad de atenderlas:
+
+| Backend | Concurrencia | VRAM total (chat + embed) | Latencia primera respuesta | Recomendación |
+|---|---|---|---|---|
+| **Ollama** (qwen3:7b + nomic) | 1 concurrent | ~6.5 GB | ~1–2 seg | Adecuado para equipo pequeño (<5 usuarios) |
+| **vLLM** (qwen3:7b) + Ollama (nomic) | 8–16 concurrent | ~8 GB | ~800 ms | **Recomendado** para equipo mediano (5–20 usuarios) |
+| **llama.cpp** (qwen3:7b Q4_K_M) + Ollama (nomic) | 2–4 concurrent | ~5 GB | ~1 seg | Buena opción si VRAM es limitada por otros servicios |
+
+> **CONSEJO:** Si el Jetson sirve el RAG a más de 5 usuarios simultáneos, configure vLLM como servidor de chat y mantenga Ollama exclusivamente para los embeddings de `nomic-embed-text`. Esta separación optimiza el throughput sin sacrificar la calidad de los embeddings.
+
+```bash
+# Iniciar vLLM para RAG multi-usuario (ver Capítulo 12 — sección vLLM)
+docker run -d --rm --runtime nvidia \
+  --name vllm-rag \
+  -p 8001:8000 \
+  -v ~/data/models:/models \
+  dustynv/vllm:r39.2.0 \
+  --model /models/qwen3-7b \
+  --max-model-len 8192 \
+  --gpu-memory-utilization 0.45
+
+# En rag_api.py: cambiar OLLAMA_URL a "http://localhost:8001/v1"
+```
+
+---
+
 > **Proyectos de IA completados.** Tiene un ecosistema completo de proyectos de IA ejecutándose completamente offline en el Jetson AGX Orin 64GB. El **Apéndice** provee la referencia rápida de todos los comandos, puertos y aliases utilizados en el libro.

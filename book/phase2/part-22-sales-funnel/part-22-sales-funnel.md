@@ -513,4 +513,94 @@ echo ""
 echo "═════════════════════════════════════════════════════════"
 ```
 
+---
+
+## 22.8 Escalabilidad y Extensiones
+
+### 22.8.1 Bot de Telegram para Generación y Publicación de Contenido
+
+El pipeline puede integrarse con Telegram para que el usuario solicite la publicación de contenido desde su teléfono, sin acceso directo al Jetson.
+
+**Flujo con N8N** (ver Capítulo 14):
+
+```yaml
+Nodo 1 — Telegram Trigger:
+  tipo: telegram_trigger
+  evento: message_received
+  filtro: texto (instrucción de publicación)
+  # Ejemplo: "publica post sobre descuento 20% zapatos tenis este fin de semana"
+
+Nodo 2 — Execute Command:
+  tipo: execute_command
+  comando: |
+    python3 ~/projects/sales-funnel/scripts/01_generate_content.py \
+      --prompt "{{message_text}}" \
+      --output /tmp/post_output.json
+  timeout: 60
+
+Nodo 3 — Execute Command:
+  tipo: execute_command
+  comando: |
+    python3 ~/projects/sales-funnel/scripts/02_publish_meta.py \
+      --input /tmp/post_output.json
+  timeout: 30
+
+Nodo 4 — Send Message:
+  tipo: telegram_send_message
+  chat_id: {{chat_id}}
+  texto: "Publicado en Facebook e Instagram. URL: {{post_url}}"
+```
+
+**Flujo con OpenClaw** (ver Capítulo 11A):
+
+```json
+"agents": {
+  "sales_funnel": {
+    "description": "Publica contenido de marketing en redes sociales",
+    "command": "python3 ~/projects/sales-funnel/scripts/run_pipeline.py --prompt {{input}}",
+    "channels": ["telegram"]
+  }
+}
+```
+
+### 22.8.2 Modo Mixto con OpenRouter
+
+Para campañas de alto impacto donde se requiera mayor creatividad o análisis de mercado:
+
+```python
+import os
+from openai import OpenAI
+
+USE_LOCAL = os.getenv("USE_LOCAL_LLM", "true").lower() == "true"
+
+if USE_LOCAL:
+    cliente = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    MODELO  = "qwen3:7b"
+else:
+    cliente = OpenAI(
+        base_url=os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    )
+    MODELO = "meta-llama/llama-3.3-70b-instruct:free"
+```
+
+```bash
+alias funnel-local="USE_LOCAL_LLM=true  python3 ~/projects/sales-funnel/scripts/01_generate_content.py"
+alias funnel-cloud="USE_LOCAL_LLM=false python3 ~/projects/sales-funnel/scripts/01_generate_content.py"
+```
+
+### 22.8.3 Evaluación de Backend de Inferencia
+
+El pipeline de ventas realiza pocas llamadas al LLM (generación del copy de 1–3 variantes), por lo que la eficiencia de memoria es más importante que el throughput:
+
+| Backend | Ventaja | Desventaja | Recomendación |
+|---|---|---|---|
+| **Ollama** (qwen3:7b) | Simple, fácil configuración | Carga completa del modelo en RAM | Adecuado |
+| **llama.cpp** (qwen3:7b Q4_K_M) | Menor uso de VRAM (~4 GB vs ~5.5 GB) | API compatible pero gestión manual | **Recomendado** si el Jetson corre otros servicios en paralelo |
+| **vLLM** | Alto throughput | Overhead innecesario para 1–3 requests | No recomendado para este caso |
+
+> **CONSEJO:** Si el Jetson ejecuta simultáneamente Open WebUI y el pipeline de ventas, use llama.cpp con `qwen3:7b Q4_K_M` para reducir el consumo de VRAM de ~5.5 GB a ~4 GB y dejar más memoria disponible para el resto del sistema.
+
+---
+
 > **Próximo paso:** El Capítulo 23 construye el generador de contenido para LinkedIn con OAuth2 y few-shot prompting basado en el estilo personal del usuario.

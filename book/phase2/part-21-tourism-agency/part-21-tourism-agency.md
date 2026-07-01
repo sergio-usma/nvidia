@@ -514,4 +514,88 @@ echo ""
 echo "═════════════════════════════════════════════════════════"
 ```
 
+---
+
+## 21.8 Escalabilidad y Extensiones
+
+### 21.8.1 Bot de Telegram para la Agencia de Turismo
+
+La agencia multi-agente puede integrarse con Telegram para atender consultas de viajeros directamente desde la mensajería. El usuario escribe su destino y preferencias; el Jetson responde con el itinerario completo.
+
+**Flujo con N8N** (ver Capítulo 14):
+
+```yaml
+Nodo 1 — Telegram Trigger:
+  tipo: telegram_trigger
+  evento: message_received
+  filtro: texto (consulta de viaje)
+
+Nodo 2 — Execute Command:
+  tipo: execute_command
+  comando: |
+    python3 ~/projects/tourism-agency/main.py \
+      --query "{{message_text}}" \
+      --output-format markdown
+  timeout: 120
+
+Nodo 3 — Send Message:
+  tipo: telegram_send_message
+  chat_id: {{chat_id}}
+  texto: "{{output}}"
+  parse_mode: Markdown
+```
+
+**Flujo con OpenClaw** (ver Capítulo 11A):
+
+```json
+"agents": {
+  "turismo": {
+    "description": "Agencia de turismo IA — itinerarios personalizados",
+    "command": "python3 ~/projects/tourism-agency/main.py --query {{input}}",
+    "channels": ["telegram"]
+  }
+}
+```
+
+### 21.8.2 Modo Mixto con OpenRouter
+
+Para destinos exóticos o cuando el modelo local no tenga suficiente conocimiento geográfico actualizado, integre OpenRouter como backend alternativo:
+
+```python
+import os
+from openai import OpenAI
+
+USE_LOCAL = os.getenv("USE_LOCAL_LLM", "true").lower() == "true"
+
+if USE_LOCAL:
+    cliente = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    MODELO  = "qwen3:7b"
+else:
+    cliente = OpenAI(
+        base_url=os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    )
+    MODELO = "meta-llama/llama-3.3-70b-instruct:free"
+```
+
+```bash
+# Aliases en ~/.bash_aliases (ver Capítulo 6)
+alias turismo-local="USE_LOCAL_LLM=true  python3 ~/projects/tourism-agency/main.py"
+alias turismo-cloud="USE_LOCAL_LLM=false python3 ~/projects/tourism-agency/main.py"
+```
+
+### 21.8.3 Evaluación de Backend de Inferencia
+
+Para una agencia multi-agente con múltiples llamadas secuenciales al LLM por cada consulta:
+
+| Backend | Ventaja | Desventaja | Recomendación |
+|---|---|---|---|
+| **Ollama** (qwen3:7b) | Simplicidad, API compatible | Mayor overhead por llamada | Ideal para 1 usuario |
+| **llama.cpp** (qwen3:7b Q4_K_M) | Menor latencia por token | Requiere gestión manual | Buena opción para reducir tiempo de respuesta |
+| **vLLM** | Throughput alto, batching | Startup lento, >4 GB VRAM | Solo si atiende múltiples usuarios concurrentes |
+
+> **RECOMENDACIÓN:** Para uso personal o con pocos usuarios simultáneos, Ollama es suficiente. Si el bot de Telegram atiende más de 5 usuarios a la vez, cambie a vLLM para aprovechar el batching continuo y evitar colas de espera.
+
+---
+
 > **Próximo paso:** El Capítulo 22 construye el pipeline de automatización de embudo de ventas, usando la API oficial de Meta para publicar en Facebook e Instagram.

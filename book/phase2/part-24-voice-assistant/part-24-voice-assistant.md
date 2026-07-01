@@ -667,4 +667,112 @@ echo ""
 echo "═════════════════════════════════════════════════════════"
 ```
 
+---
+
+## 24.11 Escalabilidad y Extensiones
+
+### 24.11.1 Canal de Texto vía Telegram como Fallback
+
+Cuando no haya micrófono disponible (trabajo remoto, entorno ruidoso), el mismo asistente puede atender consultas de texto por Telegram y responder con audio generado por kokoro-tts.
+
+**Flujo con N8N** (ver Capítulo 14):
+
+```yaml
+Nodo 1 — Telegram Trigger:
+  tipo: telegram_trigger
+  evento: message_received
+  filtro: texto
+
+Nodo 2 — Execute Command (LLM):
+  tipo: execute_command
+  comando: |
+    python3 ~/projects/voice-assistant/modules/llm.py \
+      --input "{{message_text}}" \
+      --output-text /tmp/va_response.txt
+  timeout: 30
+
+Nodo 3 — Execute Command (TTS):
+  tipo: execute_command
+  comando: |
+    python3 ~/projects/voice-assistant/modules/tts.py \
+      --input /tmp/va_response.txt \
+      --output /tmp/va_response.wav
+  timeout: 15
+
+Nodo 4 — Send Voice:
+  tipo: telegram_send_voice
+  chat_id: {{chat_id}}
+  archivo: /tmp/va_response.wav
+```
+
+**Flujo con OpenClaw** (ver Capítulo 11A):
+
+```json
+"agents": {
+  "voice_assistant": {
+    "description": "Asistente de voz — responde con audio",
+    "command": "python3 ~/projects/voice-assistant/telegram_mode.py --input {{input}}",
+    "channels": ["telegram"],
+    "reply_with_voice": true
+  }
+}
+```
+
+### 24.11.2 Modo Mixto con OpenRouter
+
+Para consultas complejas que superen la capacidad del modelo local, derive al cloud manteniendo el pipeline de voz intacto:
+
+```python
+import os
+from openai import OpenAI
+
+USE_LOCAL = os.getenv("USE_LOCAL_LLM", "true").lower() == "true"
+
+if USE_LOCAL:
+    cliente = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    MODELO  = "qwen3:7b"
+else:
+    cliente = OpenAI(
+        base_url=os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    )
+    MODELO = "meta-llama/llama-3.3-70b-instruct:free"
+```
+
+### 24.11.3 Evaluación de Backend para Mínima Latencia
+
+La latencia es el factor crítico en un asistente de voz: el usuario espera respuesta en menos de 3 segundos. Cada backend impacta diferente en ese objetivo:
+
+| Backend | Primer token (qwen3:7b) | VRAM usada | Startup | Recomendación |
+|---|---|---|---|---|
+| **Ollama** (qwen3:7b) | ~800–1200 ms | ~5.5 GB | Inmediato (precargado) | Actual — buen balance |
+| **llama.cpp** (qwen3:4b Q4_K_M) | **~300–500 ms** | ~2.5 GB | Inmediato | **Mejor opción** para minimizar latencia |
+| **llama.cpp** (qwen3:7b Q4_K_M) | ~600–900 ms | ~4 GB | Inmediato | Buena opción si se prefiere mayor calidad |
+| **vLLM** (qwen3:7b) | ~1500–2000 ms (primer call) | ~6 GB | 30–60 seg | No recomendado — startup penaliza latencia |
+
+> **CONSEJO:** Para el asistente de voz, **llama.cpp con `qwen3:4b Q4_K_M`** es la opción con menor latencia de primer token. El modelo 4B es suficientemente capaz para respuestas de asistente de voz conversacional. Si nota que las respuestas pierden coherencia en conversaciones largas, cambie a `qwen3:7b Q4_K_M`.
+
+**Configurar llama.cpp como servidor alternativo:**
+
+```bash
+# Instalar llama.cpp (ver Capítulo 12 — sección llama.cpp)
+# Descargar modelo GGUF de qwen3:4b
+huggingface-cli download Qwen/Qwen3-4B-GGUF \
+  --include "Qwen3-4B-Q4_K_M.gguf" \
+  --local-dir ~/data/models/gguf/
+
+# Lanzar servidor llama.cpp en puerto alternativo
+~/bin/llama-server \
+  --model ~/data/models/gguf/Qwen3-4B-Q4_K_M.gguf \
+  --ctx-size 4096 \
+  --n-gpu-layers 99 \
+  --port 11435 \
+  --host 0.0.0.0 &
+
+# Cambiar el módulo LLM del asistente para usar llama.cpp
+# En modules/llm.py: OLLAMA_URL = "http://localhost:11435"
+```
+
+---
+
 > **Próximo paso:** El Capítulo 25 construye el sistema RAG (Retrieval Augmented Generation) para consultar documentos empresariales con respuestas citadas con sus fuentes.

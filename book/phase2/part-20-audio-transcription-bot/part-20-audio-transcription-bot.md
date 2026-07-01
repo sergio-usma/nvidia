@@ -883,4 +883,128 @@ echo ""
 echo "════════════════════════════════════════════════════════"
 ```
 
-> **Próximo paso:** El Capítulo 21 construye el Sistema de Mantenimiento automatizado — scripts de limpieza, monitoreo de salud y benchmarking del Jetson que sirven de base para todos los pipelines de .
+---
+
+## 20.11 Escalabilidad — Workflow de Transcripción vía Telegram
+
+El bot de transcripción puede integrarse con Telegram para operar de forma completamente autónoma: el usuario envía la grabación de una reunión o clase y recibe la transcripción detallada o el resumen en su chat, en el formato que prefiera.
+
+### 20.11.1 Flujo Telegram → Jetson → Resumen
+
+```
+Usuario → envía audio .mp3/.wav/.ogg por Telegram
+          ↓
+N8N / OpenClaw recibe el archivo
+          ↓
+Guarda en ~/projects/transcription-bot/input/
+          ↓
+Ejecuta pipeline: faster-whisper → Ollama análisis
+          ↓
+Genera resumen en Markdown / DOCX / PDF
+          ↓
+Envía documento de vuelta al chat de Telegram
+```
+
+**Implementación con N8N** (ver Capítulo 14):
+
+```yaml
+Nodo 1 — Telegram Trigger:
+  tipo: telegram_trigger
+  evento: message_received
+  filtro: audio, voice, document (.mp3 .wav .ogg .m4a)
+
+Nodo 2 — Save File:
+  tipo: write_binary_file
+  ruta: /home/jetson/projects/transcription-bot/input/{{filename}}
+
+Nodo 3 — Execute Command:
+  tipo: execute_command
+  comando: |
+    python3 /home/jetson/projects/transcription-bot/scripts/01_transcribe.py \
+      /home/jetson/projects/transcription-bot/input/{{filename}} \
+      --output-format markdown
+  timeout: 900   # 15 min — reuniones largas
+
+Nodo 4 — Send Document:
+  tipo: telegram_send_document
+  chat_id: {{chat_id}}
+  archivo: /home/jetson/projects/transcription-bot/output/{{filename}}.md
+  caption: "Transcripción y resumen listos"
+```
+
+**Implementación con OpenClaw:**
+
+```json
+"hooks": {
+  "on_audio_receive": {
+    "filter": ["*.mp3", "*.wav", "*.ogg", "*.m4a"],
+    "action": "shell",
+    "command": "python3 ~/projects/transcription-bot/scripts/01_transcribe.py {{file_path}} --output-format markdown",
+    "reply_with_file": "{{output_dir}}/{{basename}}.md"
+  }
+}
+```
+
+### 20.11.2 Formatos de Salida
+
+El script de análisis (§20.5) puede generar la salida en múltiples formatos según el tipo de reunión:
+
+```bash
+# Transcripción plana con marcas de tiempo (Markdown)
+python3 01_transcribe.py reunion.mp3 --output-format markdown
+
+# Resumen ejecutivo con bullets (Markdown → Word con python-docx)
+python3 02_analyze.py reunion_transcript.txt --format docx --style executive
+
+# Reporte estructurado con secciones (ideal para actas)
+python3 02_analyze.py reunion_transcript.txt --format pdf --style minutes
+```
+
+**Prompt sugerido para el LLM (añadir en `02_analyze.py`):**
+
+```python
+PROMPT_RESUMEN = """
+Analiza esta transcripción de reunión/clase y genera:
+
+1. **Resumen ejecutivo** (3-5 oraciones)
+2. **Puntos clave** (bullets, máximo 10)
+3. **Tareas y compromisos** identificados (con responsable si se menciona)
+4. **Próximos pasos** acordados
+
+Transcripción:
+{transcripcion}
+"""
+```
+
+### 20.11.3 Modo Mixto con OpenRouter
+
+Para reuniones con vocabulario técnico complejo o cuando el modelo local no genere suficiente calidad de resumen, integre OpenRouter como fallback:
+
+```python
+import os
+from openai import OpenAI
+
+USE_LOCAL = os.getenv("USE_LOCAL_LLM", "true").lower() == "true"
+
+if USE_LOCAL:
+    client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    MODEL  = "qwen2.5:14b"
+else:
+    client = OpenAI(
+        base_url=os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    )
+    MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+```
+
+```bash
+# Aliases en ~/.bash_aliases (ver Capítulo 6)
+alias transcribe-local="USE_LOCAL_LLM=true  python3 ~/projects/transcription-bot/scripts/02_analyze.py"
+alias transcribe-cloud="USE_LOCAL_LLM=false python3 ~/projects/transcription-bot/scripts/02_analyze.py"
+```
+
+> **NOTA:** El modo cloud envía el texto de la transcripción a servidores externos. Para reuniones confidenciales use siempre el modo local. La transcripción con faster-whisper siempre ocurre en el Jetson independientemente del modo elegido para el análisis.
+
+---
+
+> **Próximo paso:** El Capítulo 21 construye la Agencia de Turismo IA — un sistema multi-agente que asesora a viajeros con información actualizada y genera itinerarios personalizados.
