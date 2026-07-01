@@ -6,6 +6,8 @@ Los capítulos anteriores construyeron los servicios del Jetson para uso local: 
 
 **Lo que se construirá:**
 
+<!-- INFOGRAFÍA: Arquitectura AIaaS sobre Jetson AGX Orin — flujo desde cliente en internet hasta servicios de IA internos: Cloudflare Tunnel → Cloudflared → Nginx reverse proxy → JWT middleware → vLLM / STT / TTS / OpenClaw / N8N / Open WebUI, con indicación de puertos y capas de seguridad — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
+
 ```
 Internet (cliente)
     ↓ HTTPS (Cloudflare Tunnel — sin abrir puertos en el router)
@@ -897,6 +899,160 @@ echo "[OK] Jetson en modo local — accesible solo vía SSH (ssh jetson)"
 ```
 
 > **NOTA de seguridad:** Mientras Cloudflare Tunnel esté activo (`systemctl is-active cloudflared`), sus servicios son accesibles desde internet. Verifique siempre el estado del túnel antes de iniciar los motores de inferencia.
+
+---
+
+## 30.10 Ciberseguridad — Buenas Prácticas y Lista de Verificación
+
+Exponer el Jetson a internet introduce riesgos reales si la configuración no se hace correctamente. Esta sección consolida las prácticas de seguridad esenciales para este despliegue.
+
+### 30.10.1 Puertos que NUNCA deben ser accesibles desde internet
+
+Los servicios de IA deben ser accesibles **únicamente a través de Nginx**, no directamente desde internet:
+
+```bash
+# Verificar que los servicios internos NO están expuestos externamente
+# Estos puertos deben estar BLOQUEADOS en el router y en UFW:
+echo "══ Puertos internos (deben ser locales únicamente) ══"
+for puerto in 8000 11434 18789 5678 3000 8880 8888 9100; do
+    netstat -tlnp 2>/dev/null | grep ":$puerto " \
+      && echo "  [LOCAL] Puerto $puerto — verificar que no pasa por Cloudflare Tunnel directamente"
+done
+
+# Verificar que UFW bloquea acceso directo desde red externa
+sudo ufw status verbose | grep -E "8000|11434|18789|5678|3000|8880"
+```
+
+**Reglas UFW para proteger los servicios internos:**
+
+```bash
+# Denegar acceso directo a los servicios de IA desde redes externas
+# (Cloudflare Tunnel conecta por salida, no entrada — no requiere puertos abiertos)
+sudo ufw deny in from any to any port 8000    # vLLM — solo via /api/llm
+sudo ufw deny in from any to any port 11434   # Ollama — solo via /api/llm
+sudo ufw deny in from any to any port 18789   # OpenClaw — solo via /api/agent
+sudo ufw deny in from any to any port 5678    # N8N — solo via /n8n
+sudo ufw deny in from any to any port 3000    # Open WebUI — solo via /
+sudo ufw deny in from any to any port 8880    # kokoro-tts — solo via /api/tts
+sudo ufw deny in from any to any port 9100    # JWT FastAPI — solo acceso interno
+
+# Permitir solo el puerto de Nginx y SSH
+sudo ufw allow 8088/tcp comment "Nginx — Cloudflare apunta aquí"
+sudo ufw allow 22/tcp comment "SSH"
+sudo ufw enable
+
+sudo ufw status verbose
+```
+
+> **IMPORTANTE:** Cloudflare Tunnel establece conexiones **salientes** desde el Jetson hacia la red de Cloudflare. No requiere abrir ningún puerto en el router. Si tiene reglas de port-forwarding previas en el router, elimínelas.
+
+### 30.10.2 Autenticación — Nunca deje endpoints sin protección
+
+Todos los endpoints expuestos a internet deben requerir JWT. Verifique que ninguno responde sin token:
+
+```bash
+# Prueba: intentar acceder a /api/llm sin token — debe devolver 401
+curl -s -o /dev/null -w "%{http_code}" https://jetson.sudominio.com/api/llm/v1/models
+# Salida esperada: 401
+
+# Prueba: intentar acceder a /n8n sin token — debe devolver 401 o redirigir a login
+curl -s -o /dev/null -w "%{http_code}" https://jetson.sudominio.com/n8n/
+# Salida esperada: 302 (redirect a login de N8N) o 401
+```
+
+### 30.10.3 Certificados SSL — Alternativas Gratuitas
+
+Cloudflare Tunnel gestiona el SSL del tráfico entre el cliente y Cloudflare automáticamente. Para servicios internos o acceso directo por IP (ej. desde la LAN), use certificados gratuitos:
+
+**Opción A — mkcert (para LAN / desarrollo):**
+
+```bash
+# Instalar mkcert (ver también §13C.11 — Open WebUI)
+sudo apt install -y libnss3-tools
+curl -Lo /usr/local/bin/mkcert https://dl.filippo.io/mkcert/latest?for=linux/arm64
+chmod +x /usr/local/bin/mkcert
+mkcert -install
+
+# Generar certificado para el Jetson en LAN
+mkcert jetson.local "192.168.*.* " localhost
+# Genera: jetson.local+1.pem y jetson.local+1-key.pem
+```
+
+**Opción B — Let's Encrypt (para dominio público, certbot):**
+
+```bash
+# Solo si el Jetson tiene IP pública y un dominio DNS configurado
+# (No aplica si usa Cloudflare Tunnel — Cloudflare gestiona el TLS)
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d jetson.sudominio.com --non-interactive --agree-tos -m admin@sudominio.com
+
+# Renovación automática (añadir al crontab del sistema)
+echo "0 3 * * 0 root certbot renew --quiet" | sudo tee /etc/cron.d/certbot-renew
+```
+
+**Opción C — ZeroSSL (alternativa gratuita a Let's Encrypt):**
+
+```bash
+# ZeroSSL ofrece 3 certificados SSL gratuitos de 90 días
+# Registro en: https://zerossl.com/
+# Genera un certificado wildcard con validación DNS via panel web
+# Descarga los archivos .crt y .key e instálalos en Nginx
+```
+
+> **CONSEJO:** Si usa Cloudflare Tunnel, el SSL público está gestionado por Cloudflare y no necesita Let's Encrypt ni ZeroSSL para el acceso externo. Use mkcert únicamente para acceso seguro dentro de la LAN.
+
+### 30.10.4 Rotación de Secretos
+
+Los tokens y secretos deben rotarse periódicamente:
+
+```bash
+# Rotar la clave secreta del JWT cada 90 días
+# (Script de rotación — añadir a crontab o ejecutar manualmente)
+
+NEW_SECRET=$(openssl rand -hex 32)
+echo "Nuevo JWT_SECRET: $NEW_SECRET"
+echo ""
+echo "Actualizar en:"
+echo "  1. ~/projects/jwt-auth/auth_service.py  (linea JWT_SECRET)"
+echo "  2. ~/.bash_aliases  (export JWT_SECRET=...)"
+echo "  3. Reiniciar el servicio JWT: sudo systemctl restart jwt-auth"
+```
+
+### 30.10.5 Lista de Verificación de Seguridad
+
+Antes de dejar el Jetson expuesto a internet de forma permanente, verifique cada punto:
+
+```bash
+echo "══ Lista de Verificación de Seguridad — Capítulo 30 ══"
+
+# 1. Cloudflare Tunnel activo
+systemctl is-active cloudflared > /dev/null 2>&1 \
+  && echo "  [OK] Cloudflare Tunnel activo" \
+  || echo "  [WARN] Cloudflare Tunnel no está corriendo"
+
+# 2. JWT middleware activo
+curl -sf http://localhost:9100/health > /dev/null \
+  && echo "  [OK] JWT middleware respondiendo" \
+  || echo "  [WARN] JWT middleware no activo"
+
+# 3. Nginx activo
+systemctl is-active nginx > /dev/null 2>&1 \
+  && echo "  [OK] Nginx activo" \
+  || echo "  [WARN] Nginx no está corriendo"
+
+# 4. Verificar que /api/llm requiere autenticación
+CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8088/api/llm/v1/models)
+[ "$CODE" = "401" ] \
+  && echo "  [OK] /api/llm requiere autenticación (401)" \
+  || echo "  [WARN] /api/llm responde $CODE — verificar JWT middleware"
+
+# 5. UFW activo
+sudo ufw status | grep -q "Status: active" \
+  && echo "  [OK] UFW activo" \
+  || echo "  [WARN] UFW inactivo — ejecutar: sudo ufw enable"
+
+echo "══════════════════════════════════════════════════════"
+```
 
 ---
 

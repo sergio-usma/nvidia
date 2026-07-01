@@ -1,12 +1,10 @@
-# Capítulo 32 — Proyecto Independiente: Daily Prayers — Automatización de YouTube Shorts y TikTok
+# Capstone 02 — Automatización de Contenido en Video con IA
 
 ## Introducción
 
-Un youtuber japonés no ha abierto él mismo su software de edición en 10 meses. Un equipo de 7 agentes de IA construye cada video. Su canal genera $180.000 al mes.
+Este capítulo demuestra cómo construir un sistema de producción de contenido en video completamente automatizado sobre el Jetson AGX Orin 64GB — sin intervención humana en el proceso de creación, con costo operativo menor a $1/mes en electricidad.
 
-Este capítulo replica esa arquitectura, adaptada a un caso de uso real y verificable: el canal **"Daily Prayers"** — videos cortos espirituales de 30–40 segundos, publicados diariamente en YouTube Shorts y TikTok, basados en los Salmos y Proverbios de la Biblia, con una voz en español latino, imágenes fotorrealistas de personas de todas las razas y culturas, y sin afiliación a ninguna religión específica.
-
-La inspiración directa es **OSSA.AI** — un sistema de creación de contenido automatizado. La diferencia: aquí todo corre localmente en el Jetson AGX Orin 64GB, completamente offline, sin costos de API de IA.
+El caso de uso implementado es el canal **"Daily Prayers"** — videos cortos espirituales de 30–40 segundos, publicados diariamente en YouTube Shorts y TikTok, basados en los Salmos y Proverbios de la Biblia, con voz en español latino, imágenes fotorrealistas generadas con IA y sin afiliación a ninguna religión específica. La arquitectura es genérica y puede adaptarse a cualquier tipo de canal de contenido: recetas de cocina, noticias locales, motivación diaria, tutoriales técnicos, etc.
 
 **Los 7 agentes del sistema:**
 
@@ -2015,6 +2013,98 @@ sudo apt install -y ffmpeg
 
 ---
 
+---
+
+## 32.15 Escalabilidad y Extensiones
+
+### 32.15.1 Advertencia de Memoria — Qué Cargar y Cuándo
+
+El pipeline de video usa múltiples servicios pesados. El Jetson tiene **~59 GB disponibles** (64 GB menos el OS base), pero no todos los agentes deben estar activos simultáneamente:
+
+| Fase del pipeline | Agentes activos | VRAM/RAM usada | VRAM libre aprox. |
+|---|---|---|---|
+| Generación de script (Agente 1) | Ollama Qwen3.5-4B | ~5 GB | ~54 GB |
+| Generación de imagen (Agente 2) | SD WebUI | ~8–12 GB | ~42–46 GB |
+| TTS + Subtítulos (Agente 3) | kokoro-tts + faster-whisper | ~4 GB | ~50 GB |
+| Ensamble de video (Agente 4) | ffmpeg (CPU) | ~1 GB RAM | ~58 GB |
+| **Pipeline completo encadenado** | **Secuencial (no simultáneo)** | **~12 GB pico** | **~47 GB** |
+
+> **IMPORTANTE:** Los agentes se ejecutan en secuencia, no en paralelo. El orquestador (§32.8) arranca cada servicio cuando lo necesita y lo detiene al terminar. Nunca deje SD WebUI y Ollama corriendo simultáneamente si no los está usando — SD WebUI solo consume ~8 GB cuando está activo pero ocupa el bus de memoria de la GPU.
+
+**Script de verificación de memoria antes de ejecutar el pipeline:**
+
+```bash
+# Añadir al orquestador antes de iniciar cada video
+RAM_LIBRE=$(free -g | awk '/^Mem:/{print $7}')
+if [ "$RAM_LIBRE" -lt 20 ]; then
+    echo "[WARN] Menos de 20 GB libres ($RAM_LIBRE GB) — ejecutando limpieza"
+    docker stop kokoro-tts sd-webui 2>/dev/null
+    sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
+    sleep 2
+fi
+```
+
+### 32.15.2 Evaluación de Backend LLM para Generación de Scripts
+
+El Agente 1 (generación de scripts) es el único que usa un LLM. Los scripts de video son cortos (~200 palabras), lo que limita la ventana de contexto necesaria:
+
+| Backend | Modelo recomendado | VRAM | Velocidad script (~200 palabras) | Calidad |
+|---|---|---|---|---|
+| **Ollama** (actual) | Qwen3.5-4B | ~5 GB | ~15–25 seg | Alta |
+| **llama.cpp** | Qwen3.5-4B Q4_K_M | ~2.5 GB | **~8–12 seg** | Alta |
+| **llama.cpp** | Mistral-7B Q4_K_M | ~4 GB | ~12–18 seg | Alta |
+| **vLLM** | Qwen3.5-7B | ~7 GB | ~20 seg (startup alto) | Muy Alta |
+
+> **RECOMENDACIÓN:** Para este pipeline, **llama.cpp con Qwen3.5-4B Q4_K_M** es la mejor opción: usa la mitad de VRAM que Ollama (dejando más para SD WebUI), genera el script en la mitad del tiempo, y la calidad del script es equivalente dada la corta longitud del output. vLLM no aporta ventaja para este caso de un solo usuario.
+
+**Configurar llama.cpp como reemplazo de Ollama (Agente 1):**
+
+```bash
+# Descargar modelo GGUF
+huggingface-cli download Qwen/Qwen3.5-4B-GGUF \
+  --include "Qwen3.5-4B-Q4_K_M.gguf" \
+  --local-dir ~/data/models/gguf/
+
+# Lanzar servidor en puerto alternativo
+~/bin/llama-server \
+  --model ~/data/models/gguf/Qwen3.5-4B-Q4_K_M.gguf \
+  --ctx-size 2048 \
+  --n-gpu-layers 99 \
+  --port 11435 \
+  --host 0.0.0.0 &
+
+# En agent_01_script_generator.py — cambiar URL de Ollama a llama.cpp
+# OLLAMA_URL = "http://localhost:11434"   ← original
+OLLAMA_URL = "http://localhost:11435"   # ← llama.cpp server
+```
+
+### 32.15.3 Extensión a Otros Tipos de Canal
+
+La arquitectura es completamente adaptable. Solo es necesario cambiar el Agente 1 (generador de scripts) y la parrilla de contenidos en Google Sheets:
+
+| Tipo de canal | Cambios en Agente 1 | Parrilla de contenidos |
+|---|---|---|
+| Recetas de cocina | Prompt: "genera receta de 30 seg para..." | Base de datos de ingredientes |
+| Noticias locales | Prompt: "resume esta noticia en 40 seg..." | RSS feed de fuentes locales |
+| Frases motivacionales | Prompt: "crea reflexión de 30 seg sobre..." | CSV con temas diarios |
+| Tutoriales técnicos | Prompt: "explica concepto X en 45 seg..." | Lista de conceptos |
+
+```python
+# En agent_01_script_generator.py — sistema parametrizable
+CHANNEL_TYPE = os.getenv("CHANNEL_TYPE", "prayers")  # prayers | cooking | news | motivation
+
+PROMPTS = {
+    "prayers": "Genera un script de 30-40 segundos basado en este versículo: {versiculo}",
+    "cooking": "Genera un script de 45 segundos para esta receta: {receta}",
+    "news":    "Resume esta noticia en 30 segundos para video: {noticia}",
+    "motivation": "Crea una reflexión motivacional de 35 segundos sobre: {tema}",
+}
+
+prompt = PROMPTS.get(CHANNEL_TYPE, PROMPTS["prayers"])
+```
+
+---
+
 ## Resumen del Capítulo
 
 El canal **Daily Prayers** es un negocio de contenido completamente automatizado funcionando desde el Jetson AGX Orin 64GB:
@@ -2026,6 +2116,6 @@ El canal **Daily Prayers** es un negocio de contenido completamente automatizado
 - **Costo operativo**: ~$0.90/mes en electricidad para producir 30 videos mensuales
 - **Tiempo de producción**: ~22 minutos por video, ejecutado automáticamente a las 7 AM
 
-Esto es exactamente lo que Asia descubrió antes que el resto del mundo: no construyes un equipo de producción de video, construyes 7 agentes pequeños, cada uno haciendo un trabajo, y los conectas entre sí. La diferencia es que aquí el servidor no está en la nube — está en tu escritorio, consume 30 vatios, y sus datos no salen de tu red local.
+No se construye un equipo de producción de video — se construyen 7 agentes pequeños, cada uno haciendo un trabajo, y se conectan entre sí. La diferencia con las soluciones cloud es que aquí el servidor está en su escritorio, consume 30 vatios, y sus datos no salen de su red local.
 
 **Este es el poder real de la computación en el borde con IA.**

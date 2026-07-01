@@ -2,7 +2,9 @@
 
 ## Introducción
 
-Este capítulo reúne todos los scripts de mantenimiento, monitoreo y limpieza que hacen que el Jetson funcione de forma fiable a lo largo del tiempo. Es una referencia transversal que los demás capítulos de  citan constantemente.
+> **NOTA DE ESTRUCTURA:** El contenido de este capítulo se integrará en el **Apéndice** del libro en la versión final impresa. El Apéndice consolida todos los scripts de mantenimiento, aliases y procedimientos de referencia en un único lugar de fácil consulta. Si ya completó los proyectos de los capítulos anteriores y desea continuar con los capítulos avanzados, puede pasar directamente al **Capítulo 30 — Microservicios y Despliegue SAAS**.
+
+Este capítulo reúne todos los scripts de mantenimiento, monitoreo y limpieza que hacen que el Jetson funcione de forma fiable a lo largo del tiempo. Es una referencia transversal que los demás capítulos citan constantemente.
 
 Un sistema de inferencia que no se mantiene acumula problemas: contenedores huérfanos que ocupan RAM, imágenes antiguas que llenan el disco, temperaturas elevadas que reducen el rendimiento, logs que crecen indefinidamente. Los scripts de este capítulo resuelven todos esos escenarios.
 

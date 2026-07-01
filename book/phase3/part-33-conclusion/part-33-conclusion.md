@@ -199,6 +199,38 @@ Estado: LISTO PARA PRODUCCION
 
 ---
 
+## Resumen Final del Libro
+
+Ha completado la construcción de un ecosistema de inteligencia artificial autónomo y completamente offline sobre el NVIDIA Jetson AGX Orin 64GB con JetPack 7.2.
+
+**Lo que construyó a lo largo de los capítulos:**
+
+| Capa | Componentes |
+|------|-------------|
+| **Sistema** | Ubuntu 24.04, CUDA 13.2.1, modo 15W/30W/MAXN, arranque limpio |
+| **Inferencia** | vLLM (Qwen3.5-35B, Gemma4), llama.cpp, Ollama — todos via containers NVIDIA ARM64 |
+| **Agentes** | OpenClaw + NemoClaw, tool calling, WhatsApp bridge |
+| **Interfaces** | Open WebUI, Flask frontend, REST APIs compatibles OpenAI |
+| **Automatización** | N8N + PostgreSQL, webhooks, email, redes sociales |
+| **Visión** | Tesseract OCR, EasyOCR, Gemma4-E4B captioning, nanoowl detección |
+| **Voz** | faster-whisper STT, kokoro-tts, piper-tts, pipeline offline <3s |
+| **Infraestructura** | Nginx reverse proxy, JWT auth, Cloudflare Tunnel, Uptime Kuma |
+| **Capstone 01** | Agencia IA completa: Flask + OpenClaw + N8N + vLLM |
+| **Capstone 02** | Canal de contenido en video automatizado: 7 agentes + SD WebUI + YouTube/TikTok |
+
+**Presupuesto de energía real:**
+
+| Modo de operación | Consumo | Costo a $0.10/kWh |
+|---|---|---|
+| En espera (agentes listos, sin generar) | 30W | $0.003/hora |
+| Durante generación activa (vLLM 35B) | 50W | $0.005/hora |
+| Disponibilidad 24/7 | — | ~$2.50/mes |
+| Producción de 30 videos mensuales | — | ~$0.90/mes |
+
+El Jetson AGX Orin 64GB no es un dispositivo de demostración — es un servidor de IA de producción en el borde de la red, capaz de ofrecer servicios de inteligencia artificial con calidad de datacenter, a una fracción del costo de las APIs en la nube, sin depender de conectividad a internet, y con control total sobre los datos y los modelos.
+
+---
+
 ## VERIFICACIÓN FINAL DEL LIBRO
 
 ```bash

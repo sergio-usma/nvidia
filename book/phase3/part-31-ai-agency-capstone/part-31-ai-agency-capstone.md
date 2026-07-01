@@ -8,6 +8,8 @@ Un cliente visita la web de la agencia, describe su necesidad, el sistema lo pro
 
 **Arquitectura del sistema completo:**
 
+<!-- INFOGRAFÍA: Arquitectura Capstone — Agencia de IA completa sobre Jetson AGX Orin: flujo desde cliente web (Cloudflare Tunnel → Nginx → Flask) hasta orquestador OpenClaw y modelos de inferencia (vLLM Qwen3.5-35B, Ollama Qwen3.5-4B), con automatización N8N y pipeline de voz opcional — presupuesto de RAM por componente incluido — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
+
 ```
 Internet
     ↓ HTTPS (Cloudflare Tunnel — Capítulo 30)
@@ -1041,27 +1043,92 @@ export N8N_WEBHOOK_URL="http://$JETSON_IP:5678/webhook/intake"
 
 ---
 
+## 31.8 Escalabilidad — Modo Mixto y Gestión de Memoria
+
+### 31.8.1 Presupuesto de Memoria — Qué Cargar y Cuándo
+
+El Jetson AGX Orin 64GB tiene **~59 GB disponibles** para aplicaciones (el OS base consume ~12 GB del sistema de archivos unificado CPU/GPU). La agencia completa en modo activo consume ~46.5 GB, dejando **~17.5 GB de margen** — suficiente para un servicio adicional, pero no para dos modelos grandes simultáneos.
+
+**Guía de gestión de memoria:**
+
+| Estado de la agencia | Qué cargar | Qué detener | RAM libre aprox. |
+|---|---|---|---|
+| En espera (sin clientes activos) | Ollama 4B + OpenClaw + N8N + Flask | vLLM 35B detenido | ~43 GB |
+| Procesando proyecto pequeño | Ollama 4B (activo) | vLLM 35B | ~38 GB |
+| Procesando proyecto complejo | vLLM 35B (activo) + Ollama 4B | — | ~17 GB |
+| Máxima capacidad | vLLM 35B + Ollama 4B + STT + TTS | Uptime Kuma, logs | ~10 GB |
+
+> **ADVERTENCIA:** Cargar vLLM 35B + Ollama 7B + faster-whisper + kokoro-tts simultáneamente supera los 59 GB disponibles y generará errores OOM. Si necesita inferencia de alta calidad más voz, use Ollama con el modelo 4B durante la síntesis de voz y cambie a vLLM solo durante la generación de contenido.
+
+**Script de gestión dinámica de memoria:**
+
+```bash
+# agency-mem.sh — libera vLLM cuando no hay proyectos activos
+# Añadir al crontab: */5 * * * * ~/scripts/agency-mem.sh
+
+#!/bin/bash
+PROYECTOS_ACTIVOS=$(curl -s http://localhost:5000/api/status | python3 -c \
+  "import sys,json; d=json.load(sys.stdin); print(len([p for p in d.get('projects',[]) if p['status']=='processing']))" 2>/dev/null || echo "0")
+
+if [ "$PROYECTOS_ACTIVOS" -eq 0 ]; then
+    # Sin proyectos activos — detener vLLM para liberar ~26 GB
+    docker stop vllm-agency 2>/dev/null && echo "[$(date)] vLLM detenido — sin proyectos activos"
+fi
+```
+
+### 31.8.2 Modo Mixto — Integración con OpenRouter
+
+Para proyectos de cliente que requieran capacidades que superen los modelos locales (análisis de documentos muy largos, traducción a idiomas poco representados, procesamiento multilingüe avanzado), integre OpenRouter como backend alternativo:
+
+```python
+import os
+from openai import OpenAI
+
+USE_LOCAL = os.getenv("USE_LOCAL_LLM", "true").lower() == "true"
+
+if USE_LOCAL:
+    # vLLM local — máxima privacidad de datos del cliente
+    client = OpenAI(base_url="http://localhost:8000/v1", api_key=os.getenv("VLLM_API_KEY", ""))
+    MODEL  = "qwen3.5-35b"
+else:
+    # OpenRouter — modelos de mayor capacidad cuando se requieran
+    client = OpenAI(
+        base_url=os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    )
+    MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+```
+
+```bash
+# Aliases en ~/.bash_aliases (ver Capítulo 6)
+alias agency-local="USE_LOCAL_LLM=true"
+alias agency-cloud="USE_LOCAL_LLM=false"
+```
+
+> **NOTA:** El modo cloud envía los briefs de los clientes a servidores externos. Informe a sus clientes si sus datos serán procesados fuera de la red local. Para clientes con requerimientos de confidencialidad estrictos, use siempre el modo local.
+
+### 31.8.3 Evaluación de Capacidad de Clientes Simultáneos
+
+La arquitectura actual soporta **un proyecto activo a la vez** con el LLM de 35B. Para servir múltiples clientes simultáneamente, configure vLLM con continuous batching:
+
+```bash
+# vLLM con batching para múltiples requests simultáneos
+docker run -d --rm --runtime nvidia \
+  --name vllm-agency \
+  -p 8000:8000 \
+  -v ~/data/models:/models \
+  dustynv/vllm:r39.2.0 \
+  --model /models/qwen3.5-35b \
+  --max-model-len 32768 \
+  --gpu-memory-utilization 0.60 \
+  --max-num-seqs 4   # hasta 4 requests simultáneos
+
+# Monitorear throughput
+curl -s http://localhost:8000/metrics | grep vllm_requests
+```
+
+---
+
 ## Resumen Final del Libro
 
-Ha completado la construcción de un ecosistema de inteligencia artificial autónomo y completamente offline sobre el NVIDIA Jetson AGX Orin 64GB con JetPack 7.2.
-
-**Lo que construyó a lo largo de los 31 capítulos:**
-
-| Capa | Componentes |
-|------|-------------|
-| **Sistema** | Ubuntu 24.04, CUDA 13.2.1, modo 15W/30W/MAXN, arranque limpio |
-| **Inferencia** | vLLM (Qwen3.5-35B, Gemma4), llama.cpp, Ollama — todos via containers NVIDIA ARM64 |
-| **Agentes** | OpenClaw + NemoClaw, tool calling, WhatsApp bridge |
-| **Interfaces** | Open WebUI, Flask frontend, REST APIs compatibles OpenAI |
-| **Automatización** | N8N + PostgreSQL, webhooks, email, redes sociales |
-| **Visión** | Tesseract OCR, EasyOCR, Gemma4-E4B captioning, nanoowl detección |
-| **Voz** | faster-whisper STT, kokoro-tts, piper-tts, pipeline offline <3s |
-| **Infraestructura** | Nginx reverse proxy, JWT auth, Cloudflare Tunnel, Uptime Kuma |
-| **Capstone** | Agencia IA completa: Flask + OpenClaw + N8N + vLLM |
-
-**Presupuesto de energía real de la agencia:**
-- En espera (entre proyectos): 30W = **$0.003/hora** a $0.10/kWh
-- Durante generación activa: 50W = **$0.005/hora**
-- Disponibilidad 24/7: ~$2.50/mes en electricidad
-
-El Jetson AGX Orin 64GB no es un dispositivo de demostración — es un servidor de IA de producción en el borde de la red, capaz de ofrecer servicios de inteligencia artificial con calidad de datacenter, a una fracción del costo de las APIs en la nube, sin depender de conectividad a internet, y con control total sobre los datos y los modelos.
+> El resumen completo del libro se encuentra en el **Capítulo 33 — Conclusiones**. Continúe allí para el balance integral de todo lo construido y los próximos pasos recomendados.
