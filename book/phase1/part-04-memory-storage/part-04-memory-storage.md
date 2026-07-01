@@ -21,7 +21,7 @@ La solución es un sistema de overflow en dos capas: **ZRAM** (swap comprimido e
 
 ## 4.1 Arquitectura de Memoria del Jetson
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Arquitectura de Memoria Unificada del Jetson* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Arquitectura de Memoria Unificada del Jetson — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 Antes de configurar el swap, conviene entender la jerarquía de memoria que usará el sistema:

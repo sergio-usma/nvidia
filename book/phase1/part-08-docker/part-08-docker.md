@@ -285,7 +285,7 @@ Build cuda_13.2...
 
 ## 8.3 Arquitectura de GPU en Contenedores Jetson
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Arquitectura de GPU en Contenedores Jetson* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Arquitectura de GPU en Contenedores Jetson — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 Entender cómo Docker accede al GPU del Jetson evita errores comunes:

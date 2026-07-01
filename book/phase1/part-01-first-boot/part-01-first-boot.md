@@ -23,7 +23,7 @@ Esta parte cubre los pasos que van desde un Jetson AGX Orin recién sacado de la
 Si su Jetson tiene JetPack 6.x instalado con configuraciones que quiere conservar, respalde lo necesario antes de flashear. El proceso de flash borra completamente el almacenamiento interno.
 
 ```bash
-# Ejecutar en el Jetson con JP 6.x ANTES de flashear [VERIFICADO EN JP 6.2]
+# Ejecutar en el Jetson con JP 6.x ANTES de flashear 
 mkdir -p ~/jp62_backup
 
 # 1. Configuración SSH (claves, authorized_keys)
@@ -85,7 +85,7 @@ Utilice **Rufus** (rufus.ie), que es gratuito y maneja correctamente las ISOs de
 
 ### 1.2.3 Poner el Jetson en modo Force Recovery
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Pasos para Poner el Jetson en Modo Force Recovery* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Pasos para Poner el Jetson en Modo Force Recovery — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 El Jetson debe estar en modo especial de recuperación para arrancar desde USB:
@@ -596,7 +596,7 @@ echo "[OK] Autenticación por contraseña deshabilitada"
 Al final de esta parte, ejecute la verificación completa desde SSH en Windows:
 
 ```bash
-# Verificación completa del estado tras Parte 1
+# Verificación completa del estado tras Capítulo 1
 echo ""
 echo "╔══════════════════════════════════════════════╗"
 echo "║     VERIFICACIÓN CAPÍTULO 1 — RESULTADO         ║"

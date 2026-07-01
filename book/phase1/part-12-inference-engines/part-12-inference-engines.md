@@ -255,6 +255,8 @@ sudo nvpmodel -m 0    # MAXN (50W) — máximo rendimiento
 sudo jetson_clocks
 ```
 
+> **NOTA:** Al ejecutar `sudo nvpmodel -m X`, el Jetson mostrará un diálogo interactivo solicitando confirmación de reinicio (escriba `yes`). Tras el reinicio, el nuevo modo quedará activo. Consulte el Capítulo 5 para detalles sobre los modos de energía disponibles.
+
 ### 12.1.6 Verificar acceso a la GPU
 
 ```bash

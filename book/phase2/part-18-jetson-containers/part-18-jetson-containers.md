@@ -23,7 +23,7 @@ El resultado: en lugar de compilar Whisper desde fuente (3–4 horas), ejecuta u
 
 ## 18.1 Por qué no usar Docker Hub genérico
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Por Qué jetson-containers en Lugar de Docker Hub Genérico* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Por Qué jetson-containers en Lugar de Docker Hub Genérico — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 Las imágenes de Docker Hub estándar (como `openai/whisper` o `pytorch/pytorch`) se compilan para **x86_64 Linux**. El Jetson tiene una arquitectura completamente diferente:
@@ -211,7 +211,7 @@ docker pull dustynv/<servicio>:r36.4.0
 
 ## 18.4 Mapa de Puertos — Referencia Completa
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Mapa de Puertos — Todos los Servicios del Jetson* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Mapa de Puertos — Todos los Servicios del Jetson — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 Para evitar conflictos entre los servicios de inferencia y los contenedores de proyectos avanzados:

@@ -24,7 +24,7 @@ La arquitectura de arranque limpio resuelve esto con un principio simple: **el J
 
 ### 15.0.1 Estado Objetivo del Sistema tras el Boot
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Estado Objetivo del Sistema tras Boot Limpio* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Estado Objetivo del Sistema tras Boot Limpio — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 ```
@@ -56,7 +56,7 @@ Usuario conecta por SSH
         ├─→ alias vllm-start   → lanza docker run (vLLM)
         ├─→ alias llama-start  → lanza docker run (llama.cpp)
         ├─→ alias ollama-start → sudo systemctl start ollama
-        └─→ combinación        → switch-model.sh (Parte 12)
+        └─→ combinación        → switch-model.sh (Capítulo 12)
 ```
 
 ### 15.0.2 Procedimiento: Configurar el Arranque Limpio

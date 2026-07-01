@@ -343,7 +343,7 @@ Este pipeline completo recibe una pregunta via webhook, la procesa con el LLM lo
 
 ### 27.5.1 Diseño del Pipeline
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Diseño del Pipeline: Webhook → LLM → Email* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Diseño del Pipeline: Webhook → LLM → Email — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 ```
@@ -528,7 +528,7 @@ curl -s -X POST http://localhost:18789/api/agent/run \
 
 ## 27.7 Pipeline de Procesamiento de Email Entrante
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Pipeline: Email Entrante → LLM → Respuesta Automática* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Pipeline: Email Entrante → LLM → Respuesta Automática — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 Este pipeline monitorea una bandeja de entrada de Gmail y procesa cada email con el LLM:
 
@@ -708,7 +708,7 @@ pwr-15w          # modo ahorro energético
 
 ## 27.10 Integración Avanzada: N8N + OpenClaw + vLLM
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Integración: N8N + OpenClaw + vLLM* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Integración: N8N + OpenClaw + vLLM — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 El stack completo de automatización agéntica combina N8N como orquestador con OpenClaw como agente de razonamiento:

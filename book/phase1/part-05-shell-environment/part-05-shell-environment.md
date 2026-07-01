@@ -30,7 +30,7 @@ mkdir -p ~/projects                        # repos clonados (device skills, etc.
 mkdir -p ~/jetson-ai-data/{outputs,benchmarks,logs}  # datos de trabajo
 mkdir -p /var/tmp/openclaw-compile-cache   # caché Node.js para OpenClaw
 
-# Si NVMe está montado en /data (de la Parte 4):
+# Si NVMe está montado en /data (de la Capítulo 4):
 mkdir -p /data/models/{huggingface,gguf,ollama}
 
 # Verificar
@@ -69,7 +69,7 @@ export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/tegra:$LD_LIBRARY_PATH
 export MAKEFLAGS="-j$(nproc)"
 export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
 
-# ── HuggingFace (si no está ya en PATH global de la Parte 2) ─────
+# ── HuggingFace (si no está ya en PATH global de la Capítulo 2) ─────
 export HF_HUB_ENABLE_HF_TRANSFER=1    # descargas más rápidas con hf_transfer
 
 # ── Directorios de trabajo ────────────────────────────────────────
@@ -279,8 +279,8 @@ Ubuntu 24.04 protege su instalación de Python del sistema y bloquea `pip instal
 ├── bin/hf                   ← comando para descargar modelos HuggingFace
 ├── lib/python3.12/
 │   └── site-packages/
-│       ├── torch/           ← PyTorch compilado para CUDA 13, sm_87 (Parte 11)
-│       ├── torchvision/     ← compilado desde fuente para sm_87 (Parte 11)
+│       ├── torch/           ← PyTorch compilado para CUDA 13, sm_87 (Capítulo 11)
+│       ├── torchvision/     ← compilado desde fuente para sm_87 (Capítulo 11)
 │       ├── huggingface_hub/ ← cliente HF para descargar modelos
 │       └── numpy, requests, ...
 ```
@@ -357,7 +357,7 @@ echo "[OK] Paquetes base instalados"
 ### 5.4.4 Autenticar HuggingFace en el venv
 
 ```bash
-# Con el venv activo, autenticar con el token configurado en Parte 2
+# Con el venv activo, autenticar con el token configurado en Capítulo 2
 #
 hf auth login --token "$HF_TOKEN"
 ```

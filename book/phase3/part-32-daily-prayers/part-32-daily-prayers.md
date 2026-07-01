@@ -28,7 +28,7 @@ La inspiración directa es **OSSA.AI** — un sistema de creación de contenido 
 
 ## 32.1 Arquitectura del Pipeline
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Arquitectura del Pipeline de 7 Agentes — Daily Prayers* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Arquitectura del Pipeline de 7 Agentes — Daily Prayers — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 ```

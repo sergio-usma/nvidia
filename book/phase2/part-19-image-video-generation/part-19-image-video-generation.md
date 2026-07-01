@@ -11,7 +11,7 @@ Este capítulo instala y configura dos herramientas complementarias:
 
 Ambas usan la misma colección de modelos (checkpoints, LoRA, VAE) almacenada en `~/models/` — así descarga cada modelo una sola vez y lo usa en cualquiera de los dos sistemas.
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Arquitectura de generación de imágenes en Jetson: modelos compartidos entre ComfyUI y SD WebUI* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Arquitectura de generación de imágenes en Jetson: modelos compartidos entre ComfyUI y SD WebUI — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 **Prerrequisitos:**
 - Capítulo 8 completado (Docker + NVIDIA Container Toolkit)

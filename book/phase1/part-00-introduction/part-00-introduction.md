@@ -186,7 +186,7 @@ Si viene de una instalación anterior con JetPack 6.2, esta tabla resume los cam
 
 ## 0.4 Arquitectura del Sistema al Final de Este Libro
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Arquitectura del Sistema al Final del Libro* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Arquitectura del Sistema al Final del Libro — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 Al completar todos los capítulos, su Jetson quedará configurado como se muestra a continuación. Tenga presente esta imagen al seguir el tutorial — cada parte construye un componente de este sistema final:
@@ -277,7 +277,7 @@ echo "OS:      $(lsb_release -d | cut -f2)" && \
 echo "Kernel:  $(uname -r)" && \
 echo "JetPack: $(dpkg -l | grep 'nvidia-jetpack ' | awk '{print $3}' 2>/dev/null || echo 'verificar con: dpkg -l | grep jetpack')" && \
 echo "L4T:     $(cat /etc/nv_tegra_release 2>/dev/null | head -1 || echo 'ver /etc/nv_tegra_release')" && \
-echo "CUDA:    $(nvcc --version 2>/dev/null | grep release | awk '{print $5}' | tr -d ',' || echo 'nvcc no en PATH — ver Parte 2')" && \
+echo "CUDA:    $(nvcc --version 2>/dev/null | grep release | awk '{print $5}' | tr -d ',' || echo 'nvcc no en PATH — ver Capítulo 2')" && \
 echo "Python:  $(python3 --version)" && \
 echo "RAM:     $(free -h | awk '/^Mem:/{print $2}') total, $(free -h | awk '/^Mem:/{print $7}') libres" && \
 echo "IP:      $(hostname -I | awk '{print $1}')" && \

@@ -16,7 +16,7 @@ Este capítulo cubre únicamente OpenClaw. Para NemoClaw (capa de seguridad), co
 
 ## 13A.1 Arquitectura de OpenClaw en JetPack 7.2
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Arquitectura de OpenClaw en JetPack 7.2* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Arquitectura de OpenClaw en JetPack 7.2 — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 ```
@@ -91,7 +91,7 @@ OpenClaw necesita un modelo respondiendo en el momento de arranque del gateway. 
 curl -sf http://localhost:8000/v1/models > /dev/null && echo "[OK] vLLM activo en :8000" \
   || curl -sf http://localhost:8080/v1/models > /dev/null && echo "[OK] llama.cpp activo en :8080" \
   || curl -sf http://localhost:11434/api/tags > /dev/null && echo "[OK] Ollama activo en :11434" \
-  || echo "[ERROR] Sin motor activo — inicie uno antes de configurar OpenClaw (ver Parte 12)"
+  || echo "[ERROR] Sin motor activo — inicie uno antes de configurar OpenClaw (ver Capítulo 12)"
 ```
 
 ---

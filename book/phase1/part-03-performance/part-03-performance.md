@@ -20,7 +20,7 @@ Esta parte explica los dos mecanismos de control de rendimiento del Jetson, cuá
 
 ## 3.1 Dos Mecanismos de Control Independientes
 
-> **[INFOGRAFÍA — VERSIÓN IMPRESA]** *Los Dos Mecanismos de Control de Rendimiento* — Se recomienda convertir este esquema en una infografía de alta resolución para la versión KDP. Requisitos: texto mínimo 10 pt, paleta teal `#0F3D3D` / accent `#1D9CB8`, formato monocromático disponible para impresión B&W.
+<!-- INFOGRAFÍA: Los Dos Mecanismos de Control de Rendimiento — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
 El rendimiento del Jetson se controla con dos herramientas complementarias:
@@ -80,8 +80,23 @@ sudo nvpmodel -q --verbose | grep -E "MODE_NAME|TDP"
 ```bash
 # Cambiar a MAXN (máximo rendimiento)
 sudo nvpmodel -m 0
+```
 
-# Verificar cambio
+> **ATENCIÓN — Diálogo de reinicio:** Al cambiar de modo de energía, el Jetson mostrará un diálogo interactivo solicitando confirmación de reinicio. Este es el comportamiento esperado:
+>
+> ```
+> jetson@jetson-orin:~$ sudo nvpmodel -m 0
+> [sudo] password for jetson:
+> NVPM WARN: Golden image context is already created
+> NVPM WARN: Reboot required for changing to this power mode: 0
+> NVPM WARN: DO YOU WANT TO REBOOT NOW? enter YES/yes to confirm:
+> yes
+> ```
+>
+> Escriba `yes` y presione Enter para confirmar el reinicio. El Jetson arrancará en el nuevo modo de energía automáticamente.
+
+```bash
+# Verificar cambio (tras el reinicio)
 sudo nvpmodel -q
 ```
 

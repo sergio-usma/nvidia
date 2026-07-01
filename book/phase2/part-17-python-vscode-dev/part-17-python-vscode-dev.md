@@ -241,13 +241,13 @@ Antes de iniciar este experimento, verifique el estado del sistema:
 ```bash
 # En terminal del Jetson
 free -h | awk '/^Mem:/{printf "RAM: %s usados de %s, %s libres\n", $3, $2, $7}'
-motors-status   # alias de Parte 15
+motors-status   # alias de Capítulo 15
 ```
 
 Si Ollama no está activo, inícielo:
 
 ```bash
-ollama-start    # alias de Parte 12, o:
+ollama-start    # alias de Capítulo 12, o:
 sudo systemctl start ollama
 ```
 
@@ -276,7 +276,7 @@ for m in modelos.data:
 
 # Generar una respuesta
 respuesta = client.chat.completions.create(
-    model="qwen3:7b",  # usar un modelo instalado en la Parte 12
+    model="qwen3:7b",  # usar un modelo instalado en la Capítulo 12
     messages=[
         {"role": "system", "content": "Eres un experto en IA y computación embebida."},
         {"role": "user", "content": "¿Qué ventajas tiene la memoria unificada del Jetson para la inferencia de LLMs?"}
@@ -344,8 +344,8 @@ vLLM expone exactamente la misma API que OpenAI, con el mismo SDK. Solo cambia e
 ### 17.6.1 Prerrequisitos de Memoria
 
 ```bash
-# Lanzar vLLM si no está activo (alias de Parte 15)
-start-qwen35    # lanza el modelo 35B de Parte 14
+# Lanzar vLLM si no está activo (alias de Capítulo 15)
+start-qwen35    # lanza el modelo 35B de Capítulo 14
 # o start-qwen4b para el modelo de 4B (más rápido, usa menos RAM)
 ```
 

@@ -430,7 +430,7 @@ echo "TORCH_CUDA_ARCH:     $TORCH_CUDA_ARCH_LIST"
 nvcc --version | grep "release"
 
 # Verificar que Docker puede ver las variables de sistema
-# (esto se comprueba plenamente en la Parte 8, cuando Docker esté instalado)
+# (esto se comprueba plenamente en la Capítulo 8, cuando Docker esté instalado)
 ```
 
 ```
@@ -608,7 +608,7 @@ ssh -T git@github.com 2>&1 | grep -E "success|Hi" && echo "[OK] GitHub SSH funci
 
 echo ""
 echo "── Variables de entorno ──"
-[ -n "$HF_TOKEN" ]          && echo "[OK] HF_TOKEN configurado"  || echo "[WARN]  HF_TOKEN vacío (necesario en Parte 11)"
+[ -n "$HF_TOKEN" ]          && echo "[OK] HF_TOKEN configurado"  || echo "[WARN]  HF_TOKEN vacío (necesario en Capítulo 11)"
 [ -n "$VLLM_API_KEY" ]      && echo "[OK] VLLM_API_KEY: $VLLM_API_KEY" || echo "[ERROR] VLLM_API_KEY no configurado"
 [ -n "$TORCH_CUDA_ARCH_LIST" ] && echo "[OK] TORCH_CUDA_ARCH_LIST: $TORCH_CUDA_ARCH_LIST" || echo "[ERROR] TORCH_CUDA_ARCH_LIST no configurado"
 nvcc --version 2>/dev/null | grep "release" && echo "[OK] nvcc en PATH" || echo "[ERROR] nvcc no en PATH"
