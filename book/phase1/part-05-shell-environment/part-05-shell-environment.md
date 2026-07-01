@@ -22,15 +22,24 @@ Un entorno de shell bien configurado puede ahorrar horas de trabajo repetitivo d
 
 Antes de instalar herramientas, cree la estructura de directorios que usarán los scripts y pipelines del resto del libro:
 
-```bash
-# Crear estructura base
-mkdir -p ~/scripts                         # scripts de automatización
-mkdir -p ~/venvs                           # entornos virtuales Python
-mkdir -p ~/projects                        # repos clonados (device skills, etc.)
-mkdir -p ~/jetson-ai-data/{outputs,benchmarks,logs}  # datos de trabajo
-mkdir -p /var/tmp/openclaw-compile-cache   # caché Node.js para OpenClaw
+> **NOTA — Usuarios con NVMe:** Si en el Capítulo 4 creó el directorio `/data` pero olvidó asignar los permisos de su usuario, puede encontrar errores como "Permission denied" al crear subdirectorios. Ejecute esto primero para corregirlo:
+>
+> ```bash
+> # Verificar propietario de /data
+> ls -ld /data
+> # Si muestra "root root" en lugar de "jetson jetson":
+> sudo chown -R jetson:jetson /data
+> ```
 
-# Si NVMe está montado en /data (de la Capítulo 4):
+```bash
+# Crear estructura base de trabajo
+mkdir -p ~/scripts                         # scripts de automatización del Jetson
+mkdir -p ~/venvs                           # entornos virtuales Python
+mkdir -p ~/projects                        # proyectos y repositorios clonados
+mkdir -p ~/jetson-ai-data/{outputs,benchmarks,logs}  # datos generados por proyectos
+mkdir -p /var/tmp/openclaw-compile-cache   # caché de compilación Node.js para OpenClaw
+
+# Directorios de modelos en /data (creado en Capítulo 4)
 mkdir -p /data/models/{huggingface,gguf,ollama}
 
 # Verificar
@@ -52,6 +61,8 @@ drwxrwxr-x  2 jetson jetson  4096 ... venvs
 El archivo `~/.bashrc` ya tiene las variables críticas al inicio (configuradas en Capítulo 2). Ahora se añade el bloque de aliases y funciones de productividad al final del archivo.
 
 > **IMPORTANTE:** Este bloque va al **final** de `~/.bashrc`, después del bloque `case $- in`. Los aliases solo necesitan estar disponibles en shells interactivos, no en Docker ni systemd.
+
+> **NOTA para el lector:** Los aliases que ve a continuación hacen referencia a herramientas que se instalan en capítulos posteriores (Ollama, Docker, vLLM, OpenClaw, etc.). No se preocupe si algunos comandos aún no funcionan — cada alias cobrará sentido a medida que avance por el libro. Al final, todos estarán disponibles y tendrá un entorno de trabajo completo desde el primer terminal que abra.
 
 ```bash
 # Agregar el bloque de aliases al final de ~/.bashrc
@@ -80,43 +91,60 @@ export SCRIPTS_DIR="$HOME/scripts"
 alias llm='source ~/venvs/llm/bin/activate && echo "(llm) venv activo"'
 alias da='deactivate 2>/dev/null && echo "venv desactivado"'
 
-# ── Modos de energía ──────────────────────────────────────────────
+# ── Modos de energía del Jetson (nvpmodel) ───────────────────────
+# nvpmodel controla el perfil de energía del Jetson (ver Capítulo 5)
+# jetson_clocks bloquea las frecuencias de CPU/GPU al máximo del modo activo
+# ATENCIÓN: Al cambiar de modo, el Jetson solicitará confirmación de reinicio
 alias pwr-maxn='sudo nvpmodel -m 0 && sudo jetson_clocks && echo "MAXN: 50W + frecuencias bloqueadas"'
 alias pwr-30w='sudo nvpmodel -m 2 && sudo jetson_clocks && echo "30W activo"'
 alias pwr-15w='sudo nvpmodel -m 3 && sudo jetson_clocks --restore && echo "15W — bajo consumo"'
-alias pwr-status='sudo nvpmodel -q 2>/dev/null | grep -v WARN'
+alias pwr-status='sudo nvpmodel -q 2>/dev/null | grep -v WARN'  # ver modo actual
 
-# ── Monitoreo rápido ──────────────────────────────────────────────
+# ── Monitoreo del sistema en tiempo real ──────────────────────────
+# jtop: monitor especializado del Jetson — CPU, GPU, temp, energía (ver Capítulo 1)
+# stats: estadísticas en tiempo real cada 1 segundo
+# temps: temperatura de todas las zonas térmicas del SoC
+# jetson-mem: resumen rápido de RAM + estado de swap/ZRAM (configurado en Cap 4)
 alias jtop='sudo jtop'
 alias stats='tegrastats --interval 1000'
 alias temps='paste <(cat /sys/class/thermal/thermal_zone*/type 2>/dev/null) <(awk "{printf \"%.1f°C\n\", \$1/1000}" /sys/class/thermal/thermal_zone*/temp 2>/dev/null)'
 alias jetson-mem='free -h | awk "/^Mem:/{print \"RAM: \"\$3\" usados / \"\$2\" total / \"\$7\" libres\"}" && echo "" && swapon --show'
 
-# ── Contenedores Docker ───────────────────────────────────────────
+# ── Gestión de contenedores Docker ───────────────────────────────
+# Docker se instala en el Capítulo 9. Estos aliases quedarán activos desde hoy.
+# dps: listar contenedores activos con nombre, estado y puertos
+# dstats: consumo de RAM y CPU por contenedor (sin stream continuo)
+# dlogs: ver las últimas 50 líneas de log de un contenedor (uso: dlogs nombre-contenedor)
 alias dps='docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
 alias dstats='docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}\t{{.CPUPerc}}"'
 alias dlogs='docker logs -f --tail 50'
 
-# ── Sistema de archivos ───────────────────────────────────────────
-alias ls='ls --color=auto'
-alias ll='ls -alFh --color=auto'
-alias la='ls -A --color=auto'
-alias ..='cd ..'
-alias ...='cd ../..'
-alias mkdir='mkdir -pv'
-alias disk='df -h | grep -Ev "tmpfs|loop|udev"'
-alias ports='ss -tulnp'
+# ── Navegación y sistema de archivos ─────────────────────────────
+# Versiones mejoradas de comandos estándar de Linux
+alias ls='ls --color=auto'                 # ls con colores
+alias ll='ls -alFh --color=auto'           # lista detallada con tamaños legibles
+alias la='ls -A --color=auto'              # lista incluyendo archivos ocultos
+alias ..='cd ..'                           # subir un nivel de directorio
+alias ...='cd ../..'                       # subir dos niveles
+alias mkdir='mkdir -pv'                    # crear directorios anidados con confirmación
+alias disk='df -h | grep -Ev "tmpfs|loop|udev"'  # espacio en disco (sin sistemas virtuales)
+alias ports='ss -tulnp'                    # listar todos los puertos en escucha
 
-# ── Git ───────────────────────────────────────────────────────────
-alias gs='git status'
-alias gd='git diff'
-alias gl='git log --oneline -15 --graph'
-alias gp='git pull'
+# ── Control de versiones Git ──────────────────────────────────────
+alias gs='git status'                      # estado del repositorio actual
+alias gd='git diff'                        # diferencias sin confirmar
+alias gl='git log --oneline -15 --graph'   # historial compacto con grafo de ramas
+alias gp='git pull'                        # descargar cambios del repositorio remoto
 
-# ── Actualización del sistema ─────────────────────────────────────
+# ── Mantenimiento del sistema ─────────────────────────────────────
+# update: actualiza todos los paquetes instalados (equivalente a Windows Update)
+# IMPORTANTE: siempre usar "upgrade -y" y NUNCA "dist-upgrade" en el Jetson
+#             (dist-upgrade puede reemplazar paquetes críticos de NVIDIA)
 alias update='sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y'
 
-# ── Sesiones tmux ────────────────────────────────────────────────
+# ── Sesiones tmux (terminales persistentes) ───────────────────────
+# tmux mantiene los procesos activos aunque se cierre la conexión SSH
+# (si se desconecta durante una descarga larga de modelo, el proceso sigue corriendo)
 alias tm='tmux attach -t main 2>/dev/null || tmux new-session -s main'
 alias tm-llm='tmux attach -t llm 2>/dev/null || tmux new-session -s llm'
 

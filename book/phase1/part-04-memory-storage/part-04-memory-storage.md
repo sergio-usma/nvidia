@@ -53,44 +53,47 @@ Antes de configurar el swap, conviene entender la jerarquía de memoria que usar
 
 ---
 
-## 4.2 Verificar el Almacenamiento Disponible
+## 4.2 Detectar su Configuración de Almacenamiento
+
+El Jetson puede estar configurado de dos formas. Identifique la suya antes de continuar:
 
 ```bash
-# Ver dispositivos de bloque
+# Identificar configuración de almacenamiento
 lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE
+echo "---"
+df -h | grep -E "/$|/data|nvme|mmcblk"
 ```
 
+**Configuración A — SO en eMMC + NVMe como disco extra (caso clásico):**
 ```
-# Salida esperada en un sistema con NVMe
 NAME         SIZE TYPE MOUNTPOINT  FSTYPE
 mmcblk0    59.2G disk
-└─mmcblk0p1 59.2G part /           ext4    ← eMMC (SO)
+└─mmcblk0p1 59.2G part /           ext4    ← eMMC (SO y datos)
 nvme0n1   931.5G disk
-└─nvme0n1p1 931.5G part /data      ext4    ← NVMe SSD
+└─nvme0n1p1 931.5G part             ext4    ← NVMe vacío o /data
 ```
 
-```bash
-# Ver espacio disponible
-df -h
+**Configuración B — SO instalado directamente en NVMe (recomendada):**
+```
+NAME         SIZE TYPE MOUNTPOINT  FSTYPE
+mmcblk0    59.2G disk                       ← eMMC (sin uso o vacío)
+nvme0n1   931.5G disk
+└─nvme0n1p1 931.5G part /           ext4    ← NVMe (SO + datos)
 ```
 
-```
-# Salida esperada
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/mmcblk0p1   58G   12G   43G  21% /
-/dev/nvme0n1p1  916G   1.2G  914G   1% /data
-```
+> **¿Cuál tengo?** Si en el resultado de `df -h` el disco `/` (raíz) es `/dev/nvme0n1p1`, tiene la Configuración B. Si es `/dev/mmcblk0p1`, tiene la Configuración A. La Configuración B es la recomendada — el NVMe es significativamente más rápido que el eMMC para E/S de modelos.
 
 ---
 
-## 4.3 Montar el NVMe SSD (si no está montado)
+## 4.3 Preparar el Directorio `/data`
 
-Si el NVMe aparece en `lsblk` pero no tiene punto de montaje, es necesario formatearlo y montarlo:
+### Configuración A — NVMe como disco extra (SO en eMMC)
+
+Si el NVMe aparece en `lsblk` sin sistema de archivos, formatéelo y móntelo como `/data`. **ATENCIÓN: este proceso borra todo el contenido del NVMe.**
 
 ```bash
-# SOLO si el NVMe no tiene sistema de archivos — BORRA TODO SU CONTENIDO
-# Verificar primero: lsblk -f nvme0n1
-# Si muestra FSTYPE vacío, ejecutar:
+# SOLO si el NVMe NO tiene sistema de archivos (FSTYPE vacío en lsblk)
+# Verifique antes: lsblk -f /dev/nvme0n1
 
 # Crear partición y formato ext4
 sudo parted /dev/nvme0n1 --script mklabel gpt
@@ -102,7 +105,7 @@ sudo mkdir -p /data
 sudo mount /dev/nvme0n1p1 /data
 sudo chown jetson:jetson /data
 
-# Montar automáticamente en boot
+# Montar automáticamente en cada arranque
 echo "/dev/nvme0n1p1  /data  ext4  defaults,noatime  0 2" | sudo tee -a /etc/fstab
 
 # Verificar
@@ -113,6 +116,42 @@ df -h /data
 # Salida esperada
 Filesystem       Size  Used Avail Use% Mounted on
 /dev/nvme0n1p1   916G  1.2G  914G   1% /data
+```
+
+### Configuración B — SO instalado en NVMe (caso del autor)
+
+Si el sistema operativo ya está en el NVMe, **no formatee nada**. Solo cree el directorio `/data` dentro del disco raíz y asigne los permisos correctos:
+
+```bash
+# Crear el directorio /data en el NVMe (que ya es su disco raíz)
+sudo mkdir -p /data
+sudo chown jetson:jetson /data
+
+# Verificar espacio disponible
+df -h / | awk 'NR==2 {print "NVMe (Raíz) disponible:", $4}'
+```
+
+```
+# Salida esperada
+NVMe (Raíz) disponible: 501G
+```
+
+> **Por qué no se monta nada:** Como el NVMe ya contiene su sistema operativo en `/`, no es necesario montarlo como partición separada. La carpeta `/data` simplemente vive dentro de su disco NVMe principal. Esto es correcto y eficiente.
+
+**Verificar permisos de `/data` (aplica para ambas configuraciones):**
+
+```bash
+# Si /data no tiene permisos de su usuario, corrija con:
+ls -ld /data
+sudo chown -R jetson:jetson /data
+
+# Verificar resultado
+ls -ld /data
+```
+
+```
+# Salida esperada (el propietario debe ser jetson:jetson)
+drwxr-xr-x 3 jetson jetson 4096 ... /data
 ```
 
 ---
@@ -162,63 +201,123 @@ Por defecto, `zram-config` crea un dispositivo de aproximadamente la mitad de la
 > swapon --show
 > ```
 
+#### Plan B — ZRAM manual con servicio systemd (Ubuntu 24.04)
+
+En Ubuntu 24.04, el paquete `zram-config` a veces sale como `inactive (dead)` o falla al arrancar automáticamente debido a conflictos con el kernel de NVIDIA. Si `swapon --show` devuelve resultados vacíos, use este método alternativo que es 100% confiable:
+
+```bash
+# Verificar si ZRAM ya está activo (si swapon muestra /dev/zram0, ya está listo)
+swapon --show
+
+# Si está vacío, crear ZRAM manualmente:
+sudo modprobe zram num_devices=1
+sudo zramctl /dev/zram0 --algorithm zstd --size 8G
+sudo mkswap /dev/zram0
+sudo swapon -p 100 /dev/zram0
+
+# Verificar que quedó activo
+swapon --show
+```
+
+```
+# Salida esperada tras el plan B
+NAME       TYPE      SIZE USED PRIO
+/dev/zram0 partition 7.8G   0B  100
+```
+
+```bash
+# Crear servicio systemd para que ZRAM arranque automáticamente con el sistema
+sudo tee /etc/systemd/system/zram-manual.service > /dev/null << 'EOF'
+[Unit]
+Description=Manual ZRAM setup (Ubuntu 24.04 fallback)
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/modprobe zram num_devices=1
+ExecStart=/sbin/zramctl /dev/zram0 --algorithm zstd --size 8G
+ExecStart=/sbin/mkswap /dev/zram0
+ExecStart=/sbin/swapon -p 100 /dev/zram0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable zram-manual.service
+```
+
+> **Resultado:** El servicio `zram-manual.service` activará ZRAM automáticamente en cada arranque. Puede verificarlo con `sudo systemctl status zram-manual.service` tras un reinicio.
+
 ---
 
 ## 4.5 Crear Swap en NVMe
 
 El swap en NVMe es el segundo nivel de overflow. 16 GB es suficiente para la mayoría de escenarios — si un modelo requiere más de 50 GB + 8 GB ZRAM + 16 GB NVMe swap = 74 GB, probablemente no debería ejecutarse en este sistema de todos modos.
 
+La ruta del archivo de swap varía según su configuración de almacenamiento:
+
+### Configuración A — NVMe montado en `/data`
+
 ```bash
-# Verificar que hay espacio suficiente en NVMe
+# Verificar espacio disponible
 df -h /data | awk 'NR==2 {print "NVMe disponible:", $4}'
-```
 
-```bash
-# Crear el archivo de swap en NVMe
+# Crear swap en /data (el NVMe extra)
 sudo fallocate -l 16G /data/swapfile
-
-# Si fallocate falla (sistema de archivos sin soporte):
-# sudo dd if=/dev/zero of=/data/swapfile bs=1G count=16 status=progress
-
-# Asegurar permisos — el swap DEBE ser solo de root
 sudo chmod 600 /data/swapfile
-
-# Formatear como área de swap
 sudo mkswap /data/swapfile
-```
-
-```
-# Salida esperada
-Setting up swapspace version 1, size = 16 GiB (17179869184 bytes)
-no label, UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
-
-```bash
-# Activar el swap
 sudo swapon /data/swapfile
 
-# Verificar que está activo (junto a ZRAM)
+# Hacer permanente en fstab
+echo '/data/swapfile  none  swap  sw  0 0' | sudo tee -a /etc/fstab
+```
+
+### Configuración B — SO instalado en NVMe (raíz `/`)
+
+Cuando el NVMe es su disco raíz, la práctica estándar de Linux es colocar el swap directamente en la raíz como `/swapfile`:
+
+```bash
+# Verificar espacio disponible en NVMe (que es su raíz)
+df -h / | awk 'NR==2 {print "NVMe disponible:", $4}'
+
+# Crear swap en la raíz del NVMe (estándar cuando es el disco de arranque)
+sudo fallocate -l 16G /swapfile
+
+# Si fallocate da error, use este alternativo:
+# sudo dd if=/dev/zero of=/swapfile bs=1G count=16 status=progress
+
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Hacer permanente en fstab
+echo '/swapfile  none  swap  sw  0 0' | sudo tee -a /etc/fstab
+```
+
+### Verificar que ambas capas de swap están activas
+
+```bash
+# Verificar swap (debe mostrar ZRAM + swapfile)
 swapon --show
 ```
 
 ```
-# Salida esperada — deben aparecer ZRAM y el swapfile
+# Salida esperada — Configuración A:
 NAME            TYPE      SIZE USED PRIO
 /dev/zram0      partition 7.8G   0B  100
 /data/swapfile  file       16G   0B   -2
+
+# Salida esperada — Configuración B:
+NAME        TYPE      SIZE USED PRIO
+/dev/zram0  partition 7.8G   0B  100
+/swapfile   file       16G   0B   -2
 ```
 
 ```bash
-# Hacer el swap permanente (sobrevive reboots)
-echo '/data/swapfile  none  swap  sw  0 0' | sudo tee -a /etc/fstab
-
 # Verificar la entrada en fstab
 grep swap /etc/fstab
-```
-
-```
-# Salida esperada
-/data/swapfile  none  swap  sw  0 0
 ```
 
 ---
