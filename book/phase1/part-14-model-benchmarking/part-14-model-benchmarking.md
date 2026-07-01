@@ -14,7 +14,7 @@ Este capítulo presenta los 10 modelos más importantes validados para JetPack 7
 
 Antes de trabajar con cualquier modelo, configure estas funciones de utilidad que se usarán a lo largo del capítulo.
 
-> **IMPORTANTE — Por qué el script anterior fallaba:** El primer problema recurrente al limpiar el Jetson es que los contenedores tienen nombres dinámicos (`qwen35-35b`, `vllm`, `gemma4-26b-vllm`, etc.), no siempre `vllm-openclaw` o `llama-openclaw`. Un script que busca nombres fijos dirá "sin contenedores" aunque haya uno consumiendo 36 GB. La versión correcta detecta contenedores por palabras clave en el nombre.
+> **IMPORTANTE — Detección por palabras clave, no por nombre fijo:** El primer problema al limpiar el Jetson entre pruebas es que los contenedores tienen nombres dinámicos (`qwen35-35b`, `vllm`, `gemma4-26b-vllm`, `vllm-container`, etc.). Un script que busca nombres exactos como `vllm-openclaw` reportará "sin contenedores activos" aunque haya uno consumiendo 36 GB. El script a continuación detecta contenedores por palabras clave en su nombre (`vllm`, `llama`, `ollama`, `gemma`, `qwen`) para cubrir cualquier variante de nombre que usted haya usado.
 
 ```bash
 # Crear el script jetson-clean.sh inteligente
@@ -252,6 +252,11 @@ start-webui
 ```
 
 > **CONSEJO:** Al probar desde Open WebUI, el indicador de tokens/s aparece debajo de cada respuesta. Para capturar estas metricas en un CSV, use el script `bench-model.sh` en paralelo (en otra terminal SSH).
+
+> **CONSEJO — Skill oficial de NVIDIA para benchmarking:** NVIDIA mantiene un skill oficial `jetson-llm-benchmark` que automatiza la comparación de modelos LLM en el Jetson con métricas estandarizadas. Disponible en:
+> `https://github.com/NVIDIA/skills/blob/main/skills/jetson-llm-benchmark/SKILL.md`
+>
+> Este skill es especialmente útil si desea comparar sus resultados con los benchmarks publicados por NVIDIA o ejecutar suites de prueba reproducibles. El flujo de trabajo de este capítulo cubre las pruebas manuales con mayor profundidad, pero el skill oficial es la alternativa recomendada si prefiere un único comando que genera el informe completo.
 
 ---
 

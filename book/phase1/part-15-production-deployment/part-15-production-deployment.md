@@ -10,7 +10,7 @@ Este capítulo cubre las cinco áreas críticas del despliegue en producción:
 2. **Firewall UFW** — reglas de red para exponer solo los puertos necesarios
 3. **Scripts de arranque inteligente** — secuencia de inicio post-reinicio que recupera el stack sin intervención manual
 4. **Watchdogs y monitoreo** — detección y recuperación automática de fallos en los servicios
-5. **Registro de parches** — 22 errores documentados en producción con sus causas y soluciones
+5. **Troubleshooting** — 22 errores comunes en producción con causas raíz y soluciones paso a paso
 
 > **NOTA:** Este capítulo asume que los componentes del stack (Capítulo 12 — motores de inferencia, Capítulo 13 — OpenClaw, NemoClaw) están instalados y funcionando correctamente en modo interactivo. El objetivo aquí es automatizar y proteger esa instalación para uso continuo.
 
@@ -843,6 +843,12 @@ echo 'alias jetson-verify="~/scripts/verify-stack.sh"' >> ~/.bashrc
 
 ### 15.5.1 Rutina de Conexión SSH Diaria
 
+> **NOTA:** Los aliases usados en esta rutina están definidos en este mismo capítulo:
+> - `jetson-verify` → definido en §15.4.2 (Script de Verificación del Stack)
+> - `motors-status` → definido en §15.8.1 (Lanzamiento bajo Demanda)
+> - `mode-vllm` → definido en §15.5.3 (Modos de Trabajo)
+> - `claw-status` → definido en §15.5.3
+
 ```bash
 # Secuencia recomendada al conectarse cada dia
 
@@ -851,7 +857,7 @@ ssh jetson
 jetson-verify
 
 # Paso 2: Si el modelo no esta activo, elegir el modo apropiado
-motors-status               # ver que esta corriendo
+motors-status               # ver que esta corriendo (definido en §15.8.1)
 mode-vllm                   # o el modo que necesite (ver switch-model.sh)
 
 # Paso 3 (opcional): Abrir Open WebUI desde Windows via SSH tunnel
@@ -869,9 +875,20 @@ openclaw channels status --probe
 Para trabajos intensivos (PDFs de 100MB, audio largo, múltiples requests en paralelo), ejecutar antes:
 
 ```bash
+# Alias de diagnóstico rápido (agregar a ~/.bash_aliases si no existen)
+# jetson-audit: muestra memoria, contenedores y procesos GPU en una pantalla
+alias jetson-audit='echo "=== MEM ==="; free -h; echo "=== DOCKER ==="; docker ps --format "table {{.Names}}\t{{.Status}}\t{{.RunningFor}}"; echo "=== OLLAMA ==="; ollama ps 2>/dev/null || echo "(Ollama no activo)"'
+
+# jetson-mem: muestra solo la memoria libre en GB (útil para decisiones rápidas)
+alias jetson-mem='free -h | awk "/^Mem:/{print \"Libre:\", \$7, \"/ Total:\", \$2}"'
+
+source ~/.bash_aliases || source ~/.bashrc
+```
+
+```bash
 # Rutina pre-workload pesado
-jetson-audit    # ver estado actual completo
-jetson-clean    # limpiar todos los modelos activos
+jetson-audit    # ver memoria, contenedores y GPU en una línea (definido arriba)
+jetson-clean    # limpiar todos los modelos activos (definido en §14.1)
 # Elegir el modo apropiado según la tarea:
 mode-longdoc    # para PDFs de 100+ páginas (Nemotron3 30B, 256K contexto)
 mode-multimodal # para audio o video (Nemotron Omni, multimodal)
@@ -955,11 +972,11 @@ La siguiente tabla describe todos los puertos del stack agéntico completo en pr
 
 ---
 
-## 15.7 Registro de Parches — 22 Errores Documentados en Producción
+## 15.7 22 Errores Comunes en Producción — Causas y Soluciones
 
-Esta tabla registra todos los errores encontrados durante la instalación real en producción con JP 7.2, junto con sus causas raíz y soluciones verificadas:
+Estos son los errores más frecuentes que encontrará al configurar y operar el stack completo del Jetson AGX Orin con JetPack 7.2. Para cada uno se indica el componente afectado, la causa raíz y la solución verificada:
 
-| # | Componente | Error | Causa raíz | Solución verificada |
+| # | Componente | Síntoma / Error | Causa raíz | Solución |
 |---|-----------|-------|-----------|---------------------|
 | P1 | hf download | Descarga incorrecta de archivos | `--exclude "a" "b"` trata "b" como archivo a descargar | Usar un `--exclude` por cada patrón |
 | P2 | HF_TOKEN | Vacío en Docker/systemd | Token definido después de `case $- in *i*)` en bashrc | Mover todos los `export` al inicio del `.bashrc` |
