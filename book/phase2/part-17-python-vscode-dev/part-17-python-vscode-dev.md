@@ -27,6 +27,8 @@ Con esta configuración, el Jetson es el servidor donde se ejecuta el código �
 
 ## 17.1 Configurar VSCode Remote SSH
 
+> **NOTA — Capítulo previo:** Si configuró el acceso remoto SSH en el Capítulo 7, ya tiene una conexión SSH funcional al Jetson y su clave pública instalada. En ese caso, puede saltarse la sección 17.1.2 (ya tiene el archivo `~/.ssh/config` creado) e ir directamente a la sección 17.1.3 para conectar VSCode. Si se saltó el Capítulo 7, siga todos los pasos de esta sección.
+
 ### 17.1.1 Instalar la Extensión Remote SSH en VSCode
 
 En su computadora (Windows/macOS/Linux):
@@ -85,6 +87,8 @@ Estas extensiones se instalan en el Jetson y se ejecutan allí. Su PC solo muest
 
 ## 17.2 Crear el Entorno Virtual de Desarrollo
 
+> **NOTA — Capítulo previo:** En el Capítulo 5 (Entorno de Shell) se creó el venv `~/venvs/llm` para los motores de inferencia. En este capítulo crearemos un venv separado `~/venvs/dev` dedicado al desarrollo Python — más limpio que instalar librerías de desarrollo en el mismo venv que los motores. Si ya creó el entorno `dev` en algún capítulo anterior, verifique con `ls ~/venvs/` y omita la creación.
+
 ### 17.2.1 Entorno Virtual para Desarrollo Python
 
 Abra un terminal integrado en VSCode (`Ctrl+Ñ` o `Ctrl+` ` `): verá una terminal que se ejecuta directamente en el Jetson.
@@ -121,6 +125,18 @@ pip install ipykernel notebook jupyterlab rich requests httpx
 ---
 
 ## 17.3 PyTorch con CUDA 13.2.1 para JetPack 7.2
+
+> **NOTA — Conceptos clave para principiantes:**
+>
+> - **PyTorch:** La librería de aprendizaje profundo (deep learning) más usada en investigación y producción. Es el "motor" que ejecuta los modelos de IA como redes neuronales. Con PyTorch puede entrenar modelos, hacer inferencia, manipular datos multidimensionales, y mucho más.
+>
+> - **CUDA:** La interfaz de programación paralela de NVIDIA que permite usar la GPU (no la CPU) para cálculos matemáticos. Sin CUDA, PyTorch usa solo la CPU y es entre 5× y 100× más lento dependiendo de la operación.
+>
+> - **Wheel file (`.whl`):** Un archivo de instalación precompilado para Python — como un instalador `.exe` de Windows pero para paquetes Python. Los wheels son específicos para la arquitectura del procesador (x86_64 para PC, arm64 para Jetson) y la versión de CUDA. No puede usar un wheel de x86_64 en el Jetson ARM64.
+>
+> - **`cp312`:** En el nombre del wheel (`torch-2.x.x-cp312-cp312-linux_aarch64.whl`), `cp312` indica que fue compilado para **CPython 3.12** — la versión de Python del Jetson con JP 7.2. Si intenta instalar un wheel `cp310` (Python 3.10), `pip` lo rechazará automáticamente.
+>
+> - **Tensores CUDA:** En PyTorch, un "tensor" es un arreglo multidimensional (similar a un NumPy array). Un tensor CUDA es un tensor que vive en la memoria de la GPU. Las operaciones entre tensores CUDA se ejecutan en paralelo con miles de CUDA cores — lo que hace la GPU tan rápida para IA.
 
 PyTorch en el Jetson no se instala con el pip normal — el wheel genérico de PyPI está compilado para x86_64. NVIDIA proporciona wheels específicos para JP 7.2.
 
@@ -188,9 +204,13 @@ python test_cuda.py
 # Salida esperada
 Tensor en GPU: cuda:0
 Forma del resultado: torch.Size([1000, 1000])
-Suma: 312.45
+Suma: 312.45   ← este valor varía con cada ejecución (números aleatorios)
 [OK] PyTorch + CUDA funcionando correctamente
 ```
+
+> **¿Qué está pasando en este test?**
+>
+> Se crean dos matrices de 1000×1000 elementos aleatorios directamente en la GPU (`torch.randn(...).cuda()`). Luego se multiplican (`torch.matmul`) — una operación de 1 billón de multiplicaciones/sumas que la CPU tardaría ~5 segundos pero la GPU del Jetson resuelve en milisegundos gracias a sus 2048 CUDA cores trabajando en paralelo. El resultado es otro tensor 1000×1000 en GPU. La "Suma" es simplemente la suma de todos los elementos, que varía porque los números de entrada son aleatorios.
 
 ---
 
@@ -498,6 +518,8 @@ Memoria GPU asignada: 0.00 GB
 
 ## 17.8 Patrón de Desarrollo Recomendado
 
+<!-- INFOGRAFÍA: Patrón de Desarrollo en Jetson AGX Orin — diagrama circular/cíclico de 5 pasos: 1. Verificar estado (motors-status / free -h) → 2. Lanzar motor (start-qwen35 / ollama / vllm) → 3. Desarrollar/Experimentar (VSCode + Jupyter + Python) → 4. Terminar y Limpiar (kill model / gc.collect()) → 5. Verificar memoria libre → vuelve al paso 1. Paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light — pendiente de diseño gráfico -->
+
 El flujo de trabajo eficiente para desarrollar con LLMs en el Jetson sigue este ciclo:
 
 ```
@@ -658,6 +680,191 @@ echo "════════════════════════�
   [OK] httpx
   [OK] jupyter
   [OK] notebook
+```
+
+---
+
+## 17.9 Mini-Proyecto: Transcriptor de Audio con GPU
+
+Este proyecto une todo lo aprendido en el capítulo: VSCode Remote SSH para editar el notebook, el venv `dev` como kernel, y la GPU del Jetson para acelerar la transcripción de audio en español.
+
+**Factor wow:** Con su Jetson, puede transcribir un audio de 10 minutos en menos de 2 minutos — completamente offline, sin enviar datos a ningún servidor externo, con calidad comparable a servicios cloud.
+
+### 17.9.1 Requisito Previo: faster-whisper activo
+
+```bash
+# Verificar que faster-whisper está corriendo (capítulo 29)
+curl -sf http://localhost:8000/health && echo "[OK] faster-whisper activo" \
+  || echo "[!] Iniciar faster-whisper primero (ver Capítulo 29, sección 29.1.2)"
+```
+
+### 17.9.2 Notebook — audio_transcriber.ipynb
+
+Cree el archivo `~/notebooks/audio_transcriber.ipynb` en VSCode y agregue las siguientes celdas:
+
+```python
+# Celda 1 — Instalar dependencias
+import subprocess
+subprocess.run(["pip", "install", "openai", "pydub", "tqdm"], capture_output=True)
+print("✓ Dependencias instaladas")
+```
+
+```python
+# Celda 2 — Verificar conexión con faster-whisper
+import requests
+
+try:
+    r = requests.get("http://localhost:8000/health", timeout=3)
+    print(f"✓ faster-whisper activo — status: {r.status_code}")
+except Exception as e:
+    print(f"✗ faster-whisper no disponible: {e}")
+    print("  → Inicie faster-whisper con: docker start faster-whisper")
+```
+
+```python
+# Celda 3 — Función de transcripción
+import requests
+import time
+from pathlib import Path
+
+def transcribir_audio(ruta_audio: str, idioma: str = "es", timestamps: bool = False) -> dict:
+    """
+    Transcribe un archivo de audio usando faster-whisper via API HTTP.
+    
+    Args:
+        ruta_audio: Ruta al archivo WAV, MP3 o M4A
+        idioma: Código de idioma ('es' para español, 'en' para inglés)
+        timestamps: Si True, incluye timestamps a nivel de palabra
+    
+    Returns:
+        dict con 'texto', 'duracion_audio', 'tiempo_transcripcion', 'ratio_velocidad'
+    """
+    inicio = time.time()
+    ruta = Path(ruta_audio)
+    
+    if not ruta.exists():
+        raise FileNotFoundError(f"Audio no encontrado: {ruta_audio}")
+    
+    # Preparar parámetros
+    params = {
+        "model": "whisper-1",
+        "language": idioma,
+        "response_format": "verbose_json" if timestamps else "json"
+    }
+    if timestamps:
+        params["timestamp_granularities[]"] = "word"
+    
+    # Enviar al API
+    with open(ruta_audio, "rb") as f:
+        r = requests.post(
+            "http://localhost:8000/v1/audio/transcriptions",
+            files={"file": (ruta.name, f, "audio/wav")},
+            data=params,
+            timeout=300
+        )
+    r.raise_for_status()
+    datos = r.json()
+    
+    tiempo_total = time.time() - inicio
+    duracion = datos.get("duration", 0)
+    
+    return {
+        "texto": datos.get("text", "").strip(),
+        "duracion_audio": round(duracion, 1),
+        "tiempo_transcripcion": round(tiempo_total, 1),
+        "ratio_velocidad": round(duracion / max(tiempo_total, 0.1), 1),
+        "palabras": datos.get("words", []) if timestamps else []
+    }
+
+print("✓ Función transcribir_audio() lista")
+```
+
+```python
+# Celda 4 — Preparar audio de prueba (grabar 20s desde micrófono)
+import subprocess
+from pathlib import Path
+
+audio_path = Path.home() / "notebooks" / "audio_prueba.wav"
+audio_path.parent.mkdir(exist_ok=True)
+
+print("Grabando 20 segundos... Hable ahora en español:")
+print("(Pruebe: 'El Jetson AGX Orin tiene 64 gigabytes de memoria unificada y puede ejecutar modelos de inteligencia artificial localmente.')")
+print()
+
+subprocess.run([
+    "arecord", "-D", "hw:0,0", "-f", "S16_LE",
+    "-r", "16000", "-c", "1", "-d", "20",
+    str(audio_path)
+], check=False)
+
+if audio_path.exists():
+    size_kb = audio_path.stat().st_size // 1024
+    print(f"✓ Audio grabado: {audio_path} ({size_kb} KB)")
+else:
+    print("⚠ No se pudo grabar (sin micrófono USB). Transfiera un archivo .wav vía SCP.")
+    print("  En Windows: scp archivo.wav jetson:~/notebooks/audio_prueba.wav")
+```
+
+```python
+# Celda 5 — Transcribir y mostrar resultado
+resultado = transcribir_audio(str(audio_path), idioma="es", timestamps=True)
+
+print(f"╔══════════════════════════════════════════════════════╗")
+print(f"║  RESULTADO DE TRANSCRIPCIÓN                         ║")
+print(f"╚══════════════════════════════════════════════════════╝")
+print(f"  Duración del audio : {resultado['duracion_audio']} s")
+print(f"  Tiempo transcripción: {resultado['tiempo_transcripcion']} s")
+print(f"  Velocidad          : {resultado['ratio_velocidad']}× tiempo real")
+print(f"")
+print(f"  TEXTO:")
+print(f"  {resultado['texto']}")
+
+if resultado["palabras"]:
+    print(f"\n  PRIMERAS 5 PALABRAS CON TIMESTAMPS:")
+    for w in resultado["palabras"][:5]:
+        print(f"    [{w['start']:.2f}s] {w['word']}")
+```
+
+```
+# Salida esperada:
+╔══════════════════════════════════════════════════════╗
+║  RESULTADO DE TRANSCRIPCIÓN                         ║
+╚══════════════════════════════════════════════════════╝
+  Duración del audio : 20.0 s
+  Tiempo transcripción: 4.2 s
+  Velocidad          : 4.8× tiempo real
+
+  TEXTO:
+  El Jetson AGX Orin tiene 64 gigabytes de memoria unificada y puede ejecutar
+  modelos de inteligencia artificial localmente.
+
+  PRIMERAS 5 PALABRAS CON TIMESTAMPS:
+    [0.00s] El
+    [0.18s] Jetson
+    [0.52s] AGX
+    [0.78s] Orin
+    [0.98s] tiene
+```
+
+```python
+# Celda 6 — Guardar transcripción en archivo Markdown
+import json
+from datetime import datetime
+
+salida_md = Path.home() / "notebooks" / f"transcripcion_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+
+contenido = f"""# Transcripción de Audio
+Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
+Archivo: {audio_path.name}  
+Duración: {resultado['duracion_audio']}s | Velocidad: {resultado['ratio_velocidad']}× tiempo real
+
+## Texto
+
+{resultado['texto']}
+"""
+
+salida_md.write_text(contenido)
+print(f"✓ Transcripción guardada en: {salida_md}")
 ```
 
 > **Próximo paso:** El Capítulo 18 cubre en profundidad el ecosistema jetson-containers — las 51 imágenes Docker optimizadas para Jetson que serán la base de todos los proyectos de la Fase 2.

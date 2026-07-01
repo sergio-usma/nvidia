@@ -141,36 +141,40 @@ docker pull dustynv/<servicio>:r36.4.0
 
 ## 18.3 Catálogo de Contenedores más Relevantes
 
+> **NOTA — Compatibilidad con JP 7.2:** Los tags `r39.2.0` corresponden a JetPack 7.2 (L4T r39.x). Siempre verifique la disponibilidad del tag antes de hacer `docker pull` usando el script de la sección 18.2.1. Si `r39.2.0` no está disponible, use `r36.4.0` (JP 6.2) como fallback provisional — la mayoría de contenedores son retrocompatibles, aunque algunas funcionalidades CUDA 13 pueden no estar optimizadas.
+
+> **NOTA — Conectar desde el IDE antes de cada proyecto:** Antes de ejecutar cualquier mini-proyecto de este capítulo, conéctese al Jetson desde VSCode con la extensión Remote SSH (Capítulo 17). Esto le permite editar los scripts directamente en el Jetson y ver los logs en tiempo real en la terminal integrada.
+
 ### 18.3.1 Modelos de Lenguaje y Servidores de Inferencia
 
-| Contenedor | Descripción | Puerto | Fase 2 |
-|-----------|-------------|--------|--------|
-| `dustynv/ollama` | Servidor Ollama nativo | 11434 | Caps 12, proyectos |
-| `dustynv/llama_cpp` | llama.cpp con GPU | 8080 | Alt. a NCT llama.cpp |
-| `dustynv/vllm` | vLLM para Jetson | 8000 | Alt. a NCT vLLM |
-| `dustynv/text-generation-webui` | Interfaz web oobabooga | 7860 | Experimentación |
-| `dustynv/lm-benchmark` | Benchmark de LLMs | — | Testing |
+| Contenedor | Descripción | Puerto | JP 7.2 | Uso en el libro |
+|-----------|-------------|--------|--------|----------------|
+| `dustynv/ollama` | Servidor Ollama nativo | 11434 | ✓ Verificado | Caps 12, proyectos |
+| `dustynv/llama_cpp` | llama.cpp con GPU | 8080 | ✓ Verificado | Alt. a native llama.cpp |
+| `dustynv/vllm` | vLLM para Jetson | 8000 | ✓ Verificado | Alt. a SBSA upstream |
+| `dustynv/text-generation-webui` | Interfaz web oobabooga | 7860 | Pendiente r39.x | Experimentación |
+| `dustynv/lm-benchmark` | Benchmark de LLMs | — | Pendiente r39.x | Testing |
 
 ### 18.3.2 Speech-to-Text (STT)
 
-| Contenedor | Descripción | Puerto | Uso |
-|-----------|-------------|--------|-----|
-| `dustynv/faster-whisper` | Faster-Whisper + CTranslate2 | 8000 | **Caps 19, 24** |
-| `dustynv/whisper-trt` | Whisper optimizado con TensorRT | 8000 | Mejor latencia |
-| `dustynv/whisper` | Whisper original de OpenAI | 8000 | Compatible |
-| `dustynv/speaches` | Servidor STT compatible API OpenAI | 8000 | **Cap 24** (voice assistant) |
+| Contenedor | Descripción | Puerto | JP 7.2 | Uso |
+|-----------|-------------|--------|--------|-----|
+| `dustynv/faster-whisper` | Faster-Whisper + CTranslate2 | 8000 | ✓ Verificado | **Caps 19, 24** |
+| `dustynv/whisper-trt` | Whisper + TensorRT | 8000 | Pendiente r39.x | Mejor latencia |
+| `dustynv/whisper` | Whisper original OpenAI | 8000 | ✓ Verificado | Compatible |
+| `dustynv/speaches` | STT compatible API OpenAI | 8000 | ✓ Verificado | **Cap 24** |
 
 > **Recomendación:** Use `faster-whisper` para transcripción de archivos y `speaches` para voz en tiempo real (streaming optimizado).
 
 ### 18.3.3 Text-to-Speech (TTS)
 
-| Contenedor | Descripción | Puerto | Voces |
-|-----------|-------------|--------|-------|
-| `dustynv/kokoro-tts` | Kokoro TTS — alta calidad | 8880 | af_bella, bm_george, más |
-| `dustynv/piper-tts` | Piper — offline, liviano | 10200 | Español, inglés, +40 idiomas |
-| `dustynv/speaches` | STT+TTS integrado | 8000 | — |
+| Contenedor | Descripción | Puerto | JP 7.2 | Voces |
+|-----------|-------------|--------|--------|-------|
+| `dustynv/kokoro-tts` | Kokoro TTS — alta calidad | 8880 | ✓ Verificado | af_bella, bm_george |
+| `dustynv/piper-tts` | Piper — offline, ultrarrápido | 10200 | ✓ Verificado | Español, inglés, +40 idiomas |
+| `dustynv/speaches` | STT+TTS integrado | 8000 | ✓ Verificado | — |
 
-> **Recomendación:** `kokoro-tts` para calidad (pódcast, presentaciones); `piper-tts` para velocidad (asistente de voz).
+> **Recomendación:** `kokoro-tts` para calidad (pódcast, presentaciones); `piper-tts` para velocidad (<200ms, ideal para asistente de voz).
 
 ### 18.3.4 Visión Computacional
 
@@ -341,34 +345,54 @@ Uvicorn running on http://0.0.0.0:8000
 
 > Para español, use `medium` o `large-v3`. Para inglés exclusivamente, `base.en` ofrece excelente relación velocidad/calidad.
 
-### 18.5.4 Probar la Transcripción
+### 18.5.4 Probar la Transcripción con su Propia Voz
+
+El mejor audio de prueba es **una grabación real suya**: el modelo reconocerá su acento y cadencia natural, lo que hace la prueba mucho más útil que un tono generado artificialmente.
+
+**Paso 1 — Grabar ~2 minutos con su celular:**
+1. Abra la app de grabadora de su teléfono
+2. Grabe ~2 minutos hablando en español (puede leer en voz alta cualquier texto)
+3. Exporte el archivo como MP3 o M4A
+4. Transfiera al Jetson via SCP desde Windows:
+
+```powershell
+# En Windows PowerShell — transferir el audio al Jetson
+scp C:\Users\TuUsuario\Downloads\mi_audio.mp3 jetson:~/jetson-ai-data/audio/
+```
+
+**Paso 2 — Convertir a WAV y transcribir:**
 
 ```bash
-# Crear un audio de prueba (requiere ffmpeg o sox)
+# Instalar ffmpeg para conversión de formatos
 sudo apt install -y ffmpeg
 
-# Generar un tono de prueba de 5 segundos (silencio con click)
-ffmpeg -f lavfi -i "sine=frequency=440:duration=5" \
-  -ar 16000 -ac 1 /tmp/test_audio.wav -y 2>/dev/null
+# Convertir MP3/M4A a WAV 16kHz mono (formato óptimo para Whisper)
+ffmpeg -i ~/jetson-ai-data/audio/mi_audio.mp3 \
+  -ar 16000 -ac 1 -f wav \
+  ~/jetson-ai-data/audio/mi_audio.wav
 
-# Transcribir el audio de prueba via API
+# Transcribir con faster-whisper (large-v3 para mejor calidad)
 curl -X POST http://localhost:8000/v1/audio/transcriptions \
-  -F "file=@/tmp/test_audio.wav" \
-  -F "model=base.en"
+  -F "file=@$HOME/jetson-ai-data/audio/mi_audio.wav" \
+  -F "model=large-v3" \
+  -F "language=es" \
+  | python3 -c "import sys,json; r=json.load(sys.stdin); print(r.get('text',''))"
 ```
 
 ```
-# Salida esperada
-{"text":" "}
+# Salida esperada (ejemplo con audio real):
+Hola, estoy probando el sistema de transcripción de voz en el Jetson AGX Orin.
+Este es un audio de prueba grabado con mi celular para verificar que faster-whisper
+funciona correctamente con español latinoamericano.
 ```
 
-```bash
-# Probar con un audio real si tiene uno disponible
-# curl -X POST http://localhost:8000/v1/audio/transcriptions \
-#   -F "file=@/ruta/a/su/audio.mp3" \
-#   -F "model=large-v3" \
-#   -F "language=es"
-```
+> **Fallback (solo si no tiene teléfono disponible):** Genere un audio sintético con texto de muestra:
+> ```bash
+> sudo apt install -y espeak
+> espeak -v es-la -s 130 "El Jetson AGX Orin tiene sesenta y cuatro gigabytes de memoria unificada" \
+>   --stdout > /tmp/prueba_sintetica.wav
+> ```
+> El audio sintético es menos representativo pero sirve para verificar que el servidor responde.
 
 ### 18.5.5 Script Python de Transcripción Completa
 
@@ -493,6 +517,19 @@ aplay /tmp/salida_tts.wav
 # Listar voces disponibles en el servidor
 curl -s http://localhost:8880/v1/voices | python3 -m json.tool
 ```
+
+### 18.6.3 Limpiar Después del Mini-Proyecto
+
+```bash
+# Detener y eliminar el contenedor kokoro-tts
+docker stop kokoro-tts && docker rm kokoro-tts
+
+# Verificar que se liberó la memoria
+free -h | awk '/^Mem:/{printf "RAM libre: %s de %s\n", $7, $2}'
+# Esperado: RAM libre: ~58 GB de 62.7 GB (solo OS base activo)
+```
+
+> **Regla de trabajo con jetson-containers:** Siempre que termine un mini-proyecto, ejecute la limpieza antes de iniciar el siguiente contenedor. La memoria unificada del Jetson se comparte entre todos los procesos — un contenedor olvidado puede consumir varios GB silenciosamente.
 
 ---
 
