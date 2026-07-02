@@ -1,4 +1,4 @@
-# Capítulo 13C — Open WebUI: Interfaz Gráfica para Todos los Motores del Jetson
+# Capítulo 11C — Open WebUI: Interfaz Gráfica para Todos los Motores del Jetson
 
 ## Introducción
 

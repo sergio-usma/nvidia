@@ -1,4 +1,4 @@
-# Capítulo 1 — Configuración Inicial y Primer Arranque
+# Capítulo 2 — Configuración Inicial y Primer Arranque
 
 ## Introducción
 

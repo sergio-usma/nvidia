@@ -1,4 +1,4 @@
-# Capítulo 13A — OpenClaw: Bot de Telegram con IA Local en el Jetson AGX Orin
+# Capítulo 11A — OpenClaw: Bot de Telegram con IA Local en el Jetson AGX Orin
 
 ## Introducción
 

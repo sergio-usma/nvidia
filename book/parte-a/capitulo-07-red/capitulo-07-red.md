@@ -1,4 +1,4 @@
-# Capítulo 6 — Optimización de Red
+# Capítulo 7 — Optimización de Red
 
 ## Introducción
 

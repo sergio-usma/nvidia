@@ -1,4 +1,4 @@
-# Capítulo 7 — IDE Remoto y Transferencia de Archivos: VSCode, PyCharm y SSH
+# Capítulo 8 — IDE Remoto y Transferencia de Archivos: VSCode, PyCharm y SSH
 
 ## Introducción
 

@@ -1,4 +1,4 @@
-# Capítulo 2 — Configuración Base del Sistema
+# Capítulo 3 — Configuración Base del Sistema
 
 ## Introducción
 

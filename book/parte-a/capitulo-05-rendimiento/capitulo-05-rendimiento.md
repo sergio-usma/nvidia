@@ -1,4 +1,4 @@
-# Capítulo 3 — Ajuste de Rendimiento: nvpmodel y jetson_clocks
+# Capítulo 5 — Ajuste de Rendimiento: nvpmodel y jetson_clocks
 
 ## Introducción
 

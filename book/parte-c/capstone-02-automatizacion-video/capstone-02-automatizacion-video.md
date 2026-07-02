@@ -1,4 +1,4 @@
-# Capstone 02 — Automatización de Contenido en Video con IA
+# Capstone Project 02 — Automatización de YouTube Shorts y TikTok
 
 ## Introducción
 

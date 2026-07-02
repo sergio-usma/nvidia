@@ -1,4 +1,4 @@
-# Capítulo 31 — Capstone: Agencia de IA con Presencia Web
+# Capstone Project 01 — Agencia de IA con Presencia Web
 
 ## Introducción
 

@@ -1,4 +1,4 @@
-# Capítulo 8 — Docker y NVIDIA Container Toolkit
+# Capítulo 9 — Docker y NVIDIA Container Toolkit
 
 ## Introducción
 

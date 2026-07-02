@@ -1,4 +1,4 @@
-# Capítulo 13 — Stack de Inteligencia Artificial Agéntica: OpenClaw, NemoClaw, Jetson Agent Skills y Open WebUI
+# Capítulo 11 — Stack de Inteligencia Artificial Agéntica: OpenClaw, NemoClaw, Jetson Agent Skills y Open WebUI
 
 ## Introducción
 
