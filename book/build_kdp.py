@@ -3,10 +3,19 @@
 """
 build_kdp.py — Convierte capítulos Markdown a DOCX con formato Amazon KDP (6×9 pulgadas).
 
-Uso:
-    python book/build_kdp.py book/chapters/part-12-inference-engines/part-12-inference-engines.md
+Uso (capítulo individual):
+    python book/build_kdp.py book/parte-a/capitulo-10-motores-inferencia/capitulo-10-motores-inferencia.md
 
-El .docx se genera en la misma carpeta del .md.
+Uso (libro completo en un solo DOCX):
+    python book/build_kdp.py --all [salida.docx]
+    # Por defecto genera: book/Jetson_AGX_Orin_JP72_Complete_Guide.docx
+
+Estructura del libro:
+    book/parte-a/   → Capítulos 1–17 (Fundamentos + Stack IA)
+    book/parte-b/   → Capítulos 13img, 18–26 (Proyectos Prácticos)
+    book/parte-c/   → Capítulo 27, Capstones 01–02, Conclusiones
+    book/glosario/  → Glosario
+
 Requiere: pip install python-docx
 """
 
@@ -434,10 +443,95 @@ def build_docx(md_path, output_path):
     print(f'DOCX generado: {output_path}')
 
 
+# Orden canónico del libro completo (relativo a book/)
+BOOK_CHAPTERS = [
+    'parte-a/capitulo-01-introduccion/capitulo-01-introduccion.md',
+    'parte-a/capitulo-02-primer-arranque/capitulo-02-primer-arranque.md',
+    'parte-a/capitulo-03-configuracion-base/capitulo-03-configuracion-base.md',
+    'parte-a/capitulo-04-memoria-almacenamiento/capitulo-04-memoria-almacenamiento.md',
+    'parte-a/capitulo-05-rendimiento/capitulo-05-rendimiento.md',
+    'parte-a/capitulo-06-shell-entorno/capitulo-06-shell-entorno.md',
+    'parte-a/capitulo-07-red/capitulo-07-red.md',
+    'parte-a/capitulo-08-acceso-remoto/capitulo-08-acceso-remoto.md',
+    'parte-a/capitulo-09-docker/capitulo-09-docker.md',
+    'parte-a/capitulo-10-motores-inferencia/capitulo-10-motores-inferencia.md',
+    'parte-a/capitulo-11-stack-agentico/capitulo-11-stack-agentico.md',
+    'parte-a/capitulo-11a-openclaw/capitulo-11a-openclaw.md',
+    'parte-a/capitulo-11b-nemoclaw/capitulo-11b-nemoclaw.md',
+    'parte-a/capitulo-11c-open-webui/capitulo-11c-open-webui.md',
+    'parte-a/capitulo-11d-tool-calling/capitulo-11d-tool-calling.md',
+    'parte-a/capitulo-12-computer-vision/capitulo-12-computer-vision.md',
+    'parte-b/capitulo-13-imagen-video/capitulo-13-imagen-video.md',
+    'parte-a/capitulo-14-n8n/capitulo-14-n8n.md',
+    'parte-a/capitulo-15-benchmarking/capitulo-15-benchmarking.md',
+    'parte-a/capitulo-16-produccion/capitulo-16-produccion.md',
+    'parte-a/capitulo-17-troubleshooting/capitulo-17-troubleshooting.md',
+    'parte-b/capitulo-18-python-vscode/capitulo-18-python-vscode.md',
+    'parte-b/capitulo-19-jetson-containers/capitulo-19-jetson-containers.md',
+    'parte-b/capitulo-20-pdf-podcast/capitulo-20-pdf-podcast.md',
+    'parte-b/capitulo-21-transcripcion-reuniones/capitulo-21-transcripcion-reuniones.md',
+    'parte-b/capitulo-22-agencia-turismo/capitulo-22-agencia-turismo.md',
+    'parte-b/capitulo-23-embudo-ventas/capitulo-23-embudo-ventas.md',
+    'parte-b/capitulo-24-linkedin/capitulo-24-linkedin.md',
+    'parte-b/capitulo-25-asistente-voz/capitulo-25-asistente-voz.md',
+    'parte-b/capitulo-26-rag/capitulo-26-rag.md',
+    'parte-c/capitulo-27-microservicios/capitulo-27-microservicios.md',
+    'parte-c/capstone-01-agencia-ia/capstone-01-agencia-ia.md',
+    'parte-c/capstone-02-automatizacion-video/capstone-02-automatizacion-video.md',
+    'parte-c/conclusiones/conclusiones.md',
+    'glosario/glosario.md',
+    'parte-a/capitulo-xx-tts-stt/capitulo-xx-tts-stt.md',  # ubicación pendiente
+    'parte-a/appendix/appendix.md',
+]
+
+
+def build_all_docx(book_dir, output_path):
+    """Genera un DOCX con todos los capítulos del libro en orden canónico."""
+    book_root = Path(book_dir)
+    doc = create_doc()
+
+    for rel_path in BOOK_CHAPTERS:
+        md_path = book_root / rel_path
+        if not md_path.exists():
+            print(f'  [AVISO] No encontrado: {rel_path}')
+            continue
+        print(f'  Procesando: {rel_path}')
+        md_text = md_path.read_text(encoding='utf-8')
+        blocks = parse_markdown(md_text)
+        for block in blocks:
+            btype = block['type']
+            if btype == 'heading':
+                level = min(block['level'], 3)
+                add_heading(doc, block['text'], level)
+            elif btype == 'body':
+                add_body(doc, block['content'])
+            elif btype == 'code':
+                add_code_block(doc, block['content'], block.get('lang', 'bash'))
+            elif btype == 'callout':
+                add_callout(doc, block['content'], block.get('kind', 'NOTA'))
+            elif btype == 'table':
+                if block.get('headers') and block.get('rows'):
+                    add_table(doc, block['headers'], block['rows'])
+            elif btype == 'bullets':
+                add_bullets(doc, block['items'], block.get('numbered', False))
+        # Page break between chapters
+        doc.add_page_break()
+
+    doc.save(output_path)
+    print(f'\nLibro completo generado: {output_path}')
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print(f'Uso: python {sys.argv[0]} <archivo.md> [salida.docx]')
+        print(f'     python {sys.argv[0]} --all [salida.docx]')
         sys.exit(1)
+
+    if sys.argv[1] == '--all':
+        book_dir = Path(__file__).parent
+        out_file = sys.argv[2] if len(sys.argv) >= 3 else str(book_dir / 'Jetson_AGX_Orin_JP72_Complete_Guide.docx')
+        build_all_docx(book_dir, out_file)
+        sys.exit(0)
 
     md_file = sys.argv[1]
     if len(sys.argv) >= 3:
