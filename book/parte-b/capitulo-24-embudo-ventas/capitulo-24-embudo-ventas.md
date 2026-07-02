@@ -26,10 +26,10 @@ El Jetson genera el contenido localmente (sin costos de API de IA), y la publica
 1. Vaya a [developers.facebook.com](https://developers.facebook.com) y cree una aplicación de tipo "Business"
 2. En su aplicación → **Add Products** → **Facebook Login** y **Instagram Graph API**
 3. En **Permisos de la app**, solicite:
-   - `pages_manage_posts`
-   - `pages_read_engagement`
-   - `instagram_content_publish`
-   - `instagram_basic`
+ - `pages_manage_posts`
+ - `pages_read_engagement`
+ - `instagram_content_publish`
+ - `instagram_basic`
 4. Use el **Graph API Explorer** para obtener un token de usuario y luego genere un **Page Access Token** de larga duración
 5. Para extender la validez a 60 días, use el endpoint de extensión de tokens
 

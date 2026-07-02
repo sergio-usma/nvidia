@@ -7,7 +7,7 @@ Un asistente de voz completamente offline: habla, el Jetson escucha, procesa y r
 La clave técnica es la latencia. Un asistente de voz es inútil si tarda 10 segundos en responder. Este capítulo construye el pipeline optimizado para mantener latencia menor a 3 segundos desde que termina de hablar hasta que escucha la respuesta — usando los tres modelos más rápidos disponibles en el Jetson.
 
 **Pipeline técnico:**
-```
+```bash
 Micrófono USB → VAD → faster-whisper (STT) → qwen3:7b (LLM) → piper-tts (TTS) → Speaker
 ```
 
@@ -36,7 +36,7 @@ Micrófono USB → VAD → faster-whisper (STT) → qwen3:7b (LLM) → piper-tts
 arecord -l
 ```
 
-```
+```bash
 # Salida esperada (con micrófono USB conectado)
 **** List of CAPTURE Hardware Devices ****
 card 1: USB Audio Device [USB Audio Device], device 0: USB Audio (hw:1,0)
@@ -49,7 +49,7 @@ card 1: USB Audio Device [USB Audio Device], device 0: USB Audio (hw:1,0)
 aplay -l
 ```
 
-```
+```bash
 # Salida esperada
 **** List of PLAYBACK Hardware Devices ****
 card 1: USB Audio Device [USB Audio Device], device 0: USB Audio (hw:1,0)

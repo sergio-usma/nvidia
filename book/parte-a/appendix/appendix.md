@@ -133,7 +133,7 @@ alias stop-webui='docker stop open-webui'
 alias kill-webui='docker stop open-webui && docker rm open-webui'
 ```
 
-###  — Mantenimiento
+### — Mantenimiento
 
 ```bash
 alias check-ready='~/scripts/maintenance/check-ready.sh'
@@ -424,7 +424,7 @@ du -sh ~/.cache/huggingface 2>/dev/null | awk '{print "  HF cache: " $1}'
 
 ## A.13 Estructura de Directorios del Libro
 
-```
+```bash
 D:\Documents\Jetson\eBook\book\
 ├── phase1\                          ← Configuración y operación del sistema
 │   ├── part-00-introduction\
@@ -678,7 +678,7 @@ pwr-15w        # Modo ahorro hasta el próximo uso
 
 ### Cuándo usar `pwr-maxn` vs `pwr-30w`
 
-```
+```bash
 pwr-maxn  → modelos >9B, arranque de vLLM, pipeline con 35B activo
 pwr-30w   → STT/TTS, Ollama ≤7B, agentes, N8N, RAG, espera activa
 pwr-15w   → sin inferencia activa, limpieza, SSH únicamente
@@ -741,7 +741,7 @@ alias download-sd='~/scripts/download-sd-models.sh'
 
 Esta es la estructura de directorios que se crea durante el libro en el Jetson AGX Orin:
 
-```
+```bash
 /home/jetson/
 ├── scripts/                         # Todos los scripts del libro
 │   ├── maintenance/

@@ -44,8 +44,11 @@ DOCX_OUT_DIR    = BOOK_DIR / 'docx-por-capitulo'
 NVIDIA_DARK    = '#0F3D3D'
 NVIDIA_ACCENT  = '#1D9CB8'
 NVIDIA_TABLE   = '#1A5A6A'
-CODE_BG        = '#F2F2F2'
+CODE_BG        = '#EAEAEA'   # obs#7: changed from F2F2F2
 CODE_BORDER    = '#1A5A6A'
+TABLE_BG       = 'EAEAEA'   # obs#6: uniform data row bg
+TABLE_BORDER   = 'FFFFFF'   # obs#6: white borders
+TABLE_BORDER_SZ = '12'      # obs#6: 1.5pt in OOXML eighths
 CODE_FG        = '#1A1A1A'
 CODE_COMMENT   = '#888888'
 CODE_OUTPUT    = '#555555'
@@ -180,6 +183,62 @@ def set_cell_padding(cell, top=80, left=160, bottom=80, right=120):
     tc_pr.append(tc_mar)
 
 
+def set_all_cell_borders(cell, color_hex, sz):
+    """Aplica bordes del mismo color a todos los lados de una celda."""
+    tc_pr = cell._tc.get_or_add_tcPr()
+    for old in tc_pr.findall(qn('w:tcBorders')):
+        tc_pr.remove(old)
+    borders = OxmlElement('w:tcBorders')
+    for side in ('top', 'left', 'bottom', 'right'):
+        el = OxmlElement(f'w:{side}')
+        el.set(qn('w:val'), 'single')
+        el.set(qn('w:sz'), sz)
+        el.set(qn('w:color'), color_hex.lstrip('#'))
+        borders.append(el)
+    tc_pr.append(borders)
+
+
+def set_row_height(row, cm_value):
+    """Altura mínima de fila en cm (1 cm ≈ 567 twips)."""
+    tr = row._tr
+    trPr = tr.get_or_add_trPr()
+    for old in trPr.findall(qn('w:trHeight')):
+        trPr.remove(old)
+    trHeight = OxmlElement('w:trHeight')
+    trHeight.set(qn('w:val'), str(int(cm_value * 567)))
+    trHeight.set(qn('w:hRule'), 'atLeast')
+    trPr.append(trHeight)
+
+
+def set_repeat_header(row):
+    """Marca la fila para repetirse como encabezado en cada página."""
+    tr = row._tr
+    trPr = tr.get_or_add_trPr()
+    if trPr.find(qn('w:tblHeader')) is None:
+        tblHeader = OxmlElement('w:tblHeader')
+        trPr.append(tblHeader)
+
+
+def set_cell_valign(cell, val='center'):
+    """Alineación vertical de celda."""
+    tc_pr = cell._tc.get_or_add_tcPr()
+    for old in tc_pr.findall(qn('w:vAlign')):
+        tc_pr.remove(old)
+    vAlign = OxmlElement('w:vAlign')
+    vAlign.set(qn('w:val'), val)
+    tc_pr.append(vAlign)
+
+
+def set_outline_level(para, level):
+    """Establece el nivel de esquema para TOC automático de Word (1=H1, 2=H2, 3=H3)."""
+    pPr = para._p.get_or_add_pPr()
+    for old in pPr.findall(qn('w:outlineLvl')):
+        pPr.remove(old)
+    outlineLvl = OxmlElement('w:outlineLvl')
+    outlineLvl.set(qn('w:val'), str(level - 1))  # 0-indexed
+    pPr.append(outlineLvl)
+
+
 def keep_together(paragraph):
     pPr = paragraph._p.get_or_add_pPr()
     kt = OxmlElement('w:keepLines')
@@ -237,6 +296,7 @@ def add_chapter_title(doc, text):
         r2.bold = False
     else:
         p.add_run(text)
+    set_outline_level(p, 1)  # obs#11: TOC support
     return p
 
 
@@ -262,9 +322,11 @@ def add_subhead(doc, text, level=2):
     p.paragraph_format.space_before = Pt(12 if level == 2 else 8)
     p.paragraph_format.space_after = Pt(3)
     r = p.add_run(text)
-    if level == 3:
-        # Nivel 3 un poco menor
-        r.font.size = Pt(9)
+    if level == 2:
+        r.font.size = Pt(12)  # obs#5
+    elif level == 3:
+        r.font.size = Pt(11)  # obs#5: was 9pt
+    set_outline_level(p, level)  # obs#11: TOC support
     return p
 
 
@@ -281,7 +343,9 @@ def add_first_paragraph(doc, text, is_front_matter=False):
     style = STYLE_FRONT_MATTER if is_front_matter else STYLE_FIRST_PARA
     style = get_style(doc, style, 'Normal')
     p = doc.add_paragraph(style=style)
-    _add_inline_formatted_runs(p, text)
+    p.paragraph_format.space_before = Pt(5)   # obs#1
+    p.paragraph_format.space_after  = Pt(5)   # obs#1
+    _add_inline_formatted_runs(p, text, font_size=Pt(10))  # obs#5
     return p
 
 
@@ -289,38 +353,63 @@ def add_body_paragraph(doc, text, is_front_matter=False):
     style = STYLE_FRONT_MATTER if is_front_matter else STYLE_BODY
     style = get_style(doc, style, 'Normal')
     p = doc.add_paragraph(style=style)
-    _add_inline_formatted_runs(p, text)
+    p.paragraph_format.space_before = Pt(5)   # obs#1
+    p.paragraph_format.space_after  = Pt(5)   # obs#1
+    _add_inline_formatted_runs(p, text, font_size=Pt(10))  # obs#5
     return p
 
 
-def _add_inline_formatted_runs(paragraph, text):
+def _add_inline_formatted_runs(paragraph, text, font_size=None):
     """Procesa markdown inline: **bold**, *italic*, `code`, [link](url)."""
-    # Primero extraer links
     text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
 
-    # Tokenizar bold, italic, code inline
     pattern = re.compile(r'(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)')
     last = 0
     for m in pattern.finditer(text):
         if m.start() > last:
-            paragraph.add_run(text[last:m.start()])
+            r = paragraph.add_run(text[last:m.start()])
+            if font_size:
+                r.font.size = font_size
         full = m.group(0)
         if full.startswith('**'):
             r = paragraph.add_run(m.group(2))
             r.bold = True
+            if font_size:
+                r.font.size = font_size
         elif full.startswith('*'):
             r = paragraph.add_run(m.group(3))
             r.italic = True
+            if font_size:
+                r.font.size = font_size
         elif full.startswith('`'):
             r = paragraph.add_run(m.group(4))
             r.font.name = 'Courier New'
-            r.font.size = Pt(8.5)
+            r.font.size = Pt(8)   # obs#5: inline code 8pt
         last = m.end()
     if last < len(text):
-        paragraph.add_run(text[last:])
+        r = paragraph.add_run(text[last:])
+        if font_size:
+            r.font.size = font_size
 
 
-def add_code_block(doc, code, lang='bash'):
+def split_code_at_separators(code_text):
+    """Divide código en sub-bloques en líneas '# ── SectionName ──────'."""
+    SEP = re.compile(r'^#\s*[─—\-]{3,}')
+    sections, current = [], []
+    for line in code_text.split('\n'):
+        if SEP.match(line.strip()):
+            if any(ln.strip() for ln in current):
+                sections.append('\n'.join(current))
+            current = [line]
+        else:
+            current.append(line)
+    if any(ln.strip() for ln in current):
+        sections.append('\n'.join(current))
+    return sections if len(sections) > 1 else [code_text]
+
+
+def _render_code_table(doc, code, lang='bash'):
+    """Renderiza un bloque de código como tabla 1×1."""
     tbl = doc.add_table(rows=1, cols=1)
     table_full_width(tbl)
     cell = tbl.cell(0, 0)
@@ -329,7 +418,6 @@ def add_code_block(doc, code, lang='bash'):
     set_cell_padding(cell, top=100, left=180, bottom=100, right=140)
 
     lines = code.split('\n')
-    # Remove trailing empty lines
     while lines and not lines[-1].strip():
         lines.pop()
 
@@ -346,25 +434,46 @@ def add_code_block(doc, code, lang='bash'):
         keep_together(p)
 
         stripped = line.strip()
-        is_comment = (stripped.startswith('#') and lang in ('bash', 'sh', 'shell', ''))
-        is_comment = is_comment or (stripped.startswith('//') and lang in ('js', 'javascript', 'json', 'c', 'cpp'))
-        is_output = not stripped.startswith('$') and not stripped.startswith('#') and lang in ('bash', 'sh', 'shell', '') and not stripped.startswith('sudo') and not stripped.startswith('git') and not stripped.startswith('pip') and not stripped.startswith('docker') and not stripped.startswith('python') and not stripped.startswith('curl') and bool(stripped) and not re.match(r'^[a-z_]+=', stripped) and not stripped.startswith('apt') and not stripped.startswith('echo') and not stripped.startswith('cat') and not stripped.startswith('export') and not stripped.startswith('cp') and not stripped.startswith('mv') and not stripped.startswith('rm') and not stripped.startswith('mkdir') and not stripped.startswith('ls') and not stripped.startswith('cd') and not stripped.startswith('nano') and not stripped.startswith('vim') and not stripped.startswith('source') and not stripped.startswith('chmod') and not stripped.startswith('chown') and not stripped.startswith('systemctl') and not stripped.startswith('service') and not stripped.startswith('wget') and not stripped.startswith('tar') and not stripped.startswith('unzip') and not stripped.startswith('ollama') and not stripped.startswith('nvcc') and not stripped.startswith('jetson') and not stripped.startswith('jtop') and not stripped.startswith('nvidia') and not stripped.startswith('make') and not stripped.startswith('cmake') and not stripped.startswith('./') and not stripped.startswith('bash') and not stripped.startswith('sh ')
+        # obs#7: comments in ALL languages, not just bash/js
+        is_comment = stripped.startswith('#') or stripped.startswith('//')
+        is_output = (
+            lang in ('bash', 'sh', 'shell', '')
+            and not is_comment
+            and not stripped.startswith('$')
+            and bool(stripped)
+            and not re.match(r'^[A-Z_]+=|^[a-z_]+=', stripped)
+            and not any(stripped.startswith(cmd) for cmd in (
+                'sudo', 'git', 'pip', 'pip3', 'docker', 'python', 'python3',
+                'curl', 'apt', 'apt-get', 'echo', 'cat', 'export', 'cp',
+                'mv', 'rm', 'mkdir', 'ls', 'cd', 'nano', 'vim', 'source',
+                'chmod', 'chown', 'systemctl', 'service', 'wget', 'tar',
+                'unzip', 'ollama', 'nvcc', 'jetson', 'jtop', 'nvidia',
+                'make', 'cmake', './', 'bash', 'sh ', 'tee', 'touch',
+                'find', 'grep', 'sed', 'awk', 'xargs', 'head', 'tail',
+            ))
+        )
 
         r = p.add_run(line)
         r.font.name = 'Courier New'
         r.font.size = Pt(8)
         if is_comment:
             r.font.color.rgb = hex_rgb(CODE_COMMENT)
-            r.italic = True
-        elif is_output and lang in ('bash', 'sh', 'shell', '') and not stripped.startswith('$'):
+            r.italic = True  # obs#7: italic for all comments
+        elif is_output:
             r.font.color.rgb = hex_rgb(CODE_OUTPUT)
+            r.italic = True
         else:
             r.font.color.rgb = hex_rgb(CODE_FG)
 
-    # Espacio después del bloque
-    after = doc.add_paragraph()
-    after.paragraph_format.space_before = Pt(0)
-    after.paragraph_format.space_after = Pt(6)
+
+def add_code_block(doc, code, lang='bash'):
+    """obs#7: splits at separator lines, renders each section as a separate table."""
+    sections = split_code_at_separators(code)
+    for idx, section in enumerate(sections):
+        _render_code_table(doc, section, lang)
+        spacer = doc.add_paragraph()
+        spacer.paragraph_format.space_before = Pt(0)
+        spacer.paragraph_format.space_after = Pt(2 if idx < len(sections) - 1 else 6)
 
 
 def add_callout(doc, text, kind='NOTA'):
@@ -407,44 +516,67 @@ def _has_endure_font():
     return True  # La plantilla ya embebe la fuente
 
 
-def add_table(doc, headers, rows):
+def add_table(doc, headers, rows, description=None):
+    """obs#6: white borders 1.5pt, EAEAEA uniform bg, repeat header, center/justify by length."""
+    if description:
+        p_desc = doc.add_paragraph()
+        r_desc = p_desc.add_run(description)
+        r_desc.font.size = Pt(8)   # obs#11
+        r_desc.italic = True
+        p_desc.paragraph_format.space_before = Pt(5)
+        p_desc.paragraph_format.space_after = Pt(2)
+
     n_cols = max(len(headers), 1)
     tbl = doc.add_table(rows=1 + len(rows), cols=n_cols)
     try:
         tbl.style = 'Table Grid'
     except KeyError:
-        pass  # KDP template may not have Table Grid; borders added manually below
+        pass
     table_full_width(tbl)
 
-    # Fila de encabezado
+    # ── Fila de encabezado ────────────────────────────────────────────────────
     hdr_row = tbl.rows[0]
-    for i, h in enumerate(headers):
-        if i >= n_cols:
-            break
+    set_row_height(hdr_row, 0.8)     # obs#6: 0.8cm mínimo
+    set_repeat_header(hdr_row)       # obs#6: repetir en cada página
+    for i, h in enumerate(headers[:n_cols]):
         cell = hdr_row.cells[i]
         cell_bg(cell, NVIDIA_TABLE)
+        set_all_cell_borders(cell, TABLE_BORDER, TABLE_BORDER_SZ)
+        set_cell_valign(cell)
+        set_cell_padding(cell, top=60, left=120, bottom=60, right=80)
         p = cell.paragraphs[0]
-        r = p.add_run(re.sub(r'\*\*(.+?)\*\*', r'\1', str(h)))
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after  = Pt(0)
+        h_clean = re.sub(r'\*\*(.+?)\*\*', r'\1', str(h))
+        p.alignment = (WD_ALIGN_PARAGRAPH.CENTER
+                       if len(h_clean.replace(' ', '')) < 30
+                       else WD_ALIGN_PARAGRAPH.JUSTIFY)
+        r = p.add_run(h_clean)
         r.bold = True
-        r.font.size = Pt(8.5)
+        r.font.size = Pt(8)     # obs#5
         r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Filas de datos
+    # ── Filas de datos ─────────────────────────────────────────────────────────
     for ri, row in enumerate(rows):
         tbl_row = tbl.rows[ri + 1]
-        bg = 'F8F8F8' if ri % 2 == 0 else 'FFFFFF'
-        for ci, val in enumerate(row):
-            if ci >= n_cols:
-                break
+        set_row_height(tbl_row, 0.5)  # obs#6: 0.5cm mínimo
+        for ci, val in enumerate(row[:n_cols]):
             cell = tbl_row.cells[ci]
-            cell_bg(cell, bg)
+            cell_bg(cell, TABLE_BG)   # obs#6: uniforme EAEAEA, sin alternancia
+            set_all_cell_borders(cell, TABLE_BORDER, TABLE_BORDER_SZ)
+            set_cell_valign(cell)
+            set_cell_padding(cell, top=40, left=120, bottom=40, right=80)
             p = cell.paragraphs[0]
+            p.paragraph_format.space_before = Pt(0)
+            p.paragraph_format.space_after  = Pt(0)
             val_clean = re.sub(r'\*\*(.+?)\*\*', r'\1', str(val))
             val_clean = re.sub(r'\*(.+?)\*', r'\1', val_clean)
             val_clean = re.sub(r'`(.+?)`', r'\1', val_clean)
+            p.alignment = (WD_ALIGN_PARAGRAPH.CENTER
+                           if len(val_clean.replace(' ', '')) < 30
+                           else WD_ALIGN_PARAGRAPH.JUSTIFY)
             r = p.add_run(val_clean)
-            r.font.size = Pt(8.5)
+            r.font.size = Pt(8)  # obs#5
 
     after = doc.add_paragraph()
     after.paragraph_format.space_before = Pt(0)
@@ -457,12 +589,12 @@ def add_bullets(doc, items, numbered=False, is_front_matter=False):
         p = doc.add_paragraph(style=style)
         p.paragraph_format.left_indent = Inches(0.25)
         p.paragraph_format.first_line_indent = Inches(-0.15)
-        p.paragraph_format.space_before = Pt(1)
-        p.paragraph_format.space_after = Pt(1)
+        p.paragraph_format.space_before = Pt(2)
+        p.paragraph_format.space_after = Pt(2)
         prefix = f'{i}. ' if numbered else '• '
         r_prefix = p.add_run(prefix)
-        r_prefix.font.size = Pt(9)
-        _add_inline_formatted_runs(p, item.strip())
+        r_prefix.font.size = Pt(10)  # obs#5
+        _add_inline_formatted_runs(p, item.strip(), font_size=Pt(10))  # obs#5
     after = doc.add_paragraph()
     after.paragraph_format.space_before = Pt(0)
     after.paragraph_format.space_after = Pt(4)
@@ -475,6 +607,7 @@ def add_image_caption(doc, caption_text):
     p.paragraph_format.space_after = Pt(8)
     r = p.add_run(caption_text)
     r.italic = True
+    r.font.size = Pt(8)  # obs#5+#11
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -491,7 +624,7 @@ C_TEXT   = '#F0F0F0'
 C_DARK_TEXT = '#1A1A1A'
 
 
-def fig_setup(w=7.0, h=3.8):
+def fig_setup(w=7.0, h=4.5):   # obs#3: increased default height from 3.8 to 4.5
     fig, ax = plt.subplots(figsize=(w, h))
     fig.patch.set_facecolor(C_DARK)
     ax.set_facecolor(C_DARK)
@@ -501,16 +634,16 @@ def fig_setup(w=7.0, h=3.8):
     return fig, ax
 
 
-def draw_box(ax, x, y, w, h, text, sub='', color=C_MID, text_color=C_WHITE, fontsize=9, subsize=7.5):
+def draw_box(ax, x, y, w, h, text, sub='', color=C_MID, text_color=C_WHITE, fontsize=9, subsize=8.0):
     rect = mpatches.FancyBboxPatch((x, y), w, h,
                                     boxstyle='round,pad=0.1',
                                     facecolor=color, edgecolor=C_ACCENT, linewidth=1.2)
     ax.add_patch(rect)
     cy = y + h / 2
     if sub:
-        ax.text(x + w/2, cy + 0.18, text, ha='center', va='center',
+        ax.text(x + w/2, cy + 0.22, text, ha='center', va='center',   # obs#3: was 0.18
                 color=text_color, fontsize=fontsize, fontweight='bold')
-        ax.text(x + w/2, cy - 0.28, sub, ha='center', va='center',
+        ax.text(x + w/2, cy - 0.38, sub, ha='center', va='center',    # obs#3: was -0.28
                 color=C_GRAY, fontsize=subsize)
     else:
         ax.text(x + w/2, cy, text, ha='center', va='center',
@@ -544,9 +677,8 @@ def save_fig(fig, path):
 
 # ── Infografía 1 — Cap 1: Arquitectura del sistema al final del libro ─────────
 def infografia_cap01_arquitectura_sistema():
-    fig, ax = fig_setup(7.0, 4.2)
+    fig, ax = fig_setup(7.0, 4.8)
     fig_title(ax, 'Arquitectura del Sistema al Final del Libro')
-    # Capas
     layers = [
         (C_MID,    'INTERNET / CLIENTES',   ':80/:443'),
         ('#0A7A7A', 'Cloudflare Tunnel + Nginx', 'Reverse proxy + SSL'),
@@ -555,8 +687,8 @@ def infografia_cap01_arquitectura_sistema():
         ('#083C3C', 'Hardware Jetson',       'GPU Ampere sm_87 · 64 GB RAM Unificada'),
     ]
     total = len(layers)
-    h = 1.3
-    gap = 0.18
+    h = 1.4   # obs#3: was 1.3
+    gap = 0.25  # obs#3: was 0.18
     start_y = 8.8 - (total * (h + gap))
     for i, (color, label, sub) in enumerate(layers):
         y = start_y + i * (h + gap)
@@ -646,7 +778,7 @@ def infografia_cap05_rendimiento():
 
 # ── Infografía 5 — Cap 9: GPU en Contenedores ────────────────────────────────
 def infografia_cap09_gpu_containers():
-    fig, ax = fig_setup(7.0, 4.2)
+    fig, ax = fig_setup(7.0, 4.8)
     fig_title(ax, 'Arquitectura de GPU en Contenedores Jetson')
     layers = [
         (C_MID,    'Aplicación / Modelo IA', '(Python, PyTorch, TensorRT)'),
@@ -655,8 +787,8 @@ def infografia_cap09_gpu_containers():
         ('#0A3A3A', 'Driver NVIDIA L4T', '(Host: /dev/nvhost-*, /dev/tegra-*)'),
         ('#083030', 'Hardware GPU Ampere sm_87', '(2048 CUDA cores · 64 GB RAM Unificada)'),
     ]
-    h, gap = 1.1, 0.2
-    start_y = 1.5
+    h, gap = 1.3, 0.25  # obs#3: was 1.1, 0.2
+    start_y = 1.3
     for i, (color, label, sub) in enumerate(layers):
         y = start_y + i * (h + gap)
         draw_box(ax, 0.4, y, 9.2, h, label, sub, color=color, fontsize=8.5)
@@ -726,9 +858,8 @@ def infografia_cap11a_openclaw():
 
 # ── Infografía 8 — Cap 11B: NemoClaw ─────────────────────────────────────────
 def infografia_cap11b_nemoclaw():
-    fig, ax = fig_setup(7.0, 4.0)
+    fig, ax = fig_setup(7.0, 4.8)
     fig_title(ax, 'NemoClaw — Capa de Seguridad L7 sobre OpenClaw')
-    # Capas de seguridad
     layers = [
         ('Cliente Externo',              '#083030', '(Telegram / Web / API)'),
         ('Cloudflare Tunnel + SSL',      '#0A3A3A', '(TLS 1.3 · DDoS mitigation)'),
@@ -736,8 +867,8 @@ def infografia_cap11b_nemoclaw():
         ('OpenClaw Gateway :18789',      '#0A5A5A', '(Routing · Context management)'),
         ('LLM Backend (vLLM / Ollama)',  '#0A7070', '(Inferencia local · 64 GB RAM)'),
     ]
-    h, gap = 1.0, 0.25
-    start_y = 2.0
+    h, gap = 1.2, 0.28  # obs#3: was 1.0, 0.25
+    start_y = 1.5  # obs#3: recalculated
     for i, (label, color, sub) in enumerate(layers):
         y = start_y + i * (h + gap)
         draw_box(ax, 0.4, y, 9.2, h, label, sub, color=color, fontsize=8)
@@ -1014,7 +1145,7 @@ def infografia_cap23_turismo():
 
 # ── Infografía 19 — Cap 28: Arquitectura AIaaS ───────────────────────────────
 def infografia_cap28_aiaas():
-    fig, ax = fig_setup(7.0, 4.5)
+    fig, ax = fig_setup(7.0, 5.0)
     fig_title(ax, 'Arquitectura AIaaS — Jetson Expuesto a Internet')
     layers = [
         ('Internet / Clientes',            '#083030', ':443 HTTPS'),
@@ -1024,8 +1155,8 @@ def infografia_cap28_aiaas():
         ('Servicios IA Internos',          '#0A5050', 'vLLM :8000 · STT · TTS · OpenClaw :18789'),
         ('Hardware Jetson AGX Orin 64GB',  '#0A3030', 'GPU Ampere · Inferencia local'),
     ]
-    h, gap = 1.05, 0.18
-    start_y = 1.5
+    h, gap = 1.2, 0.25  # obs#3: was 1.05, 0.18
+    start_y = 1.2  # obs#3: recalculated
     for i, (label, color, sub) in enumerate(layers):
         y = start_y + i * (h + gap)
         draw_box(ax, 0.4, y, 9.2, h, label, sub, color=color, fontsize=8.5)
@@ -1182,6 +1313,53 @@ def _get_infografia_key_from_comment(comment_text, md_path_stem):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# ASCII DIAGRAM DETECTION (obs#2)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_BOX_CHARS = frozenset('┌┐└┘─│├┤┬┴┼╔╗╚╝═║╠╣╦╩╬↓↑←→▼▲⟶⟵')
+_TREE_RE   = re.compile(r'^[├└│]\s*[─]')
+
+
+def _line_has_box(ln):
+    return any(c in _BOX_CHARS for c in ln)
+
+
+def add_ascii_diagram(doc, ascii_text):
+    """Renderiza un diagrama ASCII como imagen matplotlib con paleta NVIDIA."""
+    lines = [l for l in ascii_text.split('\n') if l.strip()]
+    if not lines:
+        return
+    n_lines = len(lines)
+    fig_h = max(2.0, min(n_lines * 0.38 + 1.2, 6.0))
+
+    fig, ax = plt.subplots(figsize=(7.0, fig_h))
+    fig.patch.set_facecolor(C_DARK)
+    ax.set_facecolor(C_DARK)
+    ax.axis('off')
+
+    text_content = '\n'.join(lines)
+    ax.text(0.04, 0.96, text_content,
+            transform=ax.transAxes,
+            ha='left', va='top',
+            fontsize=8.5, fontfamily='monospace',
+            color=C_WHITE,
+            linespacing=1.4)
+
+    INFOGRAFIAS_DIR.mkdir(exist_ok=True)
+    key = abs(hash(ascii_text[:80])) % 100000
+    path = INFOGRAFIAS_DIR / f'ascii_{key:05d}.png'
+    fig.savefig(str(path), dpi=150, bbox_inches='tight', facecolor=C_DARK)
+    plt.close(fig)
+
+    try:
+        doc.add_picture(str(path), width=Inches(5.5))
+        last_p = doc.paragraphs[-1]
+        last_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    except Exception as e:
+        print(f'    [AVISO] No se pudo insertar diagrama ASCII: {e}')
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PARSER MARKDOWN EXTENDIDO
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1289,6 +1467,30 @@ def parse_markdown(md_text, md_path_stem=''):
             i += 1
             continue
 
+        # Diagrama ASCII / box-drawing art (obs#2) — fuera de code blocks
+        if _line_has_box(line) or _TREE_RE.match(line):
+            diagram_lines = [line]
+            i += 1
+            while i < len(lines):
+                nxt = lines[i]
+                if not nxt.strip():
+                    # Línea vacía: continuar solo si la siguiente tiene box chars
+                    if i + 1 < len(lines) and (_line_has_box(lines[i + 1]) or _TREE_RE.match(lines[i + 1])):
+                        diagram_lines.append(nxt)
+                        i += 1
+                        continue
+                    else:
+                        break
+                if _line_has_box(nxt) or _TREE_RE.match(nxt):
+                    diagram_lines.append(nxt)
+                    i += 1
+                else:
+                    break
+            content = '\n'.join(diagram_lines).rstrip()
+            if content.strip():
+                blocks.append({'type': 'ascii_diagram', 'content': content})
+            continue
+
         # Párrafo de cuerpo
         if line.strip():
             para_lines = []
@@ -1394,6 +1596,10 @@ def build_chapter_content(doc, md_path, infografias_generated=None):
             add_bullets(doc, block['items'], block.get('numbered', False), is_front_matter=is_fm)
             after_heading = False
 
+        elif btype == 'ascii_diagram':
+            add_ascii_diagram(doc, block['content'])  # obs#2
+            after_heading = False
+
         elif btype == 'infographic':
             key = block['key']
             if infografias_generated and key in infografias_generated:
@@ -1443,8 +1649,60 @@ def build_all_chapters(infografias_generated=None):
     return count
 
 
+def verify_chapter_refs():
+    """obs#8: Verifica que todas las referencias 'Capítulo X' en los .md coincidan con capítulos reales."""
+    import re as _re
+    # Construir mapa número → título desde el #-heading de cada capítulo
+    cap_map = {}
+    cap_re = _re.compile(r'[Cc]ap(?:ítulo|\.)\s*(\d+[A-Za-z]?)', _re.IGNORECASE)
+    for rel in BOOK_CHAPTERS:
+        md_path = BOOK_DIR / rel
+        if not md_path.exists():
+            continue
+        try:
+            first_line = next(
+                (l.lstrip('#').strip() for l in md_path.read_text(encoding='utf-8').splitlines()
+                 if l.startswith('#') and not l.startswith('##')), '')
+            m = _re.match(r'[Cc]ap(?:ítulo|\.)\s*(\d+[A-Za-z]?)', first_line, _re.IGNORECASE)
+            if m:
+                cap_map[m.group(1).upper()] = first_line
+        except Exception:
+            pass
+
+    print(f'Capítulos indexados: {sorted(cap_map.keys())}')
+    issues = []
+    for rel in BOOK_CHAPTERS:
+        md_path = BOOK_DIR / rel
+        if not md_path.exists():
+            continue
+        try:
+            text = md_path.read_text(encoding='utf-8')
+            in_code = False
+            for ln, line in enumerate(text.splitlines(), 1):
+                if line.strip().startswith('```'):
+                    in_code = not in_code
+                if in_code:
+                    continue
+                for m in cap_re.finditer(line):
+                    num = m.group(1).upper()
+                    if num not in cap_map:
+                        issues.append(f'  {md_path.name}:{ln} — "{m.group(0)}" (num {num} no encontrado)')
+        except Exception:
+            pass
+
+    if issues:
+        print(f'\n{len(issues)} referencias potencialmente incorrectas:')
+        for issue in issues:
+            print(issue)
+    else:
+        print('\nTodas las referencias de capítulo son válidas.')
+    return issues
+
+
 def compile_manuscript(output_path, infografias_generated=None):
-    """Compila todos los capítulos en un único DOCX manuscrito."""
+    """Compila todos los capítulos en un único DOCX manuscrito.
+    obs#10: usa add_page_break() — NO add_section() — para mantener una única sección
+    compartiendo encabezados, pies y numeración de página en todo el manuscrito."""
     doc = create_chapter_doc()
     first = True
     for rel_path in BOOK_CHAPTERS:
@@ -1453,7 +1711,7 @@ def compile_manuscript(output_path, infografias_generated=None):
             print(f'  [AVISO] No encontrado: {rel_path}')
             continue
         if not first:
-            doc.add_page_break()
+            doc.add_page_break()   # obs#10: page break, NOT section break
         first = False
         print(f'  Compilando: {rel_path}')
         build_chapter_content(doc, md_path, infografias_generated)
@@ -1470,9 +1728,14 @@ if __name__ == '__main__':
         print(f'Uso: python {sys.argv[0]} <archivo.md>')
         print(f'     python {sys.argv[0]} --batch')
         print(f'     python {sys.argv[0]} --compile [salida.docx]')
+        print(f'     python {sys.argv[0]} --verify-refs')
         sys.exit(1)
 
     mode = sys.argv[1]
+
+    if mode == '--verify-refs':
+        issues = verify_chapter_refs()
+        sys.exit(1 if issues else 0)
 
     if mode == '--batch':
         print('Generando infografías...')

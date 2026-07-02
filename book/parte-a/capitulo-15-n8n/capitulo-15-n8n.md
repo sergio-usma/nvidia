@@ -37,7 +37,7 @@ docker inspect n8nio/n8n:latest | python3 -c \
   "import sys,json; img=json.load(sys.stdin)[0]; print('Arquitectura:', img['Architecture'], img['Os'])"
 ```
 
-```
+```bash
 # Salida esperada:
 Arquitectura: arm64 linux
 ```
@@ -49,7 +49,7 @@ docker inspect postgres:16-alpine | python3 -c \
   "import sys,json; img=json.load(sys.stdin)[0]; print('PostgreSQL arquitectura:', img['Architecture'])"
 ```
 
-```
+```bash
 # Salida esperada:
 PostgreSQL arquitectura: arm64
 ```
@@ -193,7 +193,7 @@ docker compose logs -f
 # Presionar Ctrl+C para salir de los logs
 ```
 
-```
+```bash
 # Salida esperada (extracto):
 n8n-postgres | LOG:  database system is ready to accept connections
 n8n          | Editor is now accessible via: http://0.0.0.0:5678/
@@ -205,7 +205,7 @@ n8n          | Press "o" to open in Browser
 docker compose ps
 ```
 
-```
+```bash
 # Salida esperada:
 NAME            IMAGE                COMMAND                  SERVICE    CREATED         STATUS
 n8n             n8nio/n8n:latest     "tini -- /docker-ent…"   n8n        30 seconds ago  Up 28 seconds
@@ -222,7 +222,7 @@ curl -sf http://localhost:5678/ > /dev/null && echo "[OK] N8N accesible en :5678
 
 Abra en el navegador desde cualquier equipo de la red local:
 
-```
+```bash
 http://192.168.1.100:5678
 ```
 
@@ -346,7 +346,7 @@ Este pipeline completo recibe una pregunta via webhook, la procesa con el LLM lo
 <!-- INFOGRAFÍA: Diseño del Pipeline: Webhook → LLM → Email — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
-```
+```bash
 Trigger: Webhook POST /webhook/pregunta-llm
          { "pregunta": "¿Cuáles son los beneficios del edge AI?" }
                 │
@@ -475,7 +475,7 @@ print('Respuesta:', resp.get('respuesta')[:300], '...')
 "
 ```
 
-```
+```bash
 # Salida esperada:
 Estado: procesado
 Pregunta: ¿Cuáles son las tres ventajas principales del edge AI sobre la nube?
@@ -510,8 +510,8 @@ curl -s -X POST http://localhost:18789/api/agent/run \
 1. **Method:** POST
 2. **URL:** `http://localhost:18789/api/agent/run`
 3. **Headers:**
-   - `Content-Type: application/json`
-   - `Authorization: Bearer {{ $credentials.openclaw_token }}`
+ - `Content-Type: application/json`
+ - `Authorization: Bearer {{ $credentials.openclaw_token }}`
 4. **Body:**
 
 ```json
@@ -593,7 +593,7 @@ curl -s http://localhost:5678/api/v1/executions?status=running \
 docker stats n8n n8n-postgres --no-stream
 ```
 
-```
+```bash
 # Salida esperada de docker stats:
 CONTAINER ID   NAME          CPU %   MEM USAGE / LIMIT     MEM %
 abc123         n8n           2.3%    380MiB / 62.7GiB      0.6%
@@ -713,7 +713,7 @@ pwr-15w          # modo ahorro energético
 
 El stack completo de automatización agéntica combina N8N como orquestador con OpenClaw como agente de razonamiento:
 
-```
+```bash
 Fuente externa (email, Slack, webhook, cron)
         │
         ▼

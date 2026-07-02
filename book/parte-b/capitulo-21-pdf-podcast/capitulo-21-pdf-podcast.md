@@ -67,7 +67,7 @@ mkdir -p ~/projects/pdf2podcast/{scripts,input,output,tmp}
 cd ~/projects/pdf2podcast
 ```
 
-```
+```bash
 pdf2podcast/
 ├── scripts/
 │   ├── 01_extract_text.py       # Extracción de texto del PDF
@@ -202,7 +202,7 @@ if __name__ == "__main__":
 python scripts/01_extract_text.py input/mi_articulo.pdf tmp/extracted.json
 ```
 
-```
+```bash
 # Salida esperada
 [PDF] Extrayendo texto de: mi_articulo.pdf
   Procesadas 10/32 páginas...
@@ -405,7 +405,7 @@ if __name__ == "__main__":
 python scripts/02_generate_script.py tmp/extracted.json tmp/script.json
 ```
 
-```
+```bash
 # Salida esperada
 [LLM] Generando guión de pódcast para: mi_articulo
    6 chunks → ~24 intercambios de diálogo
@@ -942,7 +942,7 @@ Con **N8N** (ver Capítulo 14) u **OpenClaw** (ver Capítulo 11A), cualquier usu
 
 **Flujo de integración:**
 
-```
+```bash
 Usuario → envía PDF por Telegram
          ↓
 N8N / OpenClaw recibe el archivo

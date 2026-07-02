@@ -104,7 +104,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 Verá la siguiente salida durante la instalación (puede tardar **2-3 minutos**):
 
-```
+```bash
 >>> Downloading ollama...
 >>> Installing ollama to /usr/local/bin...
 WARNING: Unsupported JetPack version detected. GPU may not be supported
@@ -124,7 +124,7 @@ sudo systemctl status ollama
 
 Salida esperada:
 
-```
+```bash
 ollama version is 0.x.x
 ● ollama.service - Ollama Service
      Loaded: loaded (/etc/systemd/system/ollama.service; enabled)
@@ -167,7 +167,7 @@ sudo ss -tlnp | grep 11434
 
 Salida esperada (debe mostrar `*:11434`, no `127.0.0.1:11434`):
 
-```
+```bash
 LISTEN 0  4096  *:11434  *:*  users:(("ollama",pid=XXXX,fd=3))
 ```
 
@@ -234,7 +234,7 @@ ollama list
 
 Salida esperada de `ollama list`:
 
-```
+```bash
 NAME                    ID              SIZE      MODIFIED
 qwen3:8b                a8d9d84b3c66    5.2 GB    2 minutes ago
 gemma4:latest           adc7671b8ca6    9.4 GB    5 minutes ago
@@ -267,7 +267,7 @@ ollama run qwen3:8b --verbose "Explica edge AI en una frase" 2>&1 | \
 
 Salida esperada (confirma GPU activa):
 
-```
+```bash
 eval rate:     25+ tokens/s   ← GPU confirmada (CPU-only sería 2-5 tok/s)
 ```
 
@@ -307,7 +307,7 @@ Invoke-RestMethod -Uri "http://192.168.1.100:11434/api/tags" |
 
 Salida esperada:
 
-```
+```bash
 Nombre                  Tamaño(GB)
 ------                  ----------
 qwen3:8b                5.2
@@ -347,7 +347,7 @@ llama.cpp es el motor de referencia para modelos en formato **GGUF** (cuantizado
 
 JetPack 7.2 incluye **CUDA 13.2.1**. Los contenedores Docker precompilados de llama.cpp disponibles en Docker Hub (como `dustynv/llama_cpp:r36.4`) fueron compilados contra CUDA 12 y fallan en JP 7.2 con el error:
 
-```
+```bash
 libcudart.so.12: cannot open shared object file: No such file or directory
 ```
 
@@ -396,7 +396,7 @@ ls -lh ~/jetson-ai-data/models/gguf/*.gguf
 
 Salida esperada:
 
-```
+```bash
 -rw-rw-r-- 1 jetson jetson 5.2G Jun 28 10:30 Qwen3-8B-Q4_K_M.gguf
 ```
 
@@ -427,7 +427,7 @@ cmake -B build \
 
 Salida esperada de cmake (extracto):
 
-```
+```bash
 -- CUDA found: /usr/local/cuda
 -- CUDA version: 13.2.1
 -- GGML_CUDA_ARCHITECTURES: 87
@@ -444,7 +444,7 @@ cmake --build build --config Release -j 4
 
 Al finalizar verá:
 
-```
+```bash
 [100%] Linking CXX executable llama-server
 [100%] Built target llama-server
 ```
@@ -475,7 +475,7 @@ sudo nvpmodel -m 2   # MODE_30W para modelos 7B-8B
 
 Salida esperada al iniciar exitosamente:
 
-```
+```bash
 I device_info:
 I   - CUDA0   : Orin (62817 MiB, 59531 MiB free)   ← GPU confirmada
 I llama_model_loader: loaded meta data with 32 key-value pairs
@@ -487,7 +487,7 @@ I srv  llama_server: server is listening on http://0.0.0.0:8080
 
 **Rendimiento verificado en AGX Orin 64GB / JP 7.2 (Qwen3-8B Q4_K_M, contexto 8192, 2 slots paralelos):**
 
-```
+```bash
 Prompt eval:  45.13 tokens/seg
 Generación:    7.61 tokens/seg
 ```
@@ -508,7 +508,7 @@ curl http://localhost:8080/health
 
 Salida esperada:
 
-```
+```bash
 {"status":"ok"}
 ```
 
@@ -606,7 +606,7 @@ curl http://localhost:8080/health
 
 Salida esperada:
 
-```
+```bash
 ● llama-server.service - llama.cpp GGUF Inference Server
      Active: active (running)
 {"status":"ok"}
@@ -718,14 +718,14 @@ docker logs vllm --follow
 
 **Fase 1 — Descarga del modelo** (~5-30 minutos en la primera ejecución, ~15 GB para gemma-4-E4B-it):
 
-```
+```bash
 Starting to load model google/gemma-4-E4B-it...
 Loading safetensors checkpoint shards: 100%   ← descarga completa
 ```
 
 **Fase 2 — Compilación del grafo CUDA** (~3-5 minutos, se ejecuta una sola vez y queda en caché):
 
-```
+```bash
 Dynamo bytecode transform time: XX s
 Graph capturing finished in XX secs
 Application startup complete.                 ← LISTO
@@ -733,14 +733,14 @@ Application startup complete.                 ← LISTO
 
 #### Advertencias esperadas durante el arranque (todas son cosméticas)
 
-```
+```bash
 UserWarning: Found GPU0 Orin which is of compute capability (CC) 8.7.
 - 8.0 which supports hardware CC >=8.0,<9.0 except {8.7}
 ```
 
 Esta advertencia aparece porque PyTorch dentro del contenedor fue compilado para CC 8.0/9.0/10.0 pero excluye explícitamente 8.7 (la arquitectura del Jetson Orin). vLLM recurre a la compilación PTX JIT, que funciona correctamente —la inferencia se ejecuta con normalidad. El primer arranque tarda un poco más mientras se compila PTX; los reinicios posteriores son más rápidos.
 
-```
+```bash
 Unknown vLLM environment variable: VLLM_BUILD_COMMIT / VLLM_BUILD_PIPELINE
 ```
 
@@ -755,7 +755,7 @@ curl http://localhost:8000/health
 
 Salida esperada:
 
-```
+```bash
 {"status":"ok"}
 ```
 
@@ -952,7 +952,7 @@ sudo systemctl daemon-reload
 
 ### Guía rápida de selección de motor
 
-```
+```bash
 ?Que necesito hacer?
 |
 +-- Chat general, RAG, pruebas rapidas
@@ -1072,10 +1072,10 @@ Open WebUI puede apuntar a cualquier motor activo sin reinstalarse.
 2. Ir a **Settings → Connections**
 3. En la seccion **Ollama**: la URL base por defecto es `http://localhost:11434`
 4. Para agregar vLLM o llama.cpp como proveedor adicional:
-   - Clic en el `+` junto a **OpenAI API**
-   - URL: `http://localhost:8000/v1` (vLLM) o `http://localhost:8080/v1` (llama.cpp)
-   - API Key: `vllm-local` (cualquier string no vacio)
-   - Guardar → los modelos aparecen en el dropdown
+ - Clic en el `+` junto a **OpenAI API**
+ - URL: `http://localhost:8000/v1` (vLLM) o `http://localhost:8080/v1` (llama.cpp)
+ - API Key: `vllm-local` (cualquier string no vacio)
+ - Guardar → los modelos aparecen en el dropdown
 
 **Forma 2 — Variable de entorno** (para cambiar el backend por defecto al relanzar):
 

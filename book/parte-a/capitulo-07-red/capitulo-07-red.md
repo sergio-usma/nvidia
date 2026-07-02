@@ -65,7 +65,7 @@ EOF
 sudo sysctl -p /etc/sysctl.d/99-jetson-network.conf
 ```
 
-```
+```bash
 # Salida esperada
 net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
@@ -91,7 +91,7 @@ net.core.netdev_max_backlog = 65535
 sysctl net.ipv4.tcp_congestion_control
 ```
 
-```
+```bash
 # Salida esperada
 net.ipv4.tcp_congestion_control = bbr
 ```
@@ -104,7 +104,7 @@ lsmod | grep bbr
 sysctl net.ipv4.tcp_available_congestion_control | grep bbr
 ```
 
-```
+```bash
 # Salida esperada
 net.ipv4.tcp_available_congestion_control = reno cubic bbr
 ```
@@ -120,7 +120,7 @@ El MTU (Maximum Transmission Unit) define el tamaño máximo de cada paquete de 
 ip link show | grep -E "eth|enp" | grep mtu
 ```
 
-```
+```bash
 # Salida esperada (ejemplo)
 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP ...
 ```
@@ -249,7 +249,7 @@ aria2c --conf-path=$HOME/.config/aria2/aria2.conf \
   "https://huggingface.co/unsloth/gemma-4-E2B-GGUF/resolve/main/gemma-4-E2B-Q4_K_M.gguf"
 ```
 
-```
+```bash
 # Salida esperada durante descarga:
 [DL:45.2MiB/s][#1 56%] gemma-4-E2B-Q4_K_M.gguf       2.1GiB/3.8GiB
 ```
@@ -468,7 +468,7 @@ EOF
 dl-list /tmp/modelos.txt ~/data/models/gguf
 ```
 
-```
+```bash
 # Salida esperada (dl-list con 2 archivos):
 [#1 28%][#2 12%] 2 archivos en paralelo
 [DL:38.2MiB/s] ETA: 3m12s
@@ -487,7 +487,7 @@ Antes de descargar los modelos de los Capítulos 12–14, verifique que la red f
 ping -c 5 8.8.8.8
 ```
 
-```
+```bash
 # Salida esperada
 PING 8.8.8.8 (8.8.8.8): 56 data bytes
 64 bytes from 8.8.8.8: seq=0 ttl=55 time=12.3 ms
@@ -501,7 +501,7 @@ round-trip min/avg/max = 11.2/12.5/14.1 ms
 nslookup huggingface.co
 ```
 
-```
+```bash
 # Salida esperada (solo entradas IPv4 — confirma que IPv6 está desactivado)
 Server:         8.8.8.8
 Address:        8.8.8.8#53
@@ -530,7 +530,7 @@ sysctl net.ipv4.tcp_slow_start_after_idle
 sysctl net.ipv6.conf.all.disable_ipv6
 ```
 
-```
+```bash
 # Salida esperada
 === Configuración TCP activa ===
 net.ipv4.tcp_congestion_control = bbr
@@ -599,7 +599,7 @@ hostname -I | awk '{print "  IP:", $1}'
 ip route | grep "^default" | awk '{print "  Gateway:", $3}'
 ```
 
-```
+```bash
 # Salida esperada
 ╔══════════════════════════════════════════════╗
 ║   VERIFICACIÓN CAPÍTULO 6 — RESULTADO        ║

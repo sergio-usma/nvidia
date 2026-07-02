@@ -113,7 +113,7 @@ print('Imagen de prueba creada')
 python3 ~/scripts/ocr_tesseract.py /tmp/test_ocr.png
 ```
 
-```
+```bash
 # Salida esperada:
 Confianza: 94.2% | Palabras: 8
 ──────────────────────────────────────
@@ -505,7 +505,7 @@ python3 ~/scripts/object_detection_nanoowl.py camara "una persona" "una silla" "
 v4l2-ctl --list-devices
 ```
 
-```
+```bash
 # Salida ejemplo:
 USB 2.0 Camera (usb-3610000.usb-1):
         /dev/video0
@@ -807,7 +807,7 @@ python3 ~/scripts/ocr_easyocr.py /tmp/factura.jpg \
       --schema '{"proveedor": "", "total": 0.0, "items": [], "fecha": ""}'
 ```
 
-```
+```bash
 # Salida esperada:
 {
   "proveedor": "Distribuidora XYZ S.A.S.",
@@ -834,7 +834,7 @@ python3 ~/scripts/nanoowl_detect.py \
   --on-detect "~/scripts/send-telegram-alert.sh 'Detección: {label} ({confidence:.0%})'"
 ```
 
-```
+```bash
 # Salida esperada en consola:
 [11:42:03] Detección: a person (87%) — guardado /tmp/detections/20260628_114203.jpg
 [11:42:15] Detección: a car (91%) — guardado /tmp/detections/20260628_114215.jpg
@@ -854,7 +854,7 @@ for foto in ~/productos/*.jpg; do
 done
 ```
 
-```
+```bash
 # Salida esperada (por imagen):
 === silla_ergonomica_01.jpg ===
 Silla ergonómica de oficina con respaldo en malla negra transpirable,
@@ -875,4 +875,4 @@ El Jetson AGX Orin 64GB procesa visión artificial directamente en GPU con tres 
 - **OCR → LLM pipeline**: combina EasyOCR para extracción y vLLM para análisis estructurado (JSON)
 - **Modo energético**: 30W para OCR y nanoowl; MAXN para modelos de visión grandes
 
-El siguiente capítulo (Capítulo 29) cubre el stack TTS+STT unificado: transcripción de voz en español con faster-whisper y síntesis de voz con kokoro-tts y piper, incluyendo diarización de hablantes y timestamps a nivel de palabra.
+El siguiente capítulo (Capítulo 13) cubre el stack TTS+STT unificado: transcripción de voz en español con faster-whisper y síntesis de voz con kokoro-tts y piper, incluyendo diarización de hablantes y timestamps a nivel de palabra.

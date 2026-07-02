@@ -12,7 +12,7 @@ Los errores están organizados por área: Docker y contenedores, modelos LLM, au
 
 ### Error 16.1.1 — "docker: Error response from daemon: unknown or invalid runtime name: nvidia"
 
-```
+```bash
 # Error completo
 docker: Error response from daemon: unknown or invalid runtime name: nvidia.
 See 'docker run --help'.
@@ -38,7 +38,7 @@ sudo systemctl restart docker
 docker info | grep -i runtime
 ```
 
-```
+```bash
 # Salida esperada
   Runtimes: io.containerd.runc.v2 nvidia runc
   Default Runtime: runc
@@ -48,7 +48,7 @@ docker info | grep -i runtime
 
 ### Error 16.1.2 — "docker: Error response from daemon: conflict: container name already in use"
 
-```
+```bash
 # Error completo
 docker: Error response from daemon: Conflict. The container name "/qwen35-35b" 
 is already in use by container "<id>". You have to remove (or rename) that 
@@ -76,7 +76,7 @@ kill-qwen35
 
 ### Error 16.1.3 — Out of Memory (OOM) al iniciar el contenedor del modelo
 
-```
+```bash
 # Error en los logs del contenedor
 torch.cuda.OutOfMemoryError: CUDA out of memory.
 Attempted to allocate X GiB (GPU 0; 63.98 GiB total capacity)
@@ -109,7 +109,7 @@ free -h
 
 ### Error 16.1.4 — "Error: pull access denied" o "manifest unknown"
 
-```
+```bash
 # Error completo
 docker: Error response from daemon: pull access denied for ghcr.io/nvidia-ai-iot/vllm,
 repository does not exist or may require 'docker login'
@@ -134,7 +134,7 @@ echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
 
 ### Error 16.1.5 — Contenedor se reinicia en bucle (restart loop)
 
-```
+```bash
 # Al ejecutar: docker ps
 CONTAINER ID   IMAGE          STATUS                      NAMES
 abc123         ...            Restarting (1) 2 sec ago    qwen35-35b
@@ -255,7 +255,7 @@ curl -sf http://localhost:11434/api/version && echo "[OK] Ollama activo"
 
 ### Error 16.2.4 — Velocidad de tokens muy baja (<5 tok/s)
 
-```
+```bash
 # Benchmark muestra velocidad inesperadamente baja
 Velocidad: 3.2 tok/s (esperado: >25 tok/s)
 ```
@@ -292,7 +292,7 @@ docker exec -it nombre-contenedor \
 
 ### Error 16.2.5 — vLLM termina con "Segmentation Fault"
 
-```
+```bash
 # En los logs del contenedor
 Fatal Python error: Segmentation fault
 ...
@@ -358,7 +358,7 @@ docker inspect nombre-contenedor | grep -A5 "Ports"
 
 ### Error 16.3.2 — SSH se desconecta durante operaciones largas
 
-```
+```bash
 # Durante una descarga o generación larga
 packet_write_wait: Connection to X port 22: Broken pipe
 ```
@@ -391,7 +391,7 @@ tmux attach -t jetson_session
 
 ### Error 16.3.3 — NoMachine muestra pantalla negra al conectar
 
-```
+```bash
 # Al conectar con NoMachine desde Windows
 La sesión se conecta pero la pantalla está negra
 ```
@@ -441,7 +441,7 @@ sudo systemctl restart gdm3
 
 ### Error 16.4.1 — El Jetson no arranca después de `apt upgrade`
 
-```
+```bash
 # Al encender el Jetson, queda en la pantalla de NVIDIA o reinicia en bucle
 ```
 
@@ -470,7 +470,7 @@ sudo update-initramfs -u
 
 ### Error 16.4.2 — "No space left on device" en `/`
 
-```
+```bash
 # Error al instalar o descargar
 E: Failed to fetch ... No space left on device
 ```
@@ -589,7 +589,7 @@ which nvpmodel && nvpmodel -q
 
 ### Error 16.5.1 — "ValueError: max_model_len is too large"
 
-```
+```bash
 # Al iniciar vLLM
 ValueError: max_model_len (32768) is too large for this model.
 The model's max sequence length (8192) is smaller than the requested max_model_len.
@@ -612,7 +612,7 @@ vllm serve ... --max-model-len 8192
 
 ### Error 16.5.2 — llama.cpp no descarga el modelo de Hugging Face
 
-```
+```bash
 # Al iniciar con --hf-repo
 error: failed to load model: HTTP error 401 Unauthorized
 ```

@@ -6,7 +6,7 @@ OpenClaw convierte el Jetson AGX Orin en un agente de IA completamente funcional
 
 **El proyecto de este capítulo:** Construir un bot de Telegram privado, alojado en el Jetson, que responde preguntas, busca en la web, analiza archivos y cambia automáticamente de modelo según la tarea — todo sin enviar datos a servicios externos. Este mismo bot puede monetizarse dando acceso a terceros via allowlist.
 
-Este capítulo cubre únicamente OpenClaw. Para NemoClaw (capa de seguridad), consulte el Capítulo 13B. Para Open WebUI con SSL, el Capítulo 14.
+Este capítulo cubre únicamente OpenClaw. Para NemoClaw (capa de seguridad), consulte el Capítulo 11B. Para Open WebUI con SSL, el Capítulo 14.
 
 > **Prerrequisito:** Al menos un motor de inferencia activo del Capítulo anterior antes de iniciar OpenClaw. Sin modelo respondiendo en el puerto configurado, el gateway arranca pero no puede generar respuestas.
 
@@ -19,7 +19,7 @@ Este capítulo cubre únicamente OpenClaw. Para NemoClaw (capa de seguridad), co
 <!-- INFOGRAFÍA: Arquitectura de OpenClaw en JetPack 7.2 — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
-```
+```bash
 Arquitectura OpenClaw — Jetson AGX Orin 64GB (JP 7.2)
 ══════════════════════════════════════════════════════
 
@@ -64,7 +64,7 @@ node --version
 npm --version
 ```
 
-```
+```bash
 # Salida esperada (versión mínima requerida):
 v26.4.0
 11.17.0
@@ -106,7 +106,7 @@ El instalador oficial verifica la versión de Node, instala el daemon y prepara 
 curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
-```
+```bash
 # Salida esperada al final del instalador:
 [OK] OpenClaw 2026.6.10 installed
 [OK] Node.js v22.23.1 detected
@@ -297,7 +297,7 @@ sleep 5
 openclaw doctor
 ```
 
-```
+```bash
 # Salida esperada de 'openclaw doctor':
 [OK] Gateway: running on port 18789
 [OK] Model: vllm/google/gemma-4-E4B-it (connected)
@@ -333,7 +333,7 @@ ssh -N -L 18789:127.0.0.1:18789 jetson@192.168.1.100
 
 Abra en el navegador de Windows:
 
-```
+```bash
 http://localhost:18789/#token=TU_TOKEN_AQUI
 ```
 
@@ -347,7 +347,7 @@ openclaw config get gateway.auth.token
 
 Si tiene NoMachine instalado (Capítulo 7), conéctese con el cliente NoMachine desde Windows y abra el navegador dentro del escritorio virtual del Jetson:
 
-```
+```bash
 http://127.0.0.1:18789/#token=TU_TOKEN
 ```
 
@@ -359,7 +359,7 @@ Telegram es el canal primario de este capítulo. A diferencia de WhatsApp, no re
 
 ### 13A.6.1 Crear el bot en Telegram
 
-```
+```bash
 # PASO 1: En la app de Telegram, buscar @BotFather y enviar:
 /newbot
 
@@ -395,14 +395,14 @@ sleep 3
 openclaw channels status --probe
 ```
 
-```
+```bash
 # Salida esperada:
 Telegram default: enabled, configured, linked, running, connected [OK]
 ```
 
 ### 13A.6.2 Probar el bot desde Telegram
 
-```
+```bash
 # En la app de Telegram:
 # 1. Buscar su bot por el username (@jetson_tuusuario_bot)
 # 2. Enviar /start o cualquier mensaje
@@ -763,7 +763,7 @@ alias mode-lite='~/scripts/switch-model.sh lite-gemma'
 alias mode-longdoc='~/scripts/switch-model.sh longdoc'
 alias mode-ollama='~/scripts/switch-model.sh ollama'
 alias mode-stop='~/scripts/switch-model.sh stop'
-# mode-multimodal: disponible en Capítulo 13D (Tool Calling multimodal)
+# mode-multimodal: disponible en Capítulo 11D (Tool Calling multimodal)
 # alias mode-multimodal='~/scripts/switch-model.sh multimodal'
 EOF
 source ~/.bash_aliases || source ~/.bashrc
@@ -814,7 +814,7 @@ openclaw skills reload
 
 ---
 
-## Resumen del Capítulo 13A
+## Resumen del Capítulo 11A
 
 OpenClaw transforma el Jetson en un agente de IA accesible desde Telegram. Los puntos criticos de la configuracion son:
 

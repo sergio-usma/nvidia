@@ -48,7 +48,7 @@ También instale las extensiones complementarias:
 
 **En macOS/Linux (terminal):** Edite `~/.ssh/config`
 
-```
+```bash
 # Configuración SSH para el Jetson
 Host jetson
     HostName 192.168.1.100
@@ -77,9 +77,9 @@ Con la ventana de VSCode conectada al Jetson:
 
 1. Abra **Extensions** (`Ctrl+Shift+X`)
 2. Busque e instale en el Jetson (no en su PC):
-   - **Python** (Microsoft)
-   - **Jupyter** (Microsoft)
-   - **Pylance** (Microsoft)
+ - **Python** (Microsoft)
+ - **Jupyter** (Microsoft)
+ - **Pylance** (Microsoft)
 
 Estas extensiones se instalan en el Jetson y se ejecutan allí. Su PC solo muestra la interfaz.
 
@@ -104,7 +104,7 @@ source ~/venvs/dev/bin/activate
 python --version
 ```
 
-```
+```bash
 # Salida esperada
 Python 3.12.3
 ```
@@ -168,7 +168,7 @@ print(f'Memoria GPU total: {torch.cuda.get_device_properties(0).total_memory / 1
 "
 ```
 
-```
+```bash
 # Salida esperada
 PyTorch: 2.x.x+cu129
 CUDA disponible: True
@@ -200,7 +200,7 @@ print("[OK] PyTorch + CUDA funcionando correctamente")
 python test_cuda.py
 ```
 
-```
+```bash
 # Salida esperada
 Tensor en GPU: cuda:0
 Forma del resultado: torch.Size([1000, 1000])
@@ -227,7 +227,7 @@ jupyter lab --no-browser --ip=0.0.0.0 --port=8888 \
   --NotebookApp.token='jetson2024'
 ```
 
-```
+```bash
 # Salida esperada
 [I 2026-06-28 10:00:00.000 ServerApp] Jupyter Server 2.x.x is running at:
 [I 2026-06-28 10:00:00.000 ServerApp] http://192.168.1.100:8888/lab?token=jetson2024
@@ -312,7 +312,7 @@ print(f"  Completion: {respuesta.usage.completion_tokens}")
 print(f"  Total: {respuesta.usage.total_tokens}")
 ```
 
-```
+```bash
 # Salida esperada
 Modelos Ollama disponibles:
   - qwen3:7b
@@ -505,7 +505,7 @@ print(f"Memoria GPU asignada: {torch.cuda.memory_allocated(0) / 1e9:.2f} GB")
 print("[OK] Memoria GPU liberada")
 ```
 
-```
+```bash
 # Salida esperada
 Memoria GPU reservada: 0.00 GB
 Memoria GPU asignada: 0.00 GB
@@ -522,7 +522,7 @@ Memoria GPU asignada: 0.00 GB
 
 El flujo de trabajo eficiente para desarrollar con LLMs en el Jetson sigue este ciclo:
 
-```
+```bash
 ┌──────────────────────────────────────────────────────────────┐
 │  CICLO DE DESARROLLO EN JETSON (desde VSCode Remote SSH)     │
 ├──────────────────────────────────────────────────────────────┤
@@ -664,7 +664,7 @@ echo ""
 echo "════════════════════════════════════════════════════"
 ```
 
-```
+```bash
 # Salida esperada
 ── Entorno virtual ──
   [OK] Python 3.12 activo
@@ -693,9 +693,9 @@ Este proyecto une todo lo aprendido en el capítulo: VSCode Remote SSH para edit
 ### 17.9.1 Requisito Previo: faster-whisper activo
 
 ```bash
-# Verificar que faster-whisper está corriendo (capítulo 29)
+# Verificar que faster-whisper está corriendo (capítulo 13)
 curl -sf http://localhost:8000/health && echo "[OK] faster-whisper activo" \
-  || echo "[!] Iniciar faster-whisper primero (ver Capítulo 29, sección 29.1.2)"
+  || echo "[!] Iniciar faster-whisper primero (ver Capítulo 13, sección 29.1.2)"
 ```
 
 ### 17.9.2 Notebook — audio_transcriber.ipynb
@@ -825,7 +825,7 @@ if resultado["palabras"]:
         print(f"    [{w['start']:.2f}s] {w['word']}")
 ```
 
-```
+```bash
 # Salida esperada:
 ╔══════════════════════════════════════════════════════╗
 ║  RESULTADO DE TRANSCRIPCIÓN                         ║

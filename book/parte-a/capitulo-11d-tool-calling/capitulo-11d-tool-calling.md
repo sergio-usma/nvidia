@@ -59,7 +59,7 @@ Existen dos formatos principales que los modelos del Jetson usan:
 
 El modelo genera una etiqueta especial con el JSON de la herramienta:
 
-```
+```bash
 <tool_call>
 {"name": "calcular", "arguments": {"expresion": "2+2"}}
 </tool_call>
@@ -328,7 +328,7 @@ source ~/venvs/llm/bin/activate
 python3 ~/scripts/jetson_tool_agent.py
 ```
 
-```
+```bash
 # Salida esperada (extracto):
  Usuario: ¿Cuál es la temperatura actual de la GPU del Jetson?
  Herramienta: obtener_temperatura({})
@@ -702,7 +702,7 @@ else:
 "
 ```
 
-```
+```bash
 # Salida esperada:
 finish_reason: tool_calls
 Herramienta llamada: obtener_clima
@@ -711,7 +711,7 @@ Argumentos: {"ciudad": "Medellín", "pais": "Colombia"}
 
 ---
 
-## Resumen de el Capítulo 13D
+## Resumen de el Capítulo 11D
 
 El tool calling convierte los modelos del Jetson en agentes capaces de tomar acciones reales:
 

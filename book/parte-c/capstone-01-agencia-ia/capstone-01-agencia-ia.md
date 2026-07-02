@@ -10,10 +10,10 @@ Un cliente visita la web de la agencia, describe su necesidad, el sistema lo pro
 
 <!-- INFOGRAFÍA: Arquitectura Capstone — Agencia de IA completa sobre Jetson AGX Orin: flujo desde cliente web (Cloudflare Tunnel → Nginx → Flask) hasta orquestador OpenClaw y modelos de inferencia (vLLM Qwen3.5-35B, Ollama Qwen3.5-4B), con automatización N8N y pipeline de voz opcional — presupuesto de RAM por componente incluido — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
-```
+```bash
 Internet
-    ↓ HTTPS (Cloudflare Tunnel — Capítulo 30)
-Nginx :8088 (reverse proxy — Capítulo 30)
+    ↓ HTTPS (Cloudflare Tunnel — Capítulo 28)
+Nginx :8088 (reverse proxy — Capítulo 28)
     ↓
 Flask Web Frontend :5000
     ├─ Formulario intake de cliente (descripción del proyecto)
@@ -67,7 +67,7 @@ mkdir -p ~/agencia/{web/{templates,static/{css,js}},scripts,entregables,logs}
 ls ~/agencia/
 ```
 
-```
+```bash
 web/          ← Flask app: templates, static
 scripts/      ← scripts de gestión del stack
 entregables/  ← proyectos completados (ZIP para descarga)
@@ -1131,4 +1131,4 @@ curl -s http://localhost:8000/metrics | grep vllm_requests
 
 ## Resumen Final del Libro
 
-> El resumen completo del libro se encuentra en el **Capítulo 33 — Conclusiones**. Continúe allí para el balance integral de todo lo construido y los próximos pasos recomendados.
+> El resumen completo del libro se encuentra en el **el capítulo de Conclusiones**. Continúe allí para el balance integral de todo lo construido y los próximos pasos recomendados.

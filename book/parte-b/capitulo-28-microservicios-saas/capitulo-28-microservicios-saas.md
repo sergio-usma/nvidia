@@ -8,7 +8,7 @@ Los capítulos anteriores construyeron los servicios del Jetson para uso local: 
 
 <!-- INFOGRAFÍA: Arquitectura AIaaS sobre Jetson AGX Orin — flujo desde cliente en internet hasta servicios de IA internos: Cloudflare Tunnel → Cloudflared → Nginx reverse proxy → JWT middleware → vLLM / STT / TTS / OpenClaw / N8N / Open WebUI, con indicación de puertos y capas de seguridad — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
-```
+```bash
 Internet (cliente)
     ↓ HTTPS (Cloudflare Tunnel — sin abrir puertos en el router)
 Cloudflared daemon (Jetson) → Nginx reverse proxy
@@ -53,7 +53,7 @@ sudo apt install -y nginx
 nginx -v
 ```
 
-```
+```bash
 # Salida esperada
 nginx version: nginx/1.24.x (Ubuntu)
 ```
@@ -179,7 +179,7 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 ```
 
-```
+```bash
 # Salida esperada
 nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
 nginx: configuration file /etc/nginx/nginx.conf test is successful
@@ -441,7 +441,7 @@ sudo install -m 755 /tmp/cloudflared /usr/local/bin/cloudflared
 cloudflared --version
 ```
 
-```
+```bash
 # Salida esperada
 cloudflared version 2025.x.x (built ...)
 ```
@@ -454,7 +454,7 @@ cloudflared version 2025.x.x (built ...)
 cloudflared tunnel login
 ```
 
-```
+```bash
 Please open the following URL and log in with your Cloudflare account:
 https://dash.cloudflare.com/argotunnel?callback=...
 
@@ -474,7 +474,7 @@ cloudflared tunnel create jetson-ai
 cloudflared tunnel list
 ```
 
-```
+```bash
 # Salida esperada
 ID                                   NAME       CREATED              CONNECTIONS
 a1b2c3d4-e5f6-7890-abcd-ef1234567890 jetson-ai  2026-06-29T10:00:00Z 0
@@ -549,7 +549,7 @@ sudo systemctl start cloudflared
 systemctl status cloudflared
 ```
 
-```
+```bash
 # Salida esperada
 ● cloudflared.service - cloudflared
      Loaded: loaded (/etc/systemd/system/cloudflared.service; enabled)
@@ -1023,7 +1023,7 @@ echo "  3. Reiniciar el servicio JWT: sudo systemctl restart jwt-auth"
 Antes de dejar el Jetson expuesto a internet de forma permanente, verifique cada punto:
 
 ```bash
-echo "══ Lista de Verificación de Seguridad — Capítulo 30 ══"
+echo "══ Lista de Verificación de Seguridad — Capítulo 28 ══"
 
 # 1. Cloudflare Tunnel activo
 systemctl is-active cloudflared > /dev/null 2>&1 \
@@ -1067,4 +1067,4 @@ El Jetson AGX Orin es ahora un servidor de IA accesible desde internet con arqui
 - **Uptime Kuma** monitorea disponibilidad y envía alertas cuando un servicio cae
 - **Logs JSON** estructurados con logrotate diario, rotación 7 días
 
-El siguiente capítulo (Capítulo 31) ensambla todo lo construido en los capítulos anteriores en un **Capstone de Agencia de IA**: frontend web Flask, agentes OpenClaw, automatización N8N y facturación conceptual, todo operando como un SAAS funcional desde el Jetson.
+El siguiente capítulo (Capstone 01) ensambla todo lo construido en los capítulos anteriores en un **Capstone de Agencia de IA**: frontend web Flask, agentes OpenClaw, automatización N8N y facturación conceptual, todo operando como un SAAS funcional desde el Jetson.

@@ -39,7 +39,7 @@ Cada capítulo sigue una estructura pedagógica consistente. Antes de ejecutar c
 ```
 
 **Salida esperada**
-```
+```bash
 # Los bloques sin encabezado "bash" muestran lo que debe ver en pantalla
 # Si su salida difiere, el capítulo de Troubleshooting explica las causas más comunes
 ```
@@ -86,7 +86,7 @@ La Jetson AGX Orin 64GB es una computadora de alto rendimiento del tamaño de un
 
 La característica más importante para el trabajo con LLMs es su **memoria unificada**: los 64 GB de RAM LPDDR5 son compartidos entre la CPU (12 núcleos ARM) y la GPU (Ampere sm_87). No existe una "VRAM separada" como en una tarjeta gráfica de escritorio — toda la memoria disponible puede usarse para el modelo. Esto significa que un modelo de 26 GB puede cargarse completamente en memoria con decenas de gigabytes de margen, algo imposible en una GPU de escritorio con 16 GB de VRAM.
 
-```
+```bash
 ┌───────────────────────────────────────────────────────────────┐
 │           NVIDIA Jetson AGX Orin 64GB — Arquitectura          │
 ├────────────────────────┬──────────────────────────────────────┤
@@ -191,7 +191,7 @@ Si viene de una instalación anterior con JetPack 6.2, esta tabla resume los cam
 
 Al completar todos los capítulos, su Jetson quedará configurado como se muestra a continuación. Tenga presente esta imagen al seguir el tutorial — cada parte construye un componente de este sistema final:
 
-```
+```bash
 WINDOWS 11 (192.168.1.33)
          │
          │  SSH :22           → terminal, administración
@@ -284,7 +284,7 @@ echo "IP:      $(hostname -I | awk '{print $1}')" && \
 echo "Poder:   $(sudo nvpmodel -q 2>/dev/null | grep 'NV Power Mode' || echo 'nvpmodel -q')"
 ```
 
-```
+```bash
 # Salida esperada en un Jetson AGX Orin 64GB con JetPack 7.2
 === DIAGNÓSTICO JETSON AGX ORIN ===
 OS:      Ubuntu 24.04.4 LTS

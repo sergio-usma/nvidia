@@ -34,7 +34,7 @@ ollama pull nomic-embed-text
 ollama list | grep nomic
 ```
 
-```
+```bash
 # Salida esperada
 nomic-embed-text    latest    0a109f422b47    16 hours ago    274 MB
 ```
@@ -55,7 +55,7 @@ mkdir -p /data/rag-db  # base de datos vectorial en NVMe
 cd ~/projects/rag-empresarial
 ```
 
-```
+```bash
 rag-empresarial/
 ├── documents/              # Documentos a indexar (PDF, DOCX, TXT)
 ├── data/                   # Metadatos y configuración
@@ -336,7 +336,7 @@ cp /ruta/a/mis/documentos/*.pdf ~/projects/rag-empresarial/documents/
 python scripts/indexer.py
 ```
 
-```
+```bash
 # Salida esperada
 Conectando a ChromaDB en: /data/rag-db
  Indexando 5 documentos...

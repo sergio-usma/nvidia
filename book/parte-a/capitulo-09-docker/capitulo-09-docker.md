@@ -44,7 +44,7 @@ docker ps -a
 docker system df
 ```
 
-```
+```bash
 # Salida de docker system df:
 TYPE            TOTAL   ACTIVE  SIZE      RECLAIMABLE
 Images          8       3       28.5GB    15.2GB (53%)
@@ -91,7 +91,7 @@ docker system prune
 docker stats --no-stream
 ```
 
-```
+```bash
 # Salida de docker stats --no-stream:
 CONTAINER ID   NAME          CPU %   MEM USAGE / LIMIT    MEM %
 a3f7c2e9d4b1   open-webui    0.5%    312MiB / 60.7GiB     0.5%
@@ -156,7 +156,7 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 sudo docker run --rm hello-world
 ```
 
-```
+```bash
 # Salida esperada
 Hello from Docker!
 This message shows that your installation appears to be working correctly.
@@ -180,7 +180,7 @@ newgrp docker
 docker run --rm hello-world
 ```
 
-```
+```bash
 # Salida esperada (igual que antes pero sin sudo)
 Hello from Docker!
 ```
@@ -200,7 +200,7 @@ sudo systemctl disable docker.socket
 systemctl is-enabled docker
 ```
 
-```
+```bash
 # Salida esperada
 disabled
 ```
@@ -234,7 +234,7 @@ sudo apt install -y nvidia-container-toolkit
 sudo nvidia-ctk runtime configure --runtime=docker
 ```
 
-```
+```bash
 # Salida esperada
 INFO[0000] Loading config from /etc/docker/daemon.json
 INFO[0000] Wrote updated config to /etc/docker/daemon.json
@@ -256,7 +256,7 @@ sudo docker run --rm --runtime=nvidia \
   bash -c "ls /proc/driver/nvidia/gpus/ && echo '[OK] GPU accesible desde contenedor'"
 ```
 
-```
+```bash
 # Salida esperada
 0000:00:00.0
 [OK] GPU accesible desde contenedor
@@ -270,7 +270,7 @@ docker run --rm --runtime=nvidia \
   nvcc --version
 ```
 
-```
+```bash
 # Salida esperada (tarda 2-5 min la primera vez — descarga la imagen)
 nvcc: NVIDIA (R) Cuda compiler driver
 Copyright (c) 2005-2024 NVIDIA Corporation
@@ -290,7 +290,7 @@ Build cuda_13.2...
 
 Entender cómo Docker accede al GPU del Jetson evita errores comunes:
 
-```
+```bash
 ┌──────────────────────────────────────────────────────────┐
 │                    ARQUITECTURA JETSON                    │
 │                                                          │
@@ -594,7 +594,7 @@ mkdir -p ~/stacks/{webui,voice,n8n,rag}
 docker compose version
 ```
 
-```
+```bash
 # Salida esperada
 Docker Compose version v2.x.x
 ```
@@ -659,7 +659,7 @@ docker compose up -d
 docker compose ps
 ```
 
-```
+```bash
 # Salida esperada
 NAME              IMAGE                                    STATUS
 faster-whisper    dustynv/faster-whisper:r39.2.0          running
@@ -682,7 +682,7 @@ docker compose down
 
 ### 8.6.3 Stack de Voz: faster-whisper + kokoro-tts
 
-Para el pipeline completo STT + TTS del Capítulo 29:
+Para el pipeline completo STT + TTS del Capítulo 13:
 
 ```bash
 mkdir -p ~/stacks/voice
@@ -908,7 +908,7 @@ echo ""
 echo "════════════════════════════════════════════════════"
 ```
 
-```
+```bash
 # Salida esperada
 ── Docker Engine ──
   [OK] Docker 27.x.x (linux/arm64)
