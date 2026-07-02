@@ -898,4 +898,948 @@ Esta es la estructura de directorios que se crea durante el libro en el Jetson A
 
 ---
 
+## A.24 Script de Instalación Limpia — Jetson Recién Flasheado
+
+Este script automatiza la configuración inicial del Jetson AGX Orin (Capítulos 1–8). Ejecútelo una sola vez en un sistema recién flasheado con JetPack 7.2 **después del primer arranque y configuración de usuario**.
+
+```bash
+# Descargar y ejecutar
+# OPCIÓN A — Si tiene el libro en el Jetson:
+bash ~/projects/setup-jetson.sh
+
+# OPCIÓN B — Crear el script manualmente:
+cat > ~/setup-jetson.sh << 'SETUP_EOF'
+#!/bin/bash
+# setup-jetson.sh — Configuración inicial Jetson AGX Orin / JP 7.2
+# Tiempo estimado: 15-25 minutos (depende de la velocidad de internet)
+
+set -euo pipefail
+LOG="$HOME/setup-jetson.log"
+exec > >(tee -a "$LOG") 2>&1
+echo "[$(date)] Iniciando configuración inicial del Jetson AGX Orin JP 7.2"
+
+# ── 1. Actualización del sistema ─────────────────────────────────────
+echo ""
+echo "══ [1/8] Actualizando sistema ══"
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y \
+  curl wget git vim htop net-tools tree jq \
+  build-essential cmake pkg-config \
+  python3-pip python3-venv python3-dev \
+  nvme-cli smartmontools hdparm \
+  aria2 nmap iftop nethogs \
+  tmux screen \
+  ffmpeg libsndfile1 portaudio19-dev \
+  alsa-utils libespeak-ng-dev espeak-ng \
+  tesseract-ocr tesseract-ocr-spa libtesseract-dev \
+  nginx logrotate \
+  libnss3-tools
+
+# ── 2. Docker + NVIDIA Container Toolkit ─────────────────────────────
+echo ""
+echo "══ [2/8] Instalando Docker + NVIDIA Container Toolkit ══"
+if ! command -v docker &>/dev/null; then
+  curl -fsSL https://get.docker.com | sudo bash
+  sudo usermod -aG docker jetson
+fi
+
+if ! dpkg -l | grep -q nvidia-container-toolkit; then
+  curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+    sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+  curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+  sudo apt update && sudo apt install -y nvidia-container-toolkit
+  sudo nvidia-ctk runtime configure --runtime=docker
+fi
+
+# Deshabilitar Docker en arranque (inicio bajo demanda con docker-on)
+sudo systemctl disable docker.socket docker
+sudo systemctl stop docker.socket docker 2>/dev/null || true
+echo "[OK] Docker instalado — iniciado bajo demanda con 'docker-on'"
+
+# ── 3. Estructura de directorios ─────────────────────────────────────
+echo ""
+echo "══ [3/8] Creando estructura de directorios ══"
+mkdir -p ~/scripts/maintenance ~/scripts/llm/env ~/scripts/gateway
+mkdir -p ~/projects ~/stacks ~/logs ~/data/models
+mkdir -p ~/venvs
+sudo chown -R jetson:jetson /data 2>/dev/null || true
+echo "[OK] Directorios creados"
+
+# ── 4. Python — Entornos Virtuales ───────────────────────────────────
+echo ""
+echo "══ [4/8] Creando entornos virtuales Python ══"
+if [ ! -d ~/venvs/dev ]; then
+  python3 -m venv ~/venvs/dev
+  ~/venvs/dev/bin/pip install --upgrade pip wheel setuptools
+  echo "[OK] venv dev creado"
+fi
+
+if [ ! -d ~/venvs/llm ]; then
+  python3 -m venv ~/venvs/llm
+  ~/venvs/llm/bin/pip install --upgrade pip wheel setuptools
+  echo "[OK] venv llm creado"
+fi
+
+# ── 5. .bashrc — Variables de entorno ────────────────────────────────
+echo ""
+echo "══ [5/8] Configurando .bashrc ══"
+if ! grep -q "# JETSON JP7.2 CONFIG" ~/.bashrc; then
+cat >> ~/.bashrc << 'BASHRC_EOF'
+
+# JETSON JP7.2 CONFIG — añadido por setup-jetson.sh
+export CUDA_HOME="/usr/local/cuda-13.2"
+export PATH="$CUDA_HOME/bin:$HOME/.local/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
+export TORCH_CUDA_ARCH_LIST="8.7"
+export HF_TOKEN=""          # Completar en: https://huggingface.co/settings/tokens
+export OPENROUTER_API_KEY="" # Completar en: https://openrouter.ai/keys
+export OPENROUTER_URL="https://openrouter.ai/api/v1"
+export VLLM_API_KEY=""      # Completar si usa vLLM con autenticación
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+[[ -f ~/.bash_aliases ]] && source ~/.bash_aliases
+BASHRC_EOF
+  echo "[OK] .bashrc configurado"
+fi
+
+# ── 6. .bash_aliases ─────────────────────────────────────────────────
+echo ""
+echo "══ [6/8] Instalando aliases ══"
+if [ ! -f ~/.bash_aliases ]; then
+  curl -fsSL "$HOME/scripts/bash_aliases_template.sh" -o ~/.bash_aliases 2>/dev/null || \
+  cat > ~/.bash_aliases << 'ALIAS_EOF'
+# Energía
+alias pwr-maxn='sudo nvpmodel -m 0 && sudo jetson_clocks'
+alias pwr-30w='sudo nvpmodel -m 2'
+alias pwr-15w='sudo nvpmodel -m 3'
+# Docker
+alias docker-on='sudo systemctl start docker.socket && sudo systemctl start docker'
+alias docker-off='sudo systemctl stop docker && sudo systemctl stop docker.socket'
+# Python venvs
+alias dev-env='source ~/venvs/dev/bin/activate'
+alias llm-env='source ~/venvs/llm/bin/activate'
+ALIAS_EOF
+  echo "[OK] .bash_aliases básico instalado — ver A.26 del Apéndice para la versión completa"
+fi
+
+# ── 7. SWAP + ZRAM (si no están configurados) ─────────────────────────
+echo ""
+echo "══ [7/8] Verificando SWAP ══"
+SWAP_TOTAL=$(swapon --show 2>/dev/null | wc -l)
+if [ "$SWAP_TOTAL" -eq 0 ]; then
+  echo "[WARN] Sin swap configurado — ver Capítulo 4 para configurar ZRAM y swap"
+else
+  echo "[OK] Swap activo: $(swapon --show | tail -1)"
+fi
+
+# ── 8. Verificación final ─────────────────────────────────────────────
+echo ""
+echo "══ [8/8] Verificación final ══"
+echo "  Ubuntu: $(lsb_release -rs)"
+echo "  Kernel: $(uname -r)"
+echo "  CUDA:   $(nvcc --version 2>/dev/null | grep 'release' | awk '{print $6}' | tr -d ',') "
+echo "  Python: $(python3 --version)"
+echo "  Docker: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',')"
+echo ""
+echo "══ [OK] Configuración inicial completada ══"
+echo "   Siguiente paso: Capítulo 4 (Memoria y Almacenamiento)"
+echo "   Log: $LOG"
+echo ""
+echo "   IMPORTANTE: Cierre la sesión SSH y vuelva a conectar para"
+echo "   que los cambios de grupo (docker) y .bashrc tengan efecto."
+SETUP_EOF
+
+chmod +x ~/setup-jetson.sh
+echo "[OK] setup-jetson.sh listo — ejecutar: bash ~/setup-jetson.sh"
+```
+
+---
+
+## A.25 `.bashrc` Completo para JetPack 7.2
+
+Plantilla de `.bashrc` con todas las variables de entorno necesarias para el libro. Añada estas líneas al final del `.bashrc` existente (no reemplazar el archivo completo):
+
+```bash
+# ── Añadir al final de ~/.bashrc ──────────────────────────────────────
+# Ruta CUDA 13.2.1 (JetPack 7.2)
+export CUDA_HOME="/usr/local/cuda-13.2"
+export PATH="$CUDA_HOME/bin:$HOME/.local/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDA_HOME/lib64:$LD_LIBRARY_PATH"
+
+# Arquitectura GPU Jetson AGX Orin (Ampere sm_87)
+export TORCH_CUDA_ARCH_LIST="8.7"
+
+# HuggingFace
+export HF_TOKEN=""          # https://huggingface.co/settings/tokens
+export HF_HOME="$HOME/.cache/huggingface"
+export HF_HUB_OFFLINE=0    # Cambiar a 1 para modo offline total
+
+# APIs externas (opcionales)
+export OPENROUTER_API_KEY="" # https://openrouter.ai/keys
+export OPENROUTER_URL="https://openrouter.ai/api/v1"
+export VLLM_API_KEY=""      # Solo si vLLM usa autenticación
+
+# Historial extendido
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoredups:erasedups
+
+# Aliases
+[[ -f ~/.bash_aliases ]] && source ~/.bash_aliases
+
+# Prompt informativo (muestra venv activo)
+if [ -n "$VIRTUAL_ENV" ]; then
+  VENV_NAME="($(basename $VIRTUAL_ENV)) "
+fi
+PS1="${VENV_NAME}\u@\h:\w\$ "
+```
+
+**Verificar que .bashrc está correctamente cargado:**
+
+```bash
+source ~/.bashrc
+echo "CUDA_HOME: $CUDA_HOME"
+echo "HF_TOKEN:  ${HF_TOKEN:0:10}..."
+nvcc --version 2>/dev/null | grep release || echo "[WARN] CUDA no en PATH"
+```
+
+---
+
+## A.26 `.bash_aliases` Consolidado — Instalación en Un Paso
+
+Archivo completo de aliases del libro. Instálelo con:
+
+```bash
+# Hacer backup del archivo existente
+[ -f ~/.bash_aliases ] && cp ~/.bash_aliases ~/.bash_aliases.bak
+
+# Instalar la versión consolidada
+cat > ~/.bash_aliases << 'ALIASES_EOF'
+# ══════════════════════════════════════════════════════════════════════
+# ~/.bash_aliases — Jetson AGX Orin 64GB / JetPack 7.2
+# Generado por: Libro "Getting Started with NVIDIA Jetson AGX Orin"
+# ══════════════════════════════════════════════════════════════════════
+
+# ── Energía y rendimiento (Cap 3) ─────────────────────────────────────
+alias pwr-maxn='sudo nvpmodel -m 0 && sudo jetson_clocks && echo "[OK] Modo MAXN (50W)"'
+alias pwr-30w='sudo nvpmodel -m 2 && echo "[OK] Modo 30W"'
+alias pwr-15w='sudo nvpmodel -m 3 && echo "[OK] Modo 15W"'
+alias pwr-status='sudo nvpmodel -q && sudo jetson_clocks --show 2>/dev/null | head -5'
+
+# ── Docker bajo demanda (Cap 8) ────────────────────────────────────────
+alias docker-on='sudo systemctl start docker.socket && sudo systemctl start docker && echo "[OK] Docker activo"'
+alias docker-off='sudo systemctl stop docker && sudo systemctl stop docker.socket && echo "[OK] Docker detenido"'
+alias docker-status='docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+
+# ── Python venvs (Cap 5 y 17) ─────────────────────────────────────────
+alias dev-env='source ~/venvs/dev/bin/activate && echo "[OK] venv dev"'
+alias llm-env='source ~/venvs/llm/bin/activate && echo "[OK] venv llm"'
+alias llm-vars='source ~/scripts/llm/env/llm-env.sh'
+
+# ── Descargas (Cap 6) ─────────────────────────────────────────────────
+alias dl-model='bash ~/scripts/dl-model.sh'
+dl() { aria2c -x16 -s16 -k5M --dir="${3:-.}" -o "${2:-$(basename $1)}" "$1"; }
+alias dl-iso='aria2c -x16 -s16 -k5M --summary-interval=5'
+alias dl-dataset='aria2c -x8 -s8 -k5M --disk-cache=64M --summary-interval=10'
+
+# ── Mantenimiento (Cap 26) ─────────────────────────────────────────────
+alias jetson-clean='~/scripts/jetson-clean.sh'
+alias check-ready='~/scripts/maintenance/check-ready.sh'
+alias clean-ai-containers='~/scripts/maintenance/clean-ai-containers.sh'
+alias switch-project='~/scripts/maintenance/switch-project.sh'
+alias hf-cache='~/scripts/maintenance/hf-cache-clean.sh'
+alias health-check='~/scripts/maintenance/health-check.sh'
+alias sys-status='~/scripts/maintenance/system-status.sh'
+alias motors-status='~/scripts/maintenance/system-status.sh'
+
+# ── Motores de inferencia — Ollama (Cap 12) ───────────────────────────
+alias ollama-start='sudo systemctl start ollama && echo "[OK] Ollama activo en :11434"'
+alias ollama-stop='sudo systemctl stop ollama'
+alias ollama-models='ollama list'
+alias ollama-ps='ollama ps'
+
+# ── Motores de inferencia — vLLM (Cap 12) ────────────────────────────
+alias start-qwen35='pwr-maxn && docker run -d --name qwen35-35b --restart no \
+  --runtime nvidia --network host --ipc host --shm-size 8g \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/nvidia-ai-iot/vllm:latest-jetson-orin \
+  bash -c "cd /opt && source venv/bin/activate && \
+    vllm serve Kbenkhaled/Qwen3.5-35B-A3B-quantized.w4a16 \
+    --gpu-memory-utilization 0.70 --enable-prefix-caching \
+    --served-model-name qwen35 --max-model-len 8192 --host 0.0.0.0 --port 8000" && \
+  until curl -sf http://localhost:8000/v1/models > /dev/null; do sleep 20; done && \
+  echo "[OK] qwen35 listo en :8000"'
+alias stop-qwen35='docker stop qwen35-35b && docker rm qwen35-35b'
+alias vllm-logs='docker logs qwen35-35b --follow'
+
+# ── Motores de inferencia — llama.cpp (Cap 12) ────────────────────────
+alias start-nemotron='pwr-maxn && docker run -d --name nemotron --restart no \
+  --runtime nvidia --network host \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin \
+  llama-server --hf-repo ggml-org/NVIDIA-Nemotron-3-Nano-Omni \
+  --hf-file nemotron-3-nano-omni-ga_v1.0-Q4_K_M.gguf \
+  --ctx-size 16384 --port 8080 --host 0.0.0.0 --n-gpu-layers 999 && \
+  until curl -sf http://localhost:8080/v1/models > /dev/null; do sleep 15; done && \
+  echo "[OK] nemotron listo en :8080"'
+alias stop-nemotron='docker stop nemotron && docker rm nemotron'
+
+# ── Open WebUI (Cap 13C) ──────────────────────────────────────────────
+alias start-webui='docker run -d --name open-webui --runtime nvidia --restart no \
+  --network host -v open-webui:/app/backend/data \
+  ghcr.io/open-webui/open-webui:main && echo "[OK] Open WebUI en http://localhost:3000"'
+alias stop-webui='docker stop open-webui && docker rm open-webui'
+alias webui-logs='docker logs open-webui --follow'
+
+# ── OpenClaw / NemoClaw (Caps 13A, 13B) ──────────────────────────────
+alias openclaw-start='cd ~/projects/openclaw && node index.js &'
+alias openclaw-stop='pkill -f "node.*openclaw" && echo "[OK] OpenClaw detenido"'
+alias claw-status='curl -sf http://localhost:18789/health && echo " OpenClaw activo" || echo " OpenClaw offline"'
+
+# ── STT / TTS (Caps 13C, 18, 29) ─────────────────────────────────────
+alias start-whisper='docker run --runtime nvidia -d --name faster-whisper --restart no \
+  --network host -e WHISPER_MODEL=large-v3 -e WHISPER_DEVICE=cuda \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  dustynv/faster-whisper:r39.2.0 && echo "[OK] faster-whisper en :8000"'
+alias stop-whisper='docker stop faster-whisper && docker rm faster-whisper'
+alias whisper-logs='docker logs faster-whisper --follow'
+
+alias start-kokoro='docker run --runtime nvidia -d --name kokoro-tts --restart no \
+  --network host -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  dustynv/kokoro-tts:r39.2.0 && echo "[OK] kokoro-tts en :8880"'
+alias stop-kokoro='docker stop kokoro-tts && docker rm kokoro-tts'
+alias kokoro-logs='docker logs kokoro-tts --follow'
+
+# Pipeline de voz
+alias voice-assistant='dev-env && python3 ~/scripts/voice_assistant_pipeline.py'
+alias transcribir='dev-env && python3 ~/scripts/diarize_and_transcribe.py'
+alias tts-es='dev-env && python3 ~/scripts/tts_kokoro.py'
+alias tts-rapido='dev-env && python3 ~/scripts/tts_piper.py'
+
+# ── N8N (Cap 27) ──────────────────────────────────────────────────────
+alias start-n8n='cd ~/stacks/n8n && docker compose up -d && cd -'
+alias stop-n8n='cd ~/stacks/n8n && docker compose down && cd -'
+alias n8n-logs='cd ~/stacks/n8n && docker compose logs --tail=50 -f && cd -'
+alias n8n-url='echo "http://$(hostname -I | awk "{print \$1}"):5678"'
+
+# ── Computer Vision (Cap 28) ──────────────────────────────────────────
+alias start-vision='docker run --runtime nvidia -d --name gemma4-e4b-llama --restart no \
+  --network host -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin \
+  llama-server -hf unsloth/gemma-4-E4B:Q4_K_M \
+  --ctx-size 32768 --n-gpu-layers 999 --port 8080 --alias gemma4-e4b --host 0.0.0.0'
+alias stop-vision='docker stop gemma4-e4b-llama && docker rm gemma4-e4b-llama'
+alias ocr-imagen='dev-env && python3 ~/scripts/ocr_pipeline.py'
+alias ocr-llm='dev-env && python3 ~/scripts/ocr_to_llm.py'
+alias vision-describe='dev-env && python3 ~/scripts/vision_describe.py'
+alias nanoowl-detect='dev-env && python3 ~/scripts/nanoowl_detect.py'
+alias video-monitor='dev-env && python3 ~/scripts/video_monitor.py'
+
+# ── Generación de imágenes / video (Cap 19) ───────────────────────────
+alias start-comfyui='cd ~/stacks/comfyui && docker compose up -d && cd - && echo "[OK] ComfyUI en :8188 (espere 60s)"'
+alias stop-comfyui='docker stop comfyui && docker rm comfyui'
+alias start-sdwebui='cd ~/stacks/sd-webui && docker compose up -d && cd - && echo "[OK] SD WebUI en :7860 (espere 90s)"'
+alias stop-sdwebui='docker stop sd-webui && docker rm sd-webui'
+alias list-models='ls -lh ~/models/checkpoints/ 2>/dev/null; ls -lh ~/models/loras/ 2>/dev/null'
+
+# ── JupyterLab (Cap 17) ───────────────────────────────────────────────
+alias jupyter-start='dev-env && jupyter lab --no-browser --port=8888 --ip=0.0.0.0 &'
+alias jupyter-stop='pkill -f jupyter && echo "[OK] Jupyter detenido"'
+
+# ── RAG Empresarial (Cap 25) ──────────────────────────────────────────
+alias rag-start='dev-env && uvicorn api.rag_api:app --host 0.0.0.0 --port 9000 &'
+alias rag-stop='pkill -f "uvicorn.*rag_api" && echo "[OK] RAG API detenida"'
+alias rag-query='dev-env && python3 ~/projects/rag-empresarial/scripts/query.py'
+
+# ── Pipeline PDF-to-Podcast (Cap 19) ─────────────────────────────────
+alias pdf2podcast='bash ~/projects/pdf2podcast/pdf2podcast.sh'
+
+# ── LinkedIn / Social (Cap 23) ────────────────────────────────────────
+alias linkedin-local='USE_LOCAL_LLM=true  python3 ~/projects/linkedin-content/scripts/pipeline.py'
+alias linkedin-cloud='USE_LOCAL_LLM=false python3 ~/projects/linkedin-content/scripts/pipeline.py'
+
+# ── Gateway / Infraestructura (Caps 30, 31) ──────────────────────────
+alias start-gateway='~/scripts/gateway/gateway-manage.sh start'
+alias stop-gateway='~/scripts/gateway/gateway-manage.sh stop'
+alias gateway-status='~/scripts/gateway/gateway-manage.sh status'
+alias new-client='~/scripts/gateway/new-client.sh'
+alias agency-start='~/scripts/agency-start.sh'
+alias agency-stop='~/scripts/agency-stop.sh'
+alias agency-status='curl -s http://localhost:5000/health | python3 -m json.tool'
+
+# ── Capstone 02 — Daily Prayers / Video (Cap 32) ─────────────────────
+alias daily-prayers='python3 ~/projects/daily-prayers/orchestrator.py'
+
+# ── Diagnóstico rápido ────────────────────────────────────────────────
+alias jetson-mem='free -h | awk "/^Mem:/{printf \"RAM: %s usados, %s libres de %s\n\", \$3, \$7, \$2}"'
+alias jetson-temp='cat /sys/devices/virtual/thermal/thermal_zone*/temp 2>/dev/null | awk "{printf \"%.1f°C \", \$1/1000}" && echo'
+alias jetson-ports='for p in 3000 5000 5678 7860 8000 8001 8080 8088 8188 8880 8888 9000 9100 11434 18789; do curl -sf http://localhost:$p/health --max-time 1 > /dev/null 2>&1 && echo "  :$p activo" || true; done'
+alias jetson-audit='sys-status'
+
+ALIASES_EOF
+
+source ~/.bash_aliases
+echo "[OK] .bash_aliases instalado — $(grep "^alias" ~/.bash_aliases | wc -l) aliases disponibles"
+```
+
+---
+
+## A.27 Paquetes `apt` Organizados por Categoría
+
+Lista consolidada de todos los paquetes `apt` instalados a lo largo del libro, organizados para facilitar la instalación selectiva:
+
+```bash
+# ── Sistema base y herramientas esenciales (Caps 1–3) ─────────────────
+sudo apt install -y \
+  curl wget git vim nano htop net-tools tree jq \
+  build-essential cmake pkg-config \
+  software-properties-common apt-transport-https \
+  ca-certificates gnupg lsb-release
+
+# ── Python y desarrollo (Cap 5, 17) ───────────────────────────────────
+sudo apt install -y \
+  python3-pip python3-venv python3-dev python3-setuptools \
+  python3-wheel ipython3
+
+# ── Almacenamiento y NVMe (Cap 4) ─────────────────────────────────────
+sudo apt install -y \
+  nvme-cli smartmontools hdparm parted gdisk
+
+# ── Red y descargas (Cap 6) ───────────────────────────────────────────
+sudo apt install -y \
+  aria2 nmap iftop nethogs iproute2 \
+  dnsutils traceroute mtr
+
+# ── Acceso remoto (Cap 7) ─────────────────────────────────────────────
+sudo apt install -y \
+  openssh-server xrdp
+
+# ── Audio y multimedia (Caps 17, 29) ─────────────────────────────────
+sudo apt install -y \
+  ffmpeg libsndfile1 portaudio19-dev \
+  alsa-utils libespeak-ng-dev espeak-ng \
+  sox libsox-fmt-all
+
+# ── Computer Vision (Cap 28) ──────────────────────────────────────────
+sudo apt install -y \
+  tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng \
+  libtesseract-dev libleptonica-dev \
+  libopencv-dev python3-opencv
+
+# ── Web e infraestructura (Caps 30, 31) ──────────────────────────────
+sudo apt install -y \
+  nginx \
+  libnss3-tools          # mkcert (SSL local)
+
+# Certbot (solo si se usa SSL público sin Cloudflare Tunnel):
+# sudo apt install -y certbot python3-certbot-nginx
+
+# ── Mantenimiento del sistema (Cap 26) ────────────────────────────────
+sudo apt install -y \
+  logrotate cron \
+  sysstat iostat \
+  lsof psmisc procps
+
+# ── Herramientas de shell (Cap 5) ─────────────────────────────────────
+sudo apt install -y \
+  tmux screen \
+  bat fd-find ripgrep fzf \
+  zsh  # opcional (zsh como shell alternativo)
+
+# ── Verificar total de paquetes instalados ────────────────────────────
+dpkg --get-selections | wc -l
+```
+
+**Resumen por capítulo:**
+
+| Categoría | Paquetes clave | Cap |
+|---|---|---|
+| Sistema base | curl, wget, git, build-essential, cmake | 1–3 |
+| Python | python3-pip, python3-venv, python3-dev | 5, 17 |
+| Almacenamiento | nvme-cli, smartmontools, hdparm | 4 |
+| Red | aria2, nmap, iftop, nethogs | 6 |
+| Remote | openssh-server, xrdp | 7 |
+| Audio/Multimedia | ffmpeg, libsndfile1, portaudio19-dev, alsa-utils | 17, 29 |
+| Computer Vision | tesseract-ocr, libopencv-dev | 28 |
+| Infraestructura | nginx, libnss3-tools | 30, 31 |
+| Mantenimiento | logrotate, cron, sysstat | 26 |
+| Shell tools | tmux, bat, fzf, ripgrep | 5 |
+
+---
+
+## A.28 Scripts de Verificación por Grupo de Capítulos
+
+Ejecute estos scripts para verificar que los grupos de capítulos están correctamente configurados:
+
+### Verificación — Capítulos 1–8 (Base del Sistema)
+
+```bash
+#!/bin/bash
+# verify-base.sh — Verifica configuración base (Caps 1–8)
+
+echo "╔══════════════════════════════════════════════════════╗"
+echo "║     VERIFICACIÓN — CAPS 1-8 BASE DEL SISTEMA        ║"
+echo "╚══════════════════════════════════════════════════════╝"
+
+# Sistema
+echo "── Sistema ──"
+lsb_release -d | awk '{print "  Ubuntu:", $2, $3}'
+uname -r | xargs -I{} echo "  Kernel: {}"
+nvcc --version 2>/dev/null | grep release | awk '{print "  CUDA:", $6}' | tr -d ',' \
+  || echo "  [WARN] CUDA no en PATH — source ~/.bashrc"
+
+# RAM y almacenamiento
+echo ""
+echo "── Recursos ──"
+free -h | awk '/^Mem:/{printf "  RAM total: %s (libre: %s)\n", $2, $7}'
+df -h / | awk 'NR==2{printf "  Disco /: %s usado de %s (%s)\n", $3, $2, $5}'
+df -h /data 2>/dev/null | awk 'NR==2{printf "  NVMe /data: %s usado de %s\n", $3, $2}'
+
+# Swap/ZRAM
+echo ""
+echo "── Swap / ZRAM ──"
+swapon --show 2>/dev/null | tail -n +2 | while read l; do echo "  [OK] $l"; done
+[ "$(swapon --show 2>/dev/null | wc -l)" -eq 0 ] && echo "  [WARN] Sin swap configurado (ver Cap 4)"
+
+# Docker
+echo ""
+echo "── Docker ──"
+if command -v docker &>/dev/null; then
+  docker --version | awk '{print "  Docker:", $3}' | tr -d ','
+  docker info 2>/dev/null | grep "Runtimes" | grep -q nvidia \
+    && echo "  [OK] Runtime nvidia disponible" \
+    || echo "  [WARN] Runtime nvidia no configurado (ver Cap 8)"
+else
+  echo "  [ERROR] Docker no instalado"
+fi
+
+# SSH
+echo ""
+echo "── SSH ──"
+systemctl is-active ssh > /dev/null 2>&1 \
+  && echo "  [OK] SSH activo (puerto 22)" \
+  || echo "  [WARN] SSH no activo"
+
+echo ""
+echo "════════════════════════════════════════════════════════"
+```
+
+### Verificación — Capítulos 12–13 (Motores de Inferencia)
+
+```bash
+#!/bin/bash
+# verify-inference.sh — Verifica motores de inferencia (Caps 12–13)
+
+echo "╔══════════════════════════════════════════════════════╗"
+echo "║   VERIFICACIÓN — CAPS 12-13 MOTORES DE INFERENCIA   ║"
+echo "╚══════════════════════════════════════════════════════╝"
+
+# Ollama
+echo "── Ollama ──"
+if command -v ollama &>/dev/null; then
+  ollama_ver=$(ollama --version 2>/dev/null | awk '{print $2}')
+  echo "  [OK] Ollama $ollama_ver instalado"
+  ollama list 2>/dev/null | tail -n +2 | while read m _; do echo "    Modelo: $m"; done
+  curl -sf http://localhost:11434/api/version > /dev/null \
+    && echo "  [OK] API activa en :11434" \
+    || echo "  [INFO] Ollama offline (sudo systemctl start ollama)"
+else
+  echo "  [WARN] Ollama no instalado"
+fi
+
+# vLLM
+echo ""
+echo "── vLLM ──"
+curl -sf http://localhost:8000/v1/models > /dev/null \
+  && echo "  [OK] vLLM activo en :8000" \
+  || echo "  [INFO] vLLM offline (start-qwen35)"
+
+# llama.cpp
+echo ""
+echo "── llama.cpp ──"
+curl -sf http://localhost:8080/v1/models > /dev/null \
+  && echo "  [OK] llama.cpp activo en :8080" \
+  || echo "  [INFO] llama.cpp offline (start-nemotron)"
+
+# OpenClaw
+echo ""
+echo "── OpenClaw / NemoClaw ──"
+curl -sf http://localhost:18789/health > /dev/null \
+  && echo "  [OK] OpenClaw activo en :18789" \
+  || echo "  [INFO] OpenClaw offline (openclaw-start)"
+
+# HF Token
+echo ""
+echo "── HuggingFace ──"
+[ -n "$HF_TOKEN" ] \
+  && echo "  [OK] HF_TOKEN configurado (${HF_TOKEN:0:10}...)" \
+  || echo "  [WARN] HF_TOKEN vacío — necesario para modelos gated (Gemma, GPT-OSS)"
+
+echo ""
+echo "════════════════════════════════════════════════════════"
+```
+
+### Verificación — Capítulos 17–25 (Proyectos de IA)
+
+```bash
+#!/bin/bash
+# verify-projects.sh — Verifica proyectos de IA (Caps 17–25)
+
+echo "╔══════════════════════════════════════════════════════╗"
+echo "║      VERIFICACIÓN — CAPS 17-25 PROYECTOS DE IA      ║"
+echo "╚══════════════════════════════════════════════════════╝"
+
+# Python venvs
+echo "── Python venvs ──"
+[ -d ~/venvs/dev ] && echo "  [OK] venv dev" || echo "  [WARN] venv dev faltante (python3 -m venv ~/venvs/dev)"
+[ -d ~/venvs/llm ] && echo "  [OK] venv llm" || echo "  [WARN] venv llm faltante"
+
+# Servicios activos
+echo ""
+echo "── Servicios activos ──"
+SERVICIOS=(
+  "8000:faster-whisper/vLLM"
+  "8880:kokoro-tts"
+  "11434:Ollama"
+  "9000:RAG API"
+  "8888:JupyterLab"
+  "5678:N8N"
+  "3000:Open WebUI"
+  "18789:OpenClaw"
+)
+for s in "${SERVICIOS[@]}"; do
+  puerto="${s%%:*}"
+  nombre="${s#*:}"
+  curl -sf "http://localhost:$puerto" --max-time 1 > /dev/null 2>&1 \
+    && echo "  [OK] :$puerto $nombre" \
+    || echo "  [  ] :$puerto $nombre — offline"
+done
+
+# Directorios de proyectos
+echo ""
+echo "── Proyectos ──"
+PROYECTOS=(pdf2podcast transcription-bot tourism-agency sales-funnel
+           linkedin-content voice-assistant rag-empresarial daily-prayers)
+for p in "${PROYECTOS[@]}"; do
+  [ -d ~/projects/$p ] \
+    && echo "  [OK] ~/projects/$p" \
+    || echo "  [  ] ~/projects/$p — no creado aún"
+done
+
+echo ""
+echo "════════════════════════════════════════════════════════"
+```
+
+**Instalar como aliases:**
+
+```bash
+chmod +x ~/scripts/verify-base.sh ~/scripts/verify-inference.sh ~/scripts/verify-projects.sh
+
+echo "alias verify-base='bash ~/scripts/verify-base.sh'" >> ~/.bash_aliases
+echo "alias verify-inference='bash ~/scripts/verify-inference.sh'" >> ~/.bash_aliases
+echo "alias verify-projects='bash ~/scripts/verify-projects.sh'" >> ~/.bash_aliases
+source ~/.bash_aliases
+```
+
+---
+
+## A.29 Scripts de Mantenimiento del Sistema (Capítulo 26)
+
+Estos scripts son el núcleo del sistema de mantenimiento. Créelos con los comandos de instalación de cada sección del Capítulo 26, o use los bloques siguientes para instalarlos directamente.
+
+### check-ready.sh — Verificación Pre-Pipeline
+
+```bash
+cat > ~/scripts/maintenance/check-ready.sh << 'SCRIPT_EOF'
+#!/bin/bash
+# check-ready.sh — Verifica que el Jetson está listo para un pipeline de IA
+# Uso: check-ready.sh <min-RAM-GB> "nombre-pipeline"
+# Retorna 0 si listo, 1 si no cumple requisitos
+
+MIN_RAM="${1:-20}"
+PIPELINE="${2:-pipeline}"
+
+check_ram() {
+    LIBRE=$(free -g | awk '/^Mem:/{print $7}')
+    [ "$LIBRE" -ge "$MIN_RAM" ] && return 0 || { echo "[ERROR] RAM: $LIBRE GB libre, necesita $MIN_RAM GB"; return 1; }
+}
+
+check_temp() {
+    TEMP=$(cat /sys/devices/virtual/thermal/thermal_zone0/temp 2>/dev/null || echo "0")
+    TEMP_C=$((TEMP / 1000))
+    [ "$TEMP_C" -lt 75 ] && return 0 || { echo "[WARN] Temperatura alta: ${TEMP_C}°C (óptimo <75°C)"; return 0; }
+}
+
+check_disk() {
+    USO=$(df / | awk 'NR==2{print $5}' | tr -d '%')
+    [ "$USO" -lt 90 ] && return 0 || { echo "[ERROR] Disco casi lleno: ${USO}% usado"; return 1; }
+}
+
+ERRORES=0
+echo "── Pre-check: $PIPELINE ──"
+check_ram || ((ERRORES++))
+check_temp
+check_disk || ((ERRORES++))
+
+if [ "$ERRORES" -eq 0 ]; then
+    echo "[OK] Sistema listo para $PIPELINE"
+    exit 0
+else
+    echo "[WARN] $ERRORES problema(s) detectado(s). Ejecute: jetson-clean"
+    exit 1
+fi
+SCRIPT_EOF
+chmod +x ~/scripts/maintenance/check-ready.sh
+echo "[OK] check-ready.sh instalado"
+```
+
+### clean-ai-containers.sh — Limpieza de Contenedores
+
+```bash
+cat > ~/scripts/maintenance/clean-ai-containers.sh << 'SCRIPT_EOF'
+#!/bin/bash
+# clean-ai-containers.sh — Detiene y limpia contenedores de proyectos IA
+# Uso: clean-ai-containers.sh [--all | nombre-proyecto]
+
+PROYECTO="${1:-}"
+PATRONES="vllm|llama|qwen|gemma|kokoro|whisper|nemotron|comfyui|sd-webui|openclaw|open-webui"
+[ -n "$PROYECTO" ] && PATRONES="$PROYECTO"
+
+echo "── Limpiando contenedores ──"
+CONTAINERS=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E "$PATRONES" || true)
+
+if [ -z "$CONTAINERS" ]; then
+    echo "  Sin contenedores de IA activos"
+else
+    echo "$CONTAINERS" | while read c; do
+        docker stop "$c" > /dev/null 2>&1 && docker rm "$c" > /dev/null 2>&1
+        echo "  [OK] Detenido: $c"
+    done
+fi
+
+# Liberar memoria
+sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
+RAM_LIBRE=$(free -h | awk '/^Mem:/{print $7}')
+echo "  RAM libre: $RAM_LIBRE"
+SCRIPT_EOF
+chmod +x ~/scripts/maintenance/clean-ai-containers.sh
+echo "[OK] clean-ai-containers.sh instalado"
+```
+
+### switch-project.sh — Cambio entre Proyectos
+
+```bash
+cat > ~/scripts/maintenance/switch-project.sh << 'SCRIPT_EOF'
+#!/bin/bash
+# switch-project.sh — Cambia entre proyectos de IA liberando recursos
+# Uso: switch-project.sh <nombre-proyecto>
+
+NUEVO_PROYECTO="${1:-}"
+if [ -z "$NUEVO_PROYECTO" ]; then
+    echo "Uso: switch-project.sh <nombre>"
+    echo "Disponibles: pdf2podcast | transcription | tourism | sales | linkedin | voice | rag | agency"
+    exit 1
+fi
+
+echo "── Cambiando al proyecto: $NUEVO_PROYECTO ──"
+echo "  1. Liberando recursos actuales..."
+~/scripts/maintenance/clean-ai-containers.sh
+sleep 2
+
+echo "  2. Iniciando $NUEVO_PROYECTO..."
+case "$NUEVO_PROYECTO" in
+  pdf2podcast)      echo "  Inicie: start-kokoro && ollama-start" ;;
+  transcription)    echo "  Inicie: start-whisper && ollama-start" ;;
+  tourism|agency)   echo "  Inicie: openclaw-start && ollama-start" ;;
+  voice)            echo "  Inicie: start-whisper && start-kokoro && ollama-start" ;;
+  rag)              echo "  Inicie: ollama-start && rag-start" ;;
+  *)                echo "  Proyecto '$NUEVO_PROYECTO' — inicie los servicios manualmente" ;;
+esac
+
+echo "[OK] Recursos liberados — listo para $NUEVO_PROYECTO"
+SCRIPT_EOF
+chmod +x ~/scripts/maintenance/switch-project.sh
+echo "[OK] switch-project.sh instalado"
+```
+
+### hf-cache-clean.sh — Limpieza de Caché HuggingFace
+
+```bash
+cat > ~/scripts/maintenance/hf-cache-clean.sh << 'SCRIPT_EOF'
+#!/bin/bash
+# hf-cache-clean.sh — Limpia caché HuggingFace de modelos no usados
+# Uso: hf-cache-clean.sh [--list | --all | nombre-modelo]
+
+CACHE_DIR="$HOME/.cache/huggingface/hub"
+
+if [ ! -d "$CACHE_DIR" ]; then
+    echo "[INFO] Caché vacío: $CACHE_DIR"
+    exit 0
+fi
+
+case "${1:-}" in
+  --list)
+    echo "── Modelos en caché HuggingFace ──"
+    du -sh "$CACHE_DIR"/models--*/ 2>/dev/null | sort -h | awk '{printf "  %s  %s\n", $1, $2}'
+    TOTAL=$(du -sh "$CACHE_DIR" 2>/dev/null | awk '{print $1}')
+    echo "  Total: $TOTAL"
+    ;;
+  --all)
+    echo "[WARN] Esto eliminará TODO el caché HuggingFace ($CACHE_DIR)"
+    read -p "¿Confirmar? (sí/no): " CONF
+    [ "$CONF" = "sí" ] && rm -rf "$CACHE_DIR" && echo "[OK] Caché eliminado" || echo "Cancelado"
+    ;;
+  "")
+    echo "Uso: hf-cache-clean.sh [--list | --all | nombre-modelo-parcial]"
+    echo "  --list : listar modelos en caché con tamaño"
+    echo "  --all  : eliminar TODO el caché"
+    echo "  texto  : eliminar modelos cuyo nombre contenga 'texto'"
+    ;;
+  *)
+    PATRON="$1"
+    ENCONTRADOS=$(ls "$CACHE_DIR" 2>/dev/null | grep -i "$PATRON" || true)
+    if [ -z "$ENCONTRADOS" ]; then
+        echo "[INFO] Sin modelos con '$PATRON' en caché"
+    else
+        echo "── Modelos encontrados ──"
+        echo "$ENCONTRADOS" | while read m; do
+            SIZE=$(du -sh "$CACHE_DIR/$m" | awk '{print $1}')
+            echo "  $m ($SIZE)"
+        done
+        read -p "¿Eliminar estos modelos? (sí/no): " CONF
+        if [ "$CONF" = "sí" ]; then
+            echo "$ENCONTRADOS" | while read m; do
+                rm -rf "$CACHE_DIR/$m" && echo "  [OK] Eliminado: $m"
+            done
+        fi
+    fi
+    ;;
+esac
+SCRIPT_EOF
+chmod +x ~/scripts/maintenance/hf-cache-clean.sh
+echo "[OK] hf-cache-clean.sh instalado"
+```
+
+### health-check.sh — Verificación de Salud Semanal
+
+```bash
+cat > ~/scripts/maintenance/health-check.sh << 'SCRIPT_EOF'
+#!/bin/bash
+# health-check.sh — Diagnóstico semanal completo del Jetson
+# Recomienda programar semanalmente: 0 8 * * 1 ~/scripts/maintenance/health-check.sh
+
+LOG_FILE="$HOME/logs/health-$(date +%Y%m%d).log"
+mkdir -p "$HOME/logs"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "══════════════════════════════════════════════════"
+echo "  HEALTH CHECK — $(date '+%Y-%m-%d %H:%M:%S')"
+echo "══════════════════════════════════════════════════"
+
+# Temperatura
+echo "── Temperatura ──"
+for z in /sys/devices/virtual/thermal/thermal_zone*/temp; do
+    T=$(cat "$z" 2>/dev/null)
+    [ -n "$T" ] && printf "  %s: %.1f°C\n" "$(basename $(dirname $z))" "$((T / 1000))"
+done
+
+# RAM
+echo ""
+echo "── Memoria ──"
+free -h | awk '/^Mem:/{printf "  RAM: %s total, %s disponible\n", $2, $7}'
+swapon --show 2>/dev/null | tail -n +2 | awk '{printf "  Swap %s: %s\n", $2, $3}'
+
+# Disco
+echo ""
+echo "── Almacenamiento ──"
+df -h / /data 2>/dev/null | tail -n +2 | awk '{printf "  %s: %s usados (%s)\n", $6, $3, $5}'
+CACHE_SIZE=$(du -sh ~/.cache/huggingface/hub 2>/dev/null | awk '{print $1}')
+echo "  HF cache: ${CACHE_SIZE:-vacío}"
+
+# Servicios en arranque (no deberían correr)
+echo ""
+echo "── Servicios ──"
+systemctl is-active docker > /dev/null 2>&1 \
+  && echo "  [WARN] Docker corriendo en boot — use 'docker-off' y deshabilítelo" \
+  || echo "  [OK] Docker deshabilitado en boot"
+systemctl is-enabled ollama > /dev/null 2>&1 \
+  && echo "  [WARN] Ollama habilitado en arranque — puede consumir VRAM al iniciar" \
+  || echo "  [OK] Ollama no habilitado en arranque"
+
+echo ""
+echo "  Log guardado en: $LOG_FILE"
+echo "══════════════════════════════════════════════════"
+SCRIPT_EOF
+chmod +x ~/scripts/maintenance/health-check.sh
+echo "[OK] health-check.sh instalado"
+```
+
+### system-status.sh — Estado Rápido del Sistema
+
+```bash
+cat > ~/scripts/maintenance/system-status.sh << 'SCRIPT_EOF'
+#!/bin/bash
+# system-status.sh — Estado general del Jetson en 5 segundos
+
+echo "╔══════════════════════════════════════════════════════╗"
+echo "║                ESTADO DEL SISTEMA                    ║"
+echo "╚══════════════════════════════════════════════════════╝"
+
+# Modo energético
+MODO=$(sudo nvpmodel -q 2>/dev/null | grep "NV Power Mode" | awk '{print $NF}')
+echo "  Modo energético: ${MODO:-desconocido}"
+
+# RAM
+free -h | awk '/^Mem:/{printf "  RAM: %s total / %s libre / %s usados\n", $2, $7, $3}'
+
+# Temperatura
+T=$(cat /sys/devices/virtual/thermal/thermal_zone0/temp 2>/dev/null || echo "0")
+echo "  Temperatura: $((T / 1000))°C"
+
+# Docker
+CONTAINERS=$(docker ps --format '{{.Names}}' 2>/dev/null | wc -l)
+echo "  Contenedores activos: $CONTAINERS"
+[ "$CONTAINERS" -gt 0 ] && docker ps --format "    {{.Names}} — {{.Status}}" 2>/dev/null
+
+# Ollama
+if systemctl is-active ollama > /dev/null 2>&1; then
+    MODELOS=$(ollama ps 2>/dev/null | tail -n +2 | wc -l)
+    echo "  Ollama: activo ($MODELOS modelos en VRAM)"
+else
+    echo "  Ollama: offline"
+fi
+
+# Endpoints
+echo "  Endpoints:"
+for p in 8000 8080 11434 18789 3000 8880 9000 5678; do
+    curl -sf "http://localhost:$p" --max-time 0.5 > /dev/null 2>&1 && echo "    :$p activo"
+done
+
+echo "╚══════════════════════════════════════════════════════╝"
+SCRIPT_EOF
+chmod +x ~/scripts/maintenance/system-status.sh
+echo "[OK] system-status.sh instalado"
+```
+
+**Instalar todos los scripts de mantenimiento en un paso:**
+
+```bash
+# Crear directorio y ejecutar cada bloque de instalación anterior
+mkdir -p ~/scripts/maintenance
+# (ejecutar cada bloque cat > ... SCRIPT_EOF de arriba)
+
+# Agregar aliases (ya en A.26, verificar que estén activos)
+grep -q "check-ready" ~/.bash_aliases \
+  || echo "alias check-ready='~/scripts/maintenance/check-ready.sh'" >> ~/.bash_aliases
+source ~/.bash_aliases
+
+# Programar health-check semanal (lunes 8 AM)
+(crontab -l 2>/dev/null; echo "0 8 * * 1 $HOME/scripts/maintenance/health-check.sh") | crontab -
+echo "[OK] health-check programado: lunes 8 AM"
+```
+
+---
+
 *Fin del Apéndice — Referencia Rápida.*
