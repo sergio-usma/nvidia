@@ -6,11 +6,11 @@ NemoClaw es el proxy de políticas que envuelve a OpenClaw con tres capas de pro
 
 Sin NemoClaw, cualquier usuario del bot de Telegram podría pedirle al agente que borre archivos, ejecute comandos del sistema o filtre datos privados. NemoClaw actúa como un guardia que revisa cada solicitud antes de que llegue al modelo.
 
-Este capítulo cubre únicamente NemoClaw. Para OpenClaw (gateway principal) consulte el Capítulo 13A.
+Este capítulo cubre únicamente NemoClaw. Para OpenClaw (gateway principal) consulte el Capítulo 11A.
 
 **Modo energético:** NemoClaw es un proxy liviano — 30W es suficiente. El modo de energía lo controla el motor de inferencia, no NemoClaw.
 
-> **Prerrequisito:** OpenClaw instalado, configurado y con el bot de Telegram activo (Capítulo 13A). NemoClaw envuelve a OpenClaw — sin OpenClaw, NemoClaw no tiene nada que proteger.
+> **Prerrequisito:** OpenClaw instalado, configurado y con el bot de Telegram activo (Capítulo 11A). NemoClaw envuelve a OpenClaw — sin OpenClaw, NemoClaw no tiene nada que proteger.
 
 ---
 
@@ -19,7 +19,7 @@ Este capítulo cubre únicamente NemoClaw. Para OpenClaw (gateway principal) con
 <!-- INFOGRAFÍA: Arquitectura de NemoClaw — Seguridad sobre OpenClaw — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
-```
+```bash
 Arquitectura NemoClaw — JetPack 7.2
 ═════════════════════════════════════
 
@@ -36,7 +36,7 @@ Navegador / WhatsApp
        │
        ▼  puerto 18788 (interno)
 ┌──────────────────────┐
-│   OpenClaw Gateway   │   ← Agente central (Capítulo 13A)
+│   OpenClaw Gateway   │   ← Agente central (Capítulo 11A)
 └──────────────────────┘
        │
        ▼
@@ -61,7 +61,7 @@ JetPack 7.2 incluye todas las dependencias necesarias. La instalación se reduce
 curl -fsSL nvidia.com/nemoclaw.sh | bash
 ```
 
-```
+```bash
 # Salida esperada:
 [OK] NemoClaw installed
 [OK] Dependencies satisfied (JetPack 7.2 detected)
@@ -88,7 +88,7 @@ nemoclaw --version
 nemoclaw status
 ```
 
-```
+```bash
 # Salida esperada:
 NemoClaw proxy: running on :18789
 OpenClaw gateway: connected (via :18788)
@@ -143,7 +143,7 @@ sleep 3
 nemoclaw status
 ```
 
-```
+```bash
 # Salida esperada:
 NemoClaw Proxy: running on :18788
 OpenClaw Gateway: connected via proxy
@@ -181,7 +181,7 @@ nemoclaw restart
 nemoclaw config show
 ```
 
-```
+```bash
 # Salida de nemoclaw config show:
 inference.provider: local
 inference.base-url: http://localhost:8000/v1
@@ -258,12 +258,12 @@ nemoclaw config get network.outbound.mode
 > # Whitelist mínima recomendada para stack completo con Telegram + Brave
 > nemoclaw config set network.outbound.mode allowlist
 > nemoclaw config set network.outbound.allowlist '[
->   "localhost",
->   "127.0.0.1",
->   "192.168.0.0/16",
->   "api.telegram.org",
->   "api.search.brave.com",
->   "huggingface.co"
+> "localhost",
+> "127.0.0.1",
+> "192.168.0.0/16",
+> "api.telegram.org",
+> "api.search.brave.com",
+> "huggingface.co"
 > ]'
 > ```
 >
@@ -462,9 +462,9 @@ nemoclaw restart
 
 ---
 
-## Resumen del Capítulo 13B
+## Resumen del Capítulo 11B
 
-NemoClaw añade tres capas de seguridad sobre el bot de Telegram del Capítulo 13A:
+NemoClaw añade tres capas de seguridad sobre el bot de Telegram del Capítulo 11A:
 
 - **Políticas L7 REST** — bloquea rutas de API específicas antes de que lleguen al agente
 - **Aislamiento de sistema de archivos** — el agente solo accede a directorios explícitamente permitidos

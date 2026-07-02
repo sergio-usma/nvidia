@@ -23,7 +23,7 @@ OpenClaw actúa como intermediario inteligente entre los canales de entrada (Wha
 
 <!-- INFOGRAFÍA: Arquitectura de OpenClaw en el Jetson AGX Orin 64GB — diagrama de flujo mostrando canales de entrada (WhatsApp, Navegador, Terminal) → OpenClaw Gateway :18789 → router de solicitudes → backends (vLLM :8000, llama.cpp :8080, Ollama :11434) → modelo LLM activo. Paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light — pendiente de diseño gráfico -->
 
-```
+```bash
 Arquitectura de OpenClaw en el Jetson AGX Orin 64GB
 ════════════════════════════════════════════════════
 
@@ -260,7 +260,7 @@ sleep 5
 openclaw doctor
 ```
 
-```
+```bash
 # Salida esperada de 'openclaw doctor':
 # [OK] Gateway: running on port 18789
 # [OK] Model: vllm/google/gemma-4-E2B-it (connected)
@@ -295,7 +295,7 @@ ssh -N -L 18789:127.0.0.1:18789 jetson@192.168.1.100
 
 Una vez activo el túnel, abra en el navegador de Windows:
 
-```
+```bash
 http://localhost:18789/#token=TU_TOKEN_AQUI
 ```
 
@@ -311,7 +311,7 @@ openclaw config get gateway.auth.token
 
 Si tiene NoMachine instalado en el Jetson (Capítulo 7), conéctese con el cliente NoMachine desde Windows y abra el navegador dentro del escritorio virtual del Jetson:
 
-```
+```bash
 http://127.0.0.1:18789/#token=TU_TOKEN
 ```
 
@@ -434,7 +434,7 @@ NemoClaw agrega privacidad y control de seguridad a OpenClaw mediante un proxy d
 
 ### 13.2.1 Arquitectura de NemoClaw
 
-```
+```bash
 Arquitectura NemoClaw — JetPack 7.2
 ═══════════════════════════════════
 
@@ -726,7 +726,7 @@ curl -s http://localhost:3000 | grep -o '<title>[^<]*</title>'
 
 Acceda desde el navegador en su red local:
 
-```
+```bash
 http://192.168.1.100:3000
 ```
 
@@ -869,7 +869,7 @@ chmod +x ~/scripts/verify-agentic-stack.sh
 ~/scripts/verify-agentic-stack.sh
 ```
 
-```
+```bash
 # Salida esperada con todos los componentes activos:
 # ═══ Verificación del Stack Agéntico — Sat Jun 28 14:32:15 UTC 2026 ═══
 #

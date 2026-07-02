@@ -78,10 +78,10 @@ La herramienta **recomendada oficialmente por NVIDIA** es **Balena Etcher** (etc
 2. **Importante:** Ejecútelo como administrador en Windows (clic derecho → "Ejecutar como administrador") para evitar errores al escribir en el USB.
 3. Inserte un USB de mínimo **16 GB** (se borrará todo su contenido).
 4. En Balena Etcher:
-   - Haga clic en **"Flash from file"** y seleccione la ISO descargada de JetPack 7.2.
-   - Si Etcher no muestra la ISO al navegar, seleccione "All files (*.*)" en el filtro del explorador.
-   - En **"Select target"**, elija su USB.
-   - Haga clic en **"Flash!"** y confirme.
+ - Haga clic en **"Flash from file"** y seleccione la ISO descargada de JetPack 7.2.
+ - Si Etcher no muestra la ISO al navegar, seleccione "All files (*.*)" en el filtro del explorador.
+ - En **"Select target"**, elija su USB.
+ - Haga clic en **"Flash!"** y confirme.
 5. Espere a que Etcher termine y valide el USB (5–8 minutos).
 
 > **ALTERNATIVA — Rufus:** Si prefiere usar Rufus (rufus.ie), configure: Device = su USB, Boot selection = ISO de JetPack 7.2, Partition scheme = GPT, Target system = UEFI (non CSM), File system = FAT32, y haga clic en START. Ambas herramientas producen un resultado equivalente.
@@ -96,14 +96,14 @@ El Jetson debe estar en modo especial de recuperación para arrancar desde USB:
 1. **Apague** el Jetson completamente (desconecte la alimentación si es necesario).
 2. Conecte el USB con la ISO al Jetson (use el puerto USB tipo A).
 3. Localice los **3 botones** en la parte frontal del Developer Kit:
-   - Izquierda: **POWER** (encendido)
-   - Centro: **FORCE RECOVERY**
-   - Derecha: **RESET**
+ - Izquierda: **POWER** (encendido)
+ - Centro: **FORCE RECOVERY**
+ - Derecha: **RESET**
 4. **Mantenga presionado FORCE RECOVERY**.
 5. Sin soltar FORCE RECOVERY, **conecte el cable de alimentación** (o presione POWER si ya está conectado).
 6. Mantenga presionado 2–3 segundos más, luego **suelte**.
 
-```
+```bash
 Posición de los botones en el Developer Kit:
 ┌─────────────────────────────────────────┐
 │  [POWER]  [FORCE REC]  [RESET]          │
@@ -174,7 +174,7 @@ uname -r
 cat /etc/nv_tegra_release | head -2
 ```
 
-```
+```bash
 # Salida esperada
 NAME="Ubuntu"
 VERSION="24.04.4 LTS (Noble Numbat)"
@@ -201,7 +201,7 @@ sudo apt update && sudo apt upgrade -y
 sudo apt autoremove -y
 ```
 
-```
+```bash
 # Salida esperada (parcial)
 Get:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease [256 kB]
 ...
@@ -227,7 +227,7 @@ sudo apt install -y \
   cmake ninja-build
 ```
 
-```
+```bash
 # Salida esperada (parcial)
 Reading package lists... Done
 Building dependency tree... Done
@@ -261,7 +261,7 @@ source ~/.bashrc
 nvcc --version
 ```
 
-```
+```bash
 # Salida esperada
 nvcc: NVIDIA (R) Cuda compiler driver
 Copyright (c) 2005-2024 NVIDIA Corporation
@@ -288,7 +288,7 @@ sudo systemctl restart jtop 2>/dev/null || true
 jtop --version
 ```
 
-```
+```bash
 # Salida esperada (versión 4.x.x o superior)
 jetson@jetson-orin:~$ jtop --version
 jtop 4.3.2
@@ -324,7 +324,7 @@ sudo sed -i 's/127.0.1.1.*/127.0.1.1\tjetson-orin/' /etc/hosts
 grep "127.0.1.1" /etc/hosts
 ```
 
-```
+```bash
 # Salida esperada
 127.0.1.1	jetson-orin
 ```
@@ -388,7 +388,7 @@ tmux new-session -d -s llm    # sesión para modelos de inferencia
 tmux ls
 ```
 
-```
+```bash
 # Salida esperada
 llm: 1 windows (created ...)
 main: 1 windows (created ...)
@@ -419,7 +419,7 @@ nmcli device status
 nmcli connection show
 ```
 
-```
+```bash
 # Salida esperada (ejemplo)
 DEVICE    TYPE      STATE      CONNECTION
 eth0      ethernet  connected  Wired connection 1
@@ -459,7 +459,7 @@ sudo nmcli connection down "$CONN" && sudo nmcli connection up "$CONN"
 hostname -I
 ```
 
-```
+```bash
 # Salida esperada
 192.168.1.100
 ```
@@ -527,7 +527,7 @@ sudo systemctl restart ssh
 sudo systemctl status ssh | grep -E "Active|Loaded"
 ```
 
-```
+```bash
 # Salida esperada
      Loaded: loaded (/lib/systemd/system/ssh.service; enabled; ...)
      Active: active (running) since ...
@@ -575,7 +575,7 @@ ssh jetson
 # El prompt debe mostrar: jetson@jetson-orin:~$
 ```
 
-```
+```bash
 # Salida esperada al conectar
 Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.8.12-1021-tegra aarch64)
 jetson@jetson-orin:~$
@@ -653,7 +653,7 @@ echo "── Memoria disponible ──"
 free -h | awk '/^Mem:/{print "Total:", $2, "| Libre:", $7}'
 ```
 
-```
+```bash
 # Salida esperada
 ╔══════════════════════════════════════════════╗
 ║     VERIFICACIÓN CAPÍTULO 1 — RESULTADO         ║

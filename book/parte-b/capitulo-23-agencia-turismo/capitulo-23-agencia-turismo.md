@@ -46,7 +46,7 @@ pwr-30w
 <!-- INFOGRAFÍA: Arquitectura del Sistema de Agencia de Turismo Virtual — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────────┐
 │           AGENCIA DE TURISMO VIRTUAL — ARQUITECTURA          │
 ├─────────────────────────────────────────────────────────────┤
@@ -354,7 +354,7 @@ if __name__ == "__main__":
 python tourism_chat.py
 ```
 
-```
+```bash
 # Ejemplo de sesión
 ╔══════════════════════════════════════════════════════════╗
 ║       AGENCIA DE TURISMO VIRTUAL — JETSON AI             ║

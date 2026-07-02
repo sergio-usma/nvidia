@@ -26,7 +26,7 @@ Antes de configurar los IDEs, confirme que la conexión SSH base funciona correc
 ssh jetson
 ```
 
-```
+```bash
 # Salida esperada
 jetson@jetson-orin:~$
 ```
@@ -35,7 +35,7 @@ jetson@jetson-orin:~$
 
 Si el alias `ssh jetson` no está configurado, créelo ahora en Windows:
 
-```
+```bash
 # En Windows PowerShell — crear o editar C:\Users\SU_USUARIO\.ssh\config
 # IMPORTANTE: reemplaza TU_IP con la IP del Jetson (ej: 192.168.1.100)
 # y TU_USUARIO con su nombre de usuario de Windows
@@ -44,7 +44,7 @@ notepad C:\Users\TU_USUARIO\.ssh\config
 
 Contenido del archivo `~/.ssh/config` en Windows:
 
-```
+```bash
 Host jetson
     HostName 192.168.1.100
     User jetson
@@ -86,7 +86,7 @@ También instale estas extensiones relacionadas:
 3. Se abrirá una nueva ventana de VSCode. En la esquina inferior izquierda verá `SSH: jetson`
 4. Primera conexión: VSCode instalará el servidor remoto en el Jetson (~100 MB, tarda 1–2 min)
 
-```
+```bash
 # Salida en el panel Output de VSCode durante la conexion:
 [11:23:15.891] Installing VS Code Server for host linux
 [11:23:20.012] Downloading server...
@@ -108,7 +108,7 @@ Ahora puede crear, editar y ejecutar archivos directamente en el Jetson. El term
 
 Con la conexión activa, instale las extensiones en el **servidor remoto** (el Jetson):
 
-```
+```bash
 # En VSCode conectado al Jetson:
 # Ctrl+Shift+X -> buscar "Python" -> Install on SSH: jetson
 ```
@@ -117,7 +117,7 @@ Las extensiones marcadas con `(SSH: jetson)` corren en el Jetson y tienen acceso
 
 ### 7.2.5 Seleccionar el intérprete Python
 
-```
+```bash
 # Ctrl+Shift+P -> "Python: Select Interpreter"
 # Seleccione el venv correcto segun el proyecto:
 # - Para inferencia LLM:  ~/venvs/llm/bin/python3
@@ -147,7 +147,7 @@ print(f"GPU: {torch.cuda.get_device_name(0)}")
 print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 ```
 
-```
+```bash
 # Salida esperada al presionar F5 o "Run Python File":
 CUDA disponible: True
 GPU: Orin (Ampere)
@@ -175,7 +175,7 @@ PyCharm Professional ofrece el depurador más completo para Python, con soporte 
 3. Autenticación: **Private Key** → seleccione `C:\Users\TU_USUARIO\.ssh\id_ed25519`
 4. Clic en **Check Connection and Continue**
 
-```
+```bash
 # Gateway verificara la conexion y mostrara:
 Connection test successful.
 SSH fingerprint: SHA256:... (accept once)
@@ -203,7 +203,7 @@ import torch
 print(torch.cuda.get_device_name(0))
 ```
 
-```
+```bash
 # Salida esperada:
 Orin (Ampere)
 ```
@@ -240,7 +240,7 @@ scp -r jetson:~/experiments/run_001/ C:\Users\sergi\Documents\resultados\
 ssh jetson du -sh ~/data/models/gguf/
 ```
 
-```
+```bash
 # Salida de du:
 8.1G    /home/jetson/data/models/gguf/
 ```
@@ -254,7 +254,7 @@ Para transferencias frecuentes o directorios grandes, rsync es más eficiente qu
 rsync -avz --progress /c/Users/sergi/proyectos/mi_app/ jetson:~/projects/mi_app/
 ```
 
-```
+```bash
 # Salida esperada (solo transfiere archivos modificados):
 sending incremental file list
 ./
@@ -324,7 +324,7 @@ ssh -L 3000:localhost:3000 \
 
 Para no escribir el comando cada vez, agregue los tunnels al archivo `~/.ssh/config` de Windows:
 
-```
+```bash
 # Agregar a C:\Users\TU_USUARIO\.ssh\config
 Host jetson-tunnels
     HostName 192.168.1.100
@@ -360,7 +360,7 @@ pip install jupyterlab
 jupyter lab --no-browser --port=8888 --ip=127.0.0.1
 ```
 
-```
+```bash
 # Salida esperada -- copie el token (o URL completa):
 [I 2026-06-29 11:30:15.123 ServerApp] JupyterLab extension loaded
 [I 2026-06-29 11:30:15.456 ServerApp] Jupyter Server is running at:
@@ -381,7 +381,7 @@ ssh -L 8888:localhost:8888 jetson -N
 
 ### Caso A — Desarrollo con VSCode (más común)
 
-```
+```bash
 1. [Windows] Abrir PowerShell -> ssh jetson (verificar conectividad)
 2. [Windows] Abrir VSCode -> Ctrl+Shift+P -> "Remote-SSH: Connect to Host" -> jetson
 3. [VSCode remoto] Abrir carpeta del proyecto en el Jetson
@@ -393,7 +393,7 @@ ssh -L 8888:localhost:8888 jetson -N
 
 ### Caso B — Tunnel + Navegador para Open WebUI
 
-```
+```bash
 1. [Windows PowerShell 1] ssh -L 3000:localhost:3000 jetson -N
 2. [Windows PowerShell 2] ssh jetson "start-webui"
 3. [Windows Navegador] http://localhost:3000
@@ -502,7 +502,7 @@ Write-Host "CUDA en el Jetson..."
 ssh jetson "python3 -c 'import torch; print(\"[OK] CUDA=\"+str(torch.cuda.is_available())+\" GPU=\"+torch.cuda.get_device_name(0)) if torch.cuda.is_available() else print(\"[WARN] CUDA no disponible\")'"
 ```
 
-```
+```bash
 # Salida esperada:
 === Verificacion IDE Remoto ===
 Probando SSH...

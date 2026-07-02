@@ -36,13 +36,13 @@ No se requiere experiencia previa con hardware Jetson ni con el ecosistema NVIDI
 
 El libro está organizado en tres partes que progresan desde la configuración del sistema hasta proyectos de producción:
 
-**Parte A — Fundamentos**  
+**Parte A — Fundamentos** 
 Configura el Jetson desde cero: sistema operativo, red, almacenamiento, acceso remoto, Docker, los tres motores de inferencia principales (Ollama, llama.cpp, vLLM), el stack de IA agéntica completo, visión artificial, voz, generación de imágenes y el ciclo completo de benchmarking y despliegue en producción.
 
-**Parte B — Manos a la Obra**  
+**Parte B — Manos a la Obra** 
 Construye diez proyectos prácticos completos: desde un entorno de desarrollo Python con VSCode Remote SSH hasta un sistema multiagente de RAG empresarial, pasando por bots de transcripción, pipelines PDF-a-pódcast, asistentes de voz offline y microservicios expuestos a Internet.
 
-**Parte C — Capstone**  
+**Parte C — Capstone** 
 Dos proyectos de alta complejidad que integran todo lo aprendido: una agencia de IA completa con presencia web y un sistema de automatización de contenido en video para plataformas como YouTube Shorts y TikTok.
 
 Al finalizar el libro, usted habrá:
@@ -87,7 +87,7 @@ Al finalizar el libro, usted habrá:
 
 A lo largo del libro se utilizan los siguientes elementos visuales:
 
-**Bloques de código**  
+**Bloques de código** 
 Los comandos y fragmentos de código aparecen en bloques con fondo gris. Las líneas que comienzan con `$` son comandos que usted ejecuta. Las líneas sin `$` son salidas esperadas del sistema.
 
 ```bash
@@ -96,7 +96,7 @@ Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
 Reading package lists... Done
 ```
 
-**Etiquetas de verificación**  
+**Etiquetas de verificación** 
 Los comandos verificados en el hardware de prueba se marcan con `[VERIFIED ON JP 7.2]`. Los comandos que deberían funcionar pero no han sido verificados en JP 7.2 llevan `[NEEDS VERIFICATION]`.
 
 **Callouts**
@@ -109,7 +109,7 @@ Los comandos verificados en el hardware de prueba se marcan con `[VERIFIED ON JP
 
 > **IMPORTANTE:** Paso crítico que no debe omitirse.
 
-**Infografías**  
+**Infografías** 
 Los diagramas de arquitectura y flujo están marcados con un comentario `<!-- INFOGRAFÍA -->` en el archivo fuente, indicando el concepto que ilustran. En la versión impresa final, estos comentarios serán reemplazados por ilustraciones profesionales.
 
 ---

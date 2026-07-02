@@ -151,7 +151,7 @@ for seg in data.get('words', []):
     print(f'  [{seg[\"start\"]:.2f}s → {seg[\"end\"]:.2f}s] {seg[\"word\"]}')"
 ```
 
-```
+```bash
 # Salida esperada:
 Transcripción: El Jetson AGX Orin tiene sesenta y cuatro gigabytes de memoria unificada.
 
@@ -530,7 +530,7 @@ if __name__ == "__main__":
 
 Este es el pipeline de asistente de voz offline completo del Jetson. Para la latencia mínima, combine faster-whisper (large-v3 para calidad) + Qwen3.5-4B via vLLM + piper-tts para respuestas:
 
-```
+```bash
 Micrófono USB
     ↓ grabación con pyaudio (VAD — detección de voz)      ~1.0s
     ↓ faster-whisper → texto transcrito                   ~0.5s
@@ -939,7 +939,7 @@ with open('narración.mp3', 'wb') as out:
 "
 ```
 
-```
+```bash
 # Salida esperada:
 Narrando párrafo 1/10...
 Narrando párrafo 2/10...
@@ -959,7 +959,7 @@ python3 ~/scripts/voice_assistant_pipeline.py \
   --voice en_US-amy-medium
 ```
 
-```
+```bash
 [ESCUCHANDO] Habla ahora...
 [STT] You transcript: "Yesterday I go to the market"
 [LLM] Correction: "Good try! The correct form is 'Yesterday I went to the market' — 'went' is the past tense of 'go'. Keep practicing!"

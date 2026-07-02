@@ -28,7 +28,7 @@ El resultado: en lugar de compilar Whisper desde fuente (3–4 horas), ejecuta u
 
 Las imágenes de Docker Hub estándar (como `openai/whisper` o `pytorch/pytorch`) se compilan para **x86_64 Linux**. El Jetson tiene una arquitectura completamente diferente:
 
-```
+```bash
 ┌────────────────────────────────────────────────────────────┐
 │                  Diferencia de arquitectura                 │
 ├────────────────────────────────────────────────────────────┤
@@ -65,7 +65,7 @@ Las imágenes de Docker Hub estándar (como `openai/whisper` o `pytorch/pytorch`
 
 Cada imagen de jetson-containers sigue el esquema:
 
-```
+```bash
 dustynv/<nombre-servicio>:<versión>-r<L4T-version>
 ```
 
@@ -90,7 +90,7 @@ for tag in sorted([t['name'] for t in data.get('results', [])], reverse=True):
 "
 ```
 
-```
+```bash
 # Salida esperada
 Tags disponibles para faster-whisper:
   1.0.3-r39.2.0
@@ -220,7 +220,7 @@ docker pull dustynv/<servicio>:r36.4.0
 
 Para evitar conflictos entre los servicios de inferencia y los contenedores de proyectos avanzados:
 
-```
+```bash
 ┌───────────────────────────────────────────────────────────────┐
 │               MAPA DE PUERTOS — JETSON AGX ORIN               │
 ├─────────┬─────────────────────────────────────────────────────┤
@@ -265,7 +265,7 @@ for t in data.get('results', []):
 "
 ```
 
-```
+```bash
 # Salida esperada
 Tags de faster-whisper:
   1.0.3-r39.2.0 (2847 MB)
@@ -280,7 +280,7 @@ Tags de faster-whisper:
 docker pull dustynv/faster-whisper:1.0.3-r39.2.0
 ```
 
-```
+```bash
 # Salida esperada (durante la descarga)
 1.0.3-r39.2.0: Pulling from dustynv/faster-whisper
 Digest: sha256:...
@@ -293,7 +293,7 @@ docker.io/dustynv/faster-whisper:1.0.3-r39.2.0
 docker images | grep faster-whisper
 ```
 
-```
+```bash
 # Salida esperada
 dustynv/faster-whisper   1.0.3-r39.2.0   <id>    <date>   2.85GB
 ```
@@ -312,7 +312,7 @@ docker run -d \
   dustynv/faster-whisper:1.0.3-r39.2.0
 ```
 
-```
+```bash
 # Salida esperada
 <container_id>
 ```
@@ -322,7 +322,7 @@ docker run -d \
 docker logs -f faster-whisper
 ```
 
-```
+```bash
 # Salida esperada en los logs
 Loading model base.en...
 Model loaded. Starting server on 0.0.0.0:8000
@@ -379,7 +379,7 @@ curl -X POST http://localhost:8000/v1/audio/transcriptions \
   | python3 -c "import sys,json; r=json.load(sys.stdin); print(r.get('text',''))"
 ```
 
-```
+```bash
 # Salida esperada (ejemplo con audio real):
 Hola, estoy probando el sistema de transcripción de voz en el Jetson AGX Orin.
 Este es un audio de prueba grabado con mi celular para verificar que faster-whisper
@@ -390,7 +390,7 @@ funciona correctamente con español latinoamericano.
 > ```bash
 > sudo apt install -y espeak
 > espeak -v es-la -s 130 "El Jetson AGX Orin tiene sesenta y cuatro gigabytes de memoria unificada" \
->   --stdout > /tmp/prueba_sintetica.wav
+> --stdout > /tmp/prueba_sintetica.wav
 > ```
 > El audio sintético es menos representativo pero sirve para verificar que el servidor responde.
 
@@ -440,7 +440,7 @@ docker rm faster-whisper
 docker ps
 ```
 
-```
+```bash
 # Salida esperada
 CONTAINER ID   IMAGE   COMMAND   CREATED   STATUS   PORTS   NAMES
 (tabla vacía)
@@ -493,7 +493,7 @@ curl -X POST http://localhost:8880/v1/audio/speech \
 ls -lh /tmp/salida_tts.wav
 ```
 
-```
+```bash
 # Salida esperada
 -rw-r--r-- 1 jetson jetson 87K Jun 28 10:00 /tmp/salida_tts.wav
 ```
@@ -549,7 +549,7 @@ docker images --format "{{.Repository}}:{{.Tag}}\t{{.Size}}" \
   | column -t
 ```
 
-```
+```bash
 # Ejemplo de salida
 REPOSITORIO:TAG                              TAMAÑO
 ghcr.io/nvidia-ai-iot/vllm:latest-jetson    12.3GB
@@ -805,7 +805,7 @@ echo ""
 echo "════════════════════════════════════════════════════════"
 ```
 
-```
+```bash
 # Salida esperada
 ── Docker operativo ──
   [OK] Docker 27.x.x (linux/arm64)

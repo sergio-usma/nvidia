@@ -131,9 +131,22 @@ def lint_file(path, apply_fixes=False):
     rel = str(path)
 
     for ln, line in enumerate(lines, 1):
-        # Rastrear bloques de código
-        if line.strip().startswith('```'):
+        # Rastrear bloques de código — capturar estado ANTES del toggle para R02
+        was_in_code = in_code_block
+        is_fence_line = line.strip().startswith('```')
+        if is_fence_line:
             in_code_block = not in_code_block
+
+        # R02 — Code fence sin lenguaje (solo APERTURA: was_in_code=False, in_code_block=True)
+        # Aplicar ANTES del continue para poder detectar fences de apertura sin lenguaje
+        if is_fence_line and not was_in_code and in_code_block:
+            m_fence = re.match(r'^```\s*$', line)
+            if m_fence:
+                fixed = '```bash'
+                findings.append(Finding(rel, ln, 'R02', 'Code fence sin lenguaje (asume bash)',
+                                        original=line, suggestion=fixed, auto_fixable=True))
+                if apply_fixes:
+                    fixed_lines[ln - 1] = fixed
 
         # No aplicar reglas de prosa dentro de bloques de código
         if in_code_block:
@@ -145,15 +158,6 @@ def lint_file(path, apply_fixes=False):
             findings.append(Finding(rel, ln, 'R01', 'Doble espacio detectado',
                                     original=line.rstrip(), suggestion=fixed.rstrip(),
                                     auto_fixable=True))
-            if apply_fixes:
-                fixed_lines[ln - 1] = fixed
-
-        # R02 — Code fence sin lenguaje
-        m_fence = re.match(r'^```\s*$', line)
-        if m_fence:
-            fixed = '```bash'
-            findings.append(Finding(rel, ln, 'R02', 'Code fence sin lenguaje (asume bash)',
-                                    original=line, suggestion=fixed, auto_fixable=True))
             if apply_fixes:
                 fixed_lines[ln - 1] = fixed
 

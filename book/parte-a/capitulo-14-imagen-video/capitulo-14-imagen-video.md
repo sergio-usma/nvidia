@@ -58,7 +58,7 @@ free -h
 df -h ~
 ```
 
-```
+```bash
 # Salida esperada de free -h (Jetson limpio sin modelos en RAM)
                total        used        free      shared  buff/cache   available
 Mem:            62Gi        2.1Gi       58Gi       220Mi       2.3Gi       59Gi
@@ -87,7 +87,7 @@ mkdir -p ~/stacks/sd-webui
 tree ~/models/ -L 1
 ```
 
-```
+```bash
 models/
 ├── checkpoints/     <- Modelos principales SD 1.5 / SDXL / Pony
 ├── loras/           <- LoRA: estilos, personajes, poses
@@ -120,7 +120,7 @@ for t in sorted(tags, reverse=True)[:8]:
 "
 ```
 
-```
+```bash
 # Salida esperada
 Tags disponibles:
   r39.2.0
@@ -136,7 +136,7 @@ Tags disponibles:
 docker pull dustynv/comfyui:r39.2.0
 ```
 
-```
+```bash
 # Progreso de descarga esperado
 r39.2.0: Pulling from dustynv/comfyui
 ...
@@ -191,7 +191,7 @@ docker ps | grep comfyui
 docker logs comfyui --follow
 ```
 
-```
+```bash
 # Salida esperada en logs
 [ComfyUI] Starting server
 [ComfyUI] To see the GUI go to: http://0.0.0.0:8188
@@ -203,7 +203,7 @@ docker logs comfyui --follow
 
 Una vez activo, acceda desde su PC Windows:
 
-```
+```bash
 http://<IP-del-Jetson>:8188
 ```
 
@@ -346,7 +346,7 @@ cd ~/stacks/sd-webui && docker compose up -d
 docker logs sd-webui --follow
 ```
 
-```
+```bash
 # Salida esperada
 Running on local URL:  http://0.0.0.0:7860
 To create a public link, set `share=True` in `launch()`
@@ -424,7 +424,7 @@ echo "[OK] Anything V5 descargado"
 
 La sintaxis de prompts para anime difiere del fotorrealismo:
 
-```
+```bash
 # Prompt positivo típico para anime (SD 1.5 / Anything)
 masterpiece, best quality, 1girl, solo, long hair, blue eyes, school uniform,
 cherry blossoms, detailed background, soft lighting, anime style
@@ -777,7 +777,7 @@ source ~/venvs/sdtools/bin/activate
 python3 ~/scripts/generate-pixart.py
 ```
 
-```
+```bash
 # Salida esperada
 [INFO] Cargando PixArt-Alpha (512px)...
 Downloading shards: 100%|██████████| 2/2 [03:45<00:00]
@@ -910,7 +910,7 @@ docker stats comfyui sd-webui
 docker stats comfyui --no-stream
 ```
 
-```
+```bash
 # Salida esperada de docker stats durante generación SDXL
 CONTAINER ID   NAME        CPU %   MEM USAGE / LIMIT   MEM %   NET I/O
 a3b4c5d6e7f8   comfyui     248%    11.2GiB / 62GiB     18.1%   ...

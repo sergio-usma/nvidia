@@ -102,7 +102,7 @@ EOF
 sudo systemctl set-default multi-user.target
 ```
 
-```
+```bash
 # Salida esperada
 Created symlink /etc/systemd/system/default.target → /lib/systemd/system/multi-user.target
 ```
@@ -125,7 +125,7 @@ ssh jetson            # debe conectar sin contraseña
 systemctl get-default
 ```
 
-```
+```bash
 # Salida esperada
 multi-user.target
 ```
@@ -172,7 +172,7 @@ sudo dpkg -i ~/Downloads/nomachine_*.deb
 sudo apt --fix-broken install -y
 ```
 
-```
+```bash
 # Salida esperada
 Selecting previously unselected package nomachine.
 (Reading database ... )
@@ -191,7 +191,7 @@ sudo /usr/NX/bin/nxserver --start
 sudo /usr/NX/bin/nxserver --status
 ```
 
-```
+```bash
 # Salida esperada
 NX> 111 New connections to NoMachine server are enabled.
 NX> 161 Enabled service: nxserver.
@@ -252,7 +252,7 @@ Descargue e instale el cliente NoMachine desde [nomachine.com](https://www.nomac
 sudo /usr/NX/bin/nxserver --status
 ```
 
-```
+```bash
 # Salida esperada
 NX> 111 New connections to NoMachine server are enabled.
 NX> 161 Enabled service: nxserver.
@@ -281,7 +281,7 @@ ssh-keygen -t ed25519 \
 cat ~/.ssh/github_ed25519.pub
 ```
 
-```
+```bash
 # Salida esperada — copie esta línea completa
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... jetson-orin-jp72-20260628
 ```
@@ -308,7 +308,7 @@ chmod 600 ~/.ssh/config
 ssh -T git@github.com
 ```
 
-```
+```bash
 # Salida esperada
 Hi tu-usuario! You've successfully authenticated, but GitHub does not provide shell access.
 ```
@@ -440,7 +440,7 @@ nvcc --version | grep "release"
 # (esto se comprueba plenamente en la Capítulo 8, cuando Docker esté instalado)
 ```
 
-```
+```bash
 # Salida esperada
 HF_TOKEN:            hf_oauth_xxxxxxx...
 VLLM_API_KEY:        vllm-local
@@ -472,7 +472,7 @@ jtop --version
 ```
 
 Salida esperada:
-```
+```bash
 jtop 4.2.x
 ```
 
@@ -518,7 +518,7 @@ El archivo `~/.ssh/config` en Windows define hosts nombrados con sus configuraci
 
 A continuación, el archivo de configuración completo recomendado. Incluye tres perfiles para el Jetson (conexión estándar, reenvío gráfico X11 y tunnels de servicios) y el perfil de GitHub:
 
-```
+```bash
 # [EN WINDOWS] Abrir con bloc de notas:
 # notepad $HOME\.ssh\config
 # O en PowerShell: code $HOME\.ssh\config
@@ -585,7 +585,7 @@ Host github.com
 ssh jetson
 ```
 
-```
+```bash
 # Salida esperada:
 jetson@jetson-orin:~$
 ```
@@ -670,7 +670,7 @@ echo "── Variables de entorno ──"
 nvcc --version 2>/dev/null | grep "release" && echo "[OK] nvcc en PATH" || echo "[ERROR] nvcc no en PATH"
 ```
 
-```
+```bash
 # Salida esperada al completar el Capítulo 2 correctamente:
 === VERIFICACION CAPITULO 2 ===
 

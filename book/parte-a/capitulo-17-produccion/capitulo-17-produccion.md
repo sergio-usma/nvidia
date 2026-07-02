@@ -27,7 +27,7 @@ La arquitectura de arranque limpio resuelve esto con un principio simple: **el J
 <!-- INFOGRAFÍA: Estado Objetivo del Sistema tras Boot Limpio — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
-```
+```bash
 ┌─────────────────────────────────────────────────────────┐
 │              JETSON — ESTADO TRAS REBOOT LIMPIO          │
 ├─────────────────────────────────────────────────────────┤
@@ -50,7 +50,7 @@ La arquitectura de arranque limpio resuelve esto con un principio simple: **el J
 
 Con esta base, el usuario elige qué motor activar:
 
-```
+```bash
 Usuario conecta por SSH
         │
         ├─→ alias vllm-start   → lanza docker run (vLLM)
@@ -69,7 +69,7 @@ Ejecute estos pasos **una sola vez** después de instalar todos los componentes 
 sudo systemctl set-default multi-user.target
 ```
 
-```
+```bash
 # Salida esperada
 Created symlink /etc/systemd/system/default.target → /lib/systemd/system/multi-user.target
 ```
@@ -90,7 +90,7 @@ sudo systemctl daemon-reload
 echo "[OK] ollama.service eliminado"
 ```
 
-```
+```bash
 # Verificación
 systemctl is-enabled ollama 2>&1
 # Salida esperada: Failed to get unit file state for ollama.service: No such file or directory
@@ -107,7 +107,7 @@ sudo systemctl disable docker.socket 2>/dev/null || true
 echo "[OK] Docker desactivado en boot"
 ```
 
-```
+```bash
 # Verificación
 systemctl is-enabled docker
 # Salida esperada: disabled
@@ -175,7 +175,7 @@ echo "=== MEMORIA DISPONIBLE ==="
 free -h | grep Mem
 ```
 
-```
+```bash
 # Salida esperada tras arranque limpio
 === TARGET DE ARRANQUE ===
 multi-user.target
@@ -514,7 +514,7 @@ sudo ufw enable
 sudo ufw status numbered
 ```
 
-```
+```bash
 # Salida esperada de 'ufw status numbered':
 # Status: active
 #
@@ -1227,12 +1227,12 @@ source ~/.bashrc
 echo "[OK] Aliases de lanzamiento instalados"
 ```
 
-```
+```bash
 # Verificar aliases disponibles
 alias | grep -E "^alias (start-|stop-|kill-|motors-)"
 ```
 
-```
+```bash
 # Salida esperada
 alias kill-nemotron='...'
 alias kill-qwen35='...'

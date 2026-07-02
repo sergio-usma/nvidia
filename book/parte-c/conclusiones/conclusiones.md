@@ -169,7 +169,7 @@ Con el Jetson configurado según este libro, las posibilidades inmediatas son:
 - Análisis privado de documentos confidenciales con RAG
 
 **Para proyectos comerciales:**
-- API de IA compatible con OpenAI accesible desde Internet (Capítulo 30)
+- API de IA compatible con OpenAI accesible desde Internet (Capítulo 28)
 - Bot de Telegram con IA disponible 24/7 (Capítulo 12)
 - Sistema de automatización N8N que conecta cualquier servicio (Capítulo 16)
 - Pipeline de contenido para redes sociales (Capítulo 22, 23, 32)
@@ -190,7 +190,7 @@ El Jetson AGX Orin 64 GB no es el dispositivo más potente del mercado. Es el di
 
 Espero que este libro haya sido una guía útil en ese camino.
 
-```
+```bash
 Jetson AGX Orin — JP 7.2 — L4T r39.2 — Ubuntu 24.04
 CUDA 13.2.1 — Python 3.12 — Kernel 6.8
 
@@ -309,6 +309,6 @@ echo "════════════════════════�
 
 ---
 
-*Capítulo 33 — Conclusión. Fin del libro.*
+*el capítulo de Conclusiones. Fin del libro.*
 
 *"El mejor modelo de IA es el que corre en su hardware, bajo su control, con sus datos."*

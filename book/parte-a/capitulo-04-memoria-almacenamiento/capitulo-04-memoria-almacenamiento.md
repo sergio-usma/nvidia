@@ -26,7 +26,7 @@ La solución es un sistema de overflow en dos capas: **ZRAM** (swap comprimido e
 
 Antes de configurar el swap, conviene entender la jerarquía de memoria que usará el sistema:
 
-```
+```bash
 ┌───────────────────────────────────────────────────────────────┐
 │              JERARQUÍA DE MEMORIA — Jetson AGX Orin 64GB     │
 ├───────────────────────────────────────────────────────────────┤
@@ -65,7 +65,7 @@ df -h | grep -E "/$|/data|nvme|mmcblk"
 ```
 
 **Configuración A — SO en eMMC + NVMe como disco extra (caso clásico):**
-```
+```bash
 NAME         SIZE TYPE MOUNTPOINT  FSTYPE
 mmcblk0    59.2G disk
 └─mmcblk0p1 59.2G part /           ext4    ← eMMC (SO y datos)
@@ -74,7 +74,7 @@ nvme0n1   931.5G disk
 ```
 
 **Configuración B — SO instalado directamente en NVMe (recomendada):**
-```
+```bash
 NAME         SIZE TYPE MOUNTPOINT  FSTYPE
 mmcblk0    59.2G disk                       ← eMMC (sin uso o vacío)
 nvme0n1   931.5G disk
@@ -112,13 +112,13 @@ echo "/dev/nvme0n1p1  /data  ext4  defaults,noatime  0 2" | sudo tee -a /etc/fst
 df -h /data
 ```
 
-```
+```bash
 # Salida esperada
 Filesystem       Size  Used Avail Use% Mounted on
 /dev/nvme0n1p1   916G  1.2G  914G   1% /data
 ```
 
-### Configuración B — SO instalado en NVMe (caso del autor)
+### Configuración B — SO instalado en NVMe (condición ideal)
 
 Si el sistema operativo ya está en el NVMe, **no formatee nada**. Solo cree el directorio `/data` dentro del disco raíz y asigne los permisos correctos:
 
@@ -131,7 +131,7 @@ sudo chown jetson:jetson /data
 df -h / | awk 'NR==2 {print "NVMe (Raíz) disponible:", $4}'
 ```
 
-```
+```bash
 # Salida esperada
 NVMe (Raíz) disponible: 501G
 ```
@@ -149,7 +149,7 @@ sudo chown -R jetson:jetson /data
 ls -ld /data
 ```
 
-```
+```bash
 # Salida esperada (el propietario debe ser jetson:jetson)
 drwxr-xr-x 3 jetson jetson 4096 ... /data
 ```
@@ -170,7 +170,7 @@ sudo apt install -y zram-config
 sudo systemctl status zram-config | grep -E "Active|Loaded"
 ```
 
-```
+```bash
 # Salida esperada
      Loaded: loaded (/lib/systemd/system/zram-config.service; enabled; ...)
      Active: active (exited) since ...
@@ -181,7 +181,7 @@ sudo systemctl status zram-config | grep -E "Active|Loaded"
 swapon --show
 ```
 
-```
+```bash
 # Salida esperada
 NAME       TYPE      SIZE USED PRIO
 /dev/zram0 partition 7.8G   0B  100
@@ -219,7 +219,7 @@ sudo swapon -p 100 /dev/zram0
 swapon --show
 ```
 
-```
+```bash
 # Salida esperada tras el plan B
 NAME       TYPE      SIZE USED PRIO
 /dev/zram0 partition 7.8G   0B  100
@@ -303,7 +303,7 @@ echo '/swapfile  none  swap  sw  0 0' | sudo tee -a /etc/fstab
 swapon --show
 ```
 
-```
+```bash
 # Salida esperada — Configuración A:
 NAME            TYPE      SIZE USED PRIO
 /dev/zram0      partition 7.8G   0B  100
@@ -347,7 +347,7 @@ EOF
 sudo sysctl -p /etc/sysctl.d/99-jetson-memory.conf
 ```
 
-```
+```bash
 # Salida esperada
 vm.swappiness = 10
 vm.vfs_cache_pressure = 50
@@ -383,7 +383,7 @@ ln -sf /data/models/huggingface ~/.cache/huggingface
 ls -la ~/.cache/huggingface
 ```
 
-```
+```bash
 # Salida esperada
 lrwxrwxrwx 1 jetson jetson 26 ... /home/jetson/.cache/huggingface -> /data/models/huggingface
 ```
@@ -486,7 +486,7 @@ ls -la ~/.cache/huggingface 2>/dev/null && echo "[OK] Symlink HF → NVMe" || ec
 df -h /data 2>/dev/null | awk 'NR==2{print "NVMe disponible:", $4}'
 ```
 
-```
+```bash
 # Salida esperada
 ╔══════════════════════════════════════════════╗
 ║     VERIFICACIÓN CAPÍTULO 4 — RESULTADO         ║

@@ -436,7 +436,7 @@ sudo sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
 
 Si el contenedor termina inesperadamente con el error `RuntimeError: Engine core initialization failed` o simplemente no responde, significa que la GPU quedó sin memoria virtual disponible:
 
-```
+```bash
 CUDA error: out of memory (torch.OutOfMemoryError)
 RuntimeError: Engine core initialization failed
 ```
@@ -759,7 +759,7 @@ Para descargar modelos desde el registro NGC de NVIDIA necesita la herramienta `
 
 **Error típico al hacer la instalación incorrecta:**
 
-```
+```bash
 -bash: /usr/local/bin/ngc: No such file or directory
 ```
 
@@ -791,7 +791,7 @@ source ~/.bashrc
 ngc --version
 ```
 
-```
+```bash
 # Salida esperada
 NGC CLI 3.41.4
 ```

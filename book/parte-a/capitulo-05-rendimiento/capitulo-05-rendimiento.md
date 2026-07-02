@@ -25,7 +25,7 @@ Esta parte explica los dos mecanismos de control de rendimiento del Jetson, cuá
 
 El rendimiento del Jetson se controla con dos herramientas complementarias:
 
-```
+```bash
 nvpmodel  →  define el LÍMITE de consumo energético (TDP)
               y cuántos núcleos están activos
               ↑ sobrevive reboots (escribe en /etc/nvpmodel.conf)
@@ -61,7 +61,7 @@ El Jetson AGX Orin 64GB con JetPack 7.2 tiene los siguientes modos de energía:
 sudo nvpmodel -q
 ```
 
-```
+```bash
 # Salida esperada
 NVPM WARN: fan mode is not set to cool
 NV Power Mode: MODE_30W_2CORE
@@ -100,7 +100,7 @@ sudo nvpmodel -m 0
 sudo nvpmodel -q
 ```
 
-```
+```bash
 # Salida esperada
 NVPM WARN: fan mode is not set to cool
 NV Power Mode: MAXN
@@ -127,7 +127,7 @@ sudo jetson_clocks
 sudo jetson_clocks --show
 ```
 
-```
+```bash
 # Salida esperada (extracto clave)
 CPU Cluster Switching: Disabled
 cpu0: Online=1 Governor=schedutil MinFreq=729600 MaxFreq=2201600 CurrentFreq=2201600 ...
@@ -215,7 +215,7 @@ sudo systemctl start jetson-clocks-lock
 sudo systemctl status jetson-clocks-lock
 ```
 
-```
+```bash
 # Salida esperada
 ● jetson-clocks-lock.service - Lock Jetson clocks at maximum frequency
      Loaded: loaded (/etc/systemd/system/jetson-clocks-lock.service; enabled; ...)
@@ -251,7 +251,7 @@ Navegue con las teclas numéricas:
 tegrastats --interval 1000
 ```
 
-```
+```bash
 # Salida esperada (extracto)
 RAM 12519/65536MB (lfb 1x4MB) SWAP 0/16384MB ...
 CPU [45%@2201,32%@2201,...] EMC_FREQ 85%@3199 GPC_FREQ 80%@1300
@@ -342,7 +342,7 @@ alias pwr-30w   2>/dev/null && echo "[OK] pwr-30w"  || echo "[ERROR] pwr-30w no 
 alias pwr-15w   2>/dev/null && echo "[OK] pwr-15w"  || echo "[ERROR] pwr-15w no configurado"
 ```
 
-```
+```bash
 # Salida esperada
 ── Modo de energía ──
 NV Power Mode: MAXN

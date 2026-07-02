@@ -59,7 +59,7 @@ mkdir -p ~/projects/transcription-bot/{scripts,input,output,config}
 cd ~/projects/transcription-bot
 ```
 
-```
+```bash
 transcription-bot/
 ├── scripts/
 │   ├── 01_transcribe.py     # Transcripción con faster-whisper
@@ -891,7 +891,7 @@ El bot de transcripción puede integrarse con Telegram para operar de forma comp
 
 ### 20.11.1 Flujo Telegram → Jetson → Resumen
 
-```
+```bash
 Usuario → envía audio .mp3/.wav/.ogg por Telegram
           ↓
 N8N / OpenClaw recibe el archivo

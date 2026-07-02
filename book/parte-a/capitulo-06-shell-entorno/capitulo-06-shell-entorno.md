@@ -46,7 +46,7 @@ mkdir -p /data/models/{huggingface,gguf,ollama}
 ls -la ~/ | grep -E "scripts|venvs|projects|jetson"
 ```
 
-```
+```bash
 # Salida esperada
 drwxrwxr-x  2 jetson jetson  4096 ... jetson-ai-data
 drwxrwxr-x  2 jetson jetson  4096 ... projects
@@ -237,7 +237,7 @@ jetson-mem         # muestra estado de memoria
 disk               # muestra disco sin tmpfs/loops
 ```
 
-```
+```bash
 # Salida esperada de pwr-status
 NV Power Mode: MAXN
 0
@@ -300,7 +300,7 @@ Ubuntu 24.04 protege su instalación de Python del sistema y bloquea `pip instal
 
 ### 5.4.1 Qué es y para qué sirve el venv `llm`
 
-```
+```bash
 ~/venvs/llm/                 ← directorio del entorno virtual
 ├── bin/python3              ← Python 3.12 propio (copia del sistema)
 ├── bin/pip                  ← pip propio para este entorno
@@ -332,7 +332,7 @@ Ubuntu 24.04 protege su instalación de Python del sistema y bloquea `pip instal
 python3 --version
 ```
 
-```
+```bash
 # Salida esperada
 Python 3.12.3
 ```
@@ -347,7 +347,7 @@ source ~/venvs/llm/bin/activate
 
 El prompt cambia al activar:
 
-```
+```bash
 (llm) jetson@jetson-orin:~$    ← venv activo
 ```
 
@@ -356,7 +356,7 @@ El prompt cambia al activar:
 pip install --upgrade pip setuptools wheel
 ```
 
-```
+```bash
 # Salida esperada
 Successfully installed pip-24.x.x setuptools-xx.x.x wheel-0.x.x
 ```
@@ -390,7 +390,7 @@ echo "[OK] Paquetes base instalados"
 hf auth login --token "$HF_TOKEN"
 ```
 
-```
+```bash
 # Salida esperada
 Token is valid (scope: read).
 Your token has been saved to /home/jetson/.cache/huggingface/token
@@ -403,7 +403,7 @@ hf --version
 hf whoami
 ```
 
-```
+```bash
 # Salida esperada
 huggingface_hub 0.x.x
 Tu-usuario-de-HuggingFace
@@ -425,7 +425,7 @@ La función `jetson-audit` ya está en `~/.bashrc` (sección 5.2). Pruébela aho
 jetson-audit
 ```
 
-```
+```bash
 # Salida esperada (sistema limpio, sin modelos)
 ╔══════════════════════════════════════════════════════╗
 ║            AUDITORÍA — JETSON AGX ORIN              ║
@@ -513,7 +513,7 @@ echo "  TORCH_CUDA_ARCH:     ${TORCH_CUDA_ARCH_LIST}"
 echo "  HF_HUB_ENABLE_HF_TRANSFER: ${HF_HUB_ENABLE_HF_TRANSFER}"
 ```
 
-```
+```bash
 # Salida esperada
 ╔══════════════════════════════════════════════╗
 ║     VERIFICACIÓN CAPÍTULO 5 — RESULTADO         ║

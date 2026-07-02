@@ -29,7 +29,7 @@ El caso de uso implementado es el canal **"Daily Prayers"** — videos cortos es
 <!-- INFOGRAFÍA: Arquitectura del Pipeline de 7 Agentes — Daily Prayers — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
 
-```
+```bash
 Google Sheets
   (parrilla: ~241 filas, Salmos+Proverbios intercalados, status=pending)
     ↓
@@ -132,7 +132,7 @@ ls ~/projects/daily-prayers/
 
 Las APIs de Google requieren una cuenta de Google Cloud (gratuita hasta ciertos límites):
 
-```
+```bash
 1. Ir a: console.cloud.google.com
 2. Crear proyecto: "daily-prayers-jetson"
 3. Habilitar las siguientes APIs:
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     print(f"\n[OK] Parrilla guardada en {output_path}")
 ```
 
-```
+```bash
 # Salida esperada al ejecutar
 Total de videos en la parrilla: 241
 Salmos: 150
@@ -1511,7 +1511,7 @@ Importar en N8N (`http://localhost:5678`) → Settings → Import Workflow:
 > **Filosofía:** Antes de publicar en redes sociales, el video sube a Google Drive y se envía un email con el enlace de previsualización al administrador. Solo después de una aprobación explícita (click en el enlace de aprobación) se publica. Esto evita errores o contenido inesperado en el canal.
 
 **Flujo:**
-```
+```bash
 Video completado (status=ready)
     ↓
 Subir a Google Drive (carpeta daily-prayers-pending/)

@@ -42,7 +42,7 @@ Archivo que contiene los pesos de un modelo de difusión estable completo. Exten
 Filosofía central de este libro: el Jetson arrancar con el mínimo de servicios activos (solo SSH y NoMachine). Ningún contenedor ni modelo se inicia automáticamente al encender. Cada servicio se lanza manualmente bajo demanda con un alias y se detiene con `jetson-clean`. Esto garantiza que los 64 GB de RAM estén siempre disponibles para el modelo que los necesite.
 
 **Cloudflare Tunnel (`cloudflared`)**
-Servicio de Cloudflare que crea un túnel cifrado entre el Jetson e Internet sin necesidad de abrir puertos en el router ni tener IP pública estática. El Jetson se conecta hacia afuera al servidor de Cloudflare, que actúa como proxy inverso. Usado en el Capítulo 30.
+Servicio de Cloudflare que crea un túnel cifrado entre el Jetson e Internet sin necesidad de abrir puertos en el router ni tener IP pública estática. El Jetson se conecta hacia afuera al servidor de Cloudflare, que actúa como proxy inverso. Usado en el Capítulo 28.
 
 **ComfyUI**
 Interfaz web de generación de imágenes basada en un sistema de nodos conectados (grafo de procesamiento). Permite construir pipelines complejos de difusión estable: modelos, LoRA, ControlNet, VAE, AnimateDiff. Puerto por defecto: 8188. Más flexible que SD WebUI pero con curva de aprendizaje mayor.
@@ -70,7 +70,7 @@ Técnica para reducir el tamaño de un modelo LLM convirtiendo los pesos de punt
 Proceso del sistema operativo que corre en segundo plano sin interacción del usuario. En este libro se evita configurar servicios de IA como daemons (no `systemctl enable`) para respetar la filosofía de arranque limpio. Solo SSH, NoMachine y el kernel son daemons permanentes.
 
 **Diarización**
-Proceso de identificar quién habla en cada segmento de un audio con múltiples hablantes. En el Capítulo 29, se usa `pyannote/speaker-diarization` para asignar etiquetas "SPEAKER_00", "SPEAKER_01", etc. a cada fragmento transcrito por Whisper.
+Proceso de identificar quién habla en cada segmento de un audio con múltiples hablantes. En el Capítulo 13, se usa `pyannote/speaker-diarization` para asignar etiquetas "SPEAKER_00", "SPEAKER_01", etc. a cada fragmento transcrito por Whisper.
 
 **Diffusers (biblioteca de Hugging Face)**
 Biblioteca Python de código abierto de Hugging Face para modelos de difusión (Stable Diffusion, SDXL, PixArt, etc.). Permite cargar y ejecutar estos modelos directamente en Python sin necesidad de una interfaz web. Usada en el Capítulo 19 para PixArt-Alpha.
@@ -280,7 +280,7 @@ Unidad básica de texto que procesa un LLM. Un token es aproximadamente una pala
 Unidad de rendimiento de IA. El Jetson AGX Orin 64 GB ofrece 275 TOPS de inferencia INT8. No confundir con tok/s (tokens por segundo), que depende del modelo y el motor de inferencia.
 
 **TTS (Text-to-Speech)**
-Tecnología de síntesis de voz que convierte texto en audio. En este libro se usan kokoro-tts (alta calidad, puerto 8880) y piper-tts (rápido, puerto 10200). El Capítulo 29 cubre ambos en detalle.
+Tecnología de síntesis de voz que convierte texto en audio. En este libro se usan kokoro-tts (alta calidad, puerto 8880) y piper-tts (rápido, puerto 10200). El Capítulo 13 cubre ambos en detalle.
 
 ---
 

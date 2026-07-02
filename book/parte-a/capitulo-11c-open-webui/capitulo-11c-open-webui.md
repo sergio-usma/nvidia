@@ -22,7 +22,7 @@ A diferencia de los motores de inferencia, Open WebUI **no carga modelos en GPU*
 
 **Modo energético:** 30W en reposo. Cambie a MAXN solo cuando el motor de inferencia lo requiera.
 
-> **Prerrequisito:** Docker activo (`docker-on`) y al menos un motor de inferencia corriendo del Capítulo anterior. El bot de Telegram del Capítulo 13A es independiente de Open WebUI.
+> **Prerrequisito:** Docker activo (`docker-on`) y al menos un motor de inferencia corriendo del Capítulo anterior. El bot de Telegram del Capítulo 11A es independiente de Open WebUI.
 
 ---
 
@@ -61,7 +61,7 @@ curl -s http://localhost:3000 | grep -o '<title>[^<]*</title>'
 
 Abra desde el navegador en cualquier equipo de la red local:
 
-```
+```bash
 http://192.168.1.100:3000
 ```
 
@@ -102,7 +102,7 @@ docker run -d \
 docker logs open-webui --follow
 ```
 
-```
+```bash
 # Salida esperada (extracto):
 INFO:     Application startup complete.
 ```
@@ -446,7 +446,7 @@ chmod +x ~/bin/mkcert
 mkcert --version
 ```
 
-```
+```bash
 # Salida esperada:
 v1.4.4
 ```
@@ -465,7 +465,7 @@ cd ~/certs/openwebui
 mkcert 192.168.1.100 localhost 127.0.0.1
 ```
 
-```
+```bash
 # Salida esperada:
 Created a new certificate valid for the following names:
  - "192.168.1.100"
@@ -486,7 +486,7 @@ mkcert -CAROOT
 # scp jetson:~/.local/share/mkcert/rootCA.pem C:\Users\TU_USUARIO\Desktop\jetson-CA.pem
 ```
 
-```
+```bash
 # En Windows — instalar la CA en el almacen de certificados:
 # 1. Doble clic en jetson-CA.pem
 # 2. "Instalar certificado" -> "Equipo local" -> "Colocar todos los certificados en el siguiente almacen"
@@ -515,7 +515,7 @@ docker run -d \
 docker logs -f open-webui | grep -E "https|started|error"
 ```
 
-```
+```bash
 # Salida esperada:
 INFO:     Uvicorn running on https://0.0.0.0:3000
 INFO:     Application startup complete.
@@ -587,7 +587,7 @@ curl -s http://localhost:8080/v1/models | python3 -m json.tool | grep '"id"'
 
 En Open WebUI → crear un nuevo "Workspace" con este system prompt:
 
-```
+```bash
 # [COPIAR EN Open WebUI -> Admin Panel -> Models -> Edit -> System Prompt]
 
 You are an English conversation assistant helping a Spanish speaker improve their English.
@@ -616,7 +616,7 @@ Start by greeting the user in English and asking what they want to practice toda
 # 5. El asistente responde con correccion + respuesta + traduccion
 ```
 
-```
+```bash
 # Ejemplo de conversacion:
 Usuario: "I go to the store yesterday"
 Asistente:
@@ -640,7 +640,7 @@ jtop
 
 ---
 
-## Resumen del Capítulo 13C
+## Resumen del Capítulo 11C
 
 Open WebUI es la interfaz gráfica que unifica todos los motores de inferencia del Jetson:
 
