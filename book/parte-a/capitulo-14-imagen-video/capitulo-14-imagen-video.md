@@ -1,4 +1,4 @@
-# Capítulo 19 — Generación de Imágenes y Videos: ComfyUI, SD WebUI y AnimateDiff
+# Capítulo 14 — Generación de Imágenes y Videos: ComfyUI, SD WebUI y AnimateDiff
 
 ## Introducción
 

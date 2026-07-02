@@ -1,4 +1,4 @@
-# Capítulo 24 — Asistente de Voz Offline Completo
+# Capítulo 26 — Asistente de Voz Offline Completo
 
 ## Introducción
 

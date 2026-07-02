@@ -1,4 +1,4 @@
-# Capítulo 23 — Generador de Contenido para LinkedIn
+# Capítulo 25 — Generador de Contenido para LinkedIn
 
 ## Introducción
 

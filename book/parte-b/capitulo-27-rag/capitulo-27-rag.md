@@ -1,4 +1,4 @@
-# Capítulo 25 — Sistema RAG para Documentos Empresariales
+# Capítulo 27 — Sistema RAG para Documentos Empresariales
 
 ## Introducción
 

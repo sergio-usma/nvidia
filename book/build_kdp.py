@@ -445,6 +445,10 @@ def build_docx(md_path, output_path):
 
 # Orden canónico del libro completo (relativo a book/)
 BOOK_CHAPTERS = [
+    # Secciones preliminares
+    'prologo/prologo.md',
+    'introduccion/introduccion.md',
+    # Parte A — Fundamentos
     'parte-a/capitulo-01-introduccion/capitulo-01-introduccion.md',
     'parte-a/capitulo-02-primer-arranque/capitulo-02-primer-arranque.md',
     'parte-a/capitulo-03-configuracion-base/capitulo-03-configuracion-base.md',
@@ -461,26 +465,29 @@ BOOK_CHAPTERS = [
     'parte-a/capitulo-11c-open-webui/capitulo-11c-open-webui.md',
     'parte-a/capitulo-11d-tool-calling/capitulo-11d-tool-calling.md',
     'parte-a/capitulo-12-computer-vision/capitulo-12-computer-vision.md',
-    'parte-b/capitulo-13-imagen-video/capitulo-13-imagen-video.md',
-    'parte-a/capitulo-14-n8n/capitulo-14-n8n.md',
-    'parte-a/capitulo-15-benchmarking/capitulo-15-benchmarking.md',
-    'parte-a/capitulo-16-produccion/capitulo-16-produccion.md',
-    'parte-a/capitulo-17-troubleshooting/capitulo-17-troubleshooting.md',
-    'parte-b/capitulo-18-python-vscode/capitulo-18-python-vscode.md',
-    'parte-b/capitulo-19-jetson-containers/capitulo-19-jetson-containers.md',
-    'parte-b/capitulo-20-pdf-podcast/capitulo-20-pdf-podcast.md',
-    'parte-b/capitulo-21-transcripcion-reuniones/capitulo-21-transcripcion-reuniones.md',
-    'parte-b/capitulo-22-agencia-turismo/capitulo-22-agencia-turismo.md',
-    'parte-b/capitulo-23-embudo-ventas/capitulo-23-embudo-ventas.md',
-    'parte-b/capitulo-24-linkedin/capitulo-24-linkedin.md',
-    'parte-b/capitulo-25-asistente-voz/capitulo-25-asistente-voz.md',
-    'parte-b/capitulo-26-rag/capitulo-26-rag.md',
-    'parte-c/capitulo-27-microservicios/capitulo-27-microservicios.md',
+    'parte-a/capitulo-13-tts-stt/capitulo-13-tts-stt.md',
+    'parte-a/capitulo-14-imagen-video/capitulo-14-imagen-video.md',
+    'parte-a/capitulo-15-n8n/capitulo-15-n8n.md',
+    'parte-a/capitulo-16-benchmarking/capitulo-16-benchmarking.md',
+    'parte-a/capitulo-17-produccion/capitulo-17-produccion.md',
+    'parte-a/capitulo-18-troubleshooting/capitulo-18-troubleshooting.md',
+    # Parte B — Manos a la Obra
+    'parte-b/capitulo-19-python-vscode/capitulo-19-python-vscode.md',
+    'parte-b/capitulo-20-jetson-containers/capitulo-20-jetson-containers.md',
+    'parte-b/capitulo-21-pdf-podcast/capitulo-21-pdf-podcast.md',
+    'parte-b/capitulo-22-transcripcion-reuniones/capitulo-22-transcripcion-reuniones.md',
+    'parte-b/capitulo-23-agencia-turismo/capitulo-23-agencia-turismo.md',
+    'parte-b/capitulo-24-embudo-ventas/capitulo-24-embudo-ventas.md',
+    'parte-b/capitulo-25-linkedin/capitulo-25-linkedin.md',
+    'parte-b/capitulo-26-asistente-voz/capitulo-26-asistente-voz.md',
+    'parte-b/capitulo-27-rag/capitulo-27-rag.md',
+    'parte-b/capitulo-28-microservicios-saas/capitulo-28-microservicios-saas.md',
+    # Parte C — Capstone
     'parte-c/capstone-01-agencia-ia/capstone-01-agencia-ia.md',
     'parte-c/capstone-02-automatizacion-video/capstone-02-automatizacion-video.md',
+    # Secciones finales
     'parte-c/conclusiones/conclusiones.md',
     'glosario/glosario.md',
-    'parte-a/capitulo-xx-tts-stt/capitulo-xx-tts-stt.md',  # ubicación pendiente
     'parte-a/appendix/appendix.md',
 ]
 

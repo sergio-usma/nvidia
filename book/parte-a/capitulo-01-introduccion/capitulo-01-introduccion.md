@@ -1,4 +1,4 @@
-# Capítulo 0 — Introducción y Especificaciones del Hardware
+# Capítulo 1 — Inicio Rápido y Especificaciones del Hardware
 
 ## Sobre Este Libro
 

@@ -1,4 +1,4 @@
-# Capítulo 22 — Automatización de Embudo de Ventas para Redes Sociales
+# Capítulo 24 — Automatización de Embudo de Ventas para Redes Sociales
 
 ## Introducción
 

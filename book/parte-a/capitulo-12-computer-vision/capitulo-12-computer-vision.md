@@ -1,4 +1,4 @@
-# Capítulo 28 — Computer Vision y OCR: Visión Artificial con GPU en el Jetson AGX Orin 64GB
+# Capítulo 12 — Computer Vision y OCR: Visión Artificial con GPU
 
 ## Introducción
 

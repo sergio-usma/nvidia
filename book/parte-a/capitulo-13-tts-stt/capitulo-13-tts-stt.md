@@ -1,4 +1,4 @@
-# Capítulo 29 — TTS y STT: Voz Natural en Español con el Jetson AGX Orin 64GB
+# Capítulo 13 — TTS y STT: Procesamiento y Generación de Voz Natural
 
 ## Introducción
 

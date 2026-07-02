@@ -1,4 +1,4 @@
-# Capítulo 13B — NemoClaw: Capa de Seguridad L7 sobre OpenClaw
+# Capítulo 11B — NemoClaw: Capa de Seguridad L7 sobre OpenClaw
 
 ## Introducción
 

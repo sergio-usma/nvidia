@@ -1,4 +1,4 @@
-# Capítulo 12: Motores de Inferencia
+# Capítulo 10 — Motores de Inferencia (llama.cpp, vLLM y Ollama)
 
 **Getting Started with NVIDIA Jetson AGX Orin 64GB (JetPack 7.2)**
 *Capítulo 12 de 16*

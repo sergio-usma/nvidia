@@ -1,4 +1,4 @@
-# Capítulo 30 — Microservicios y Despliegue SAAS: Exponer el Jetson a Internet
+# Capítulo 28 — Microservicios y Despliegue SAAS: Exponer el Jetson a Internet
 
 ## Introducción
 

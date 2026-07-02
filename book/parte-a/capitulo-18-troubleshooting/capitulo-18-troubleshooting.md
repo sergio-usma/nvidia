@@ -1,4 +1,4 @@
-# Capítulo 16 — Troubleshooting y Mejores Prácticas
+# Capítulo 18 — Troubleshooting y Mejores Prácticas
 
 ## Introducción
 

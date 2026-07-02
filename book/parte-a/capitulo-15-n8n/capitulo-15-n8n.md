@@ -1,4 +1,4 @@
-# Capítulo 27 — N8N: Automatización de Flujos de Trabajo con IA Local
+# Capítulo 15 — N8N: Automatización de Flujos de Trabajo con IA Local
 
 ## Introducción
 

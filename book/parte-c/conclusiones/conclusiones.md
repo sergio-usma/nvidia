@@ -1,4 +1,4 @@
-# Capítulo 33 — Reflexiones Finales: De Cero a IA Productiva en el Borde
+# Conclusiones
 
 ## Lo Que Construyó
 

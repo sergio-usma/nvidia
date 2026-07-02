@@ -1,4 +1,4 @@
-# Capítulo 14 — Testing y Benchmarking de los 10 Mejores Modelos para Jetson AGX Orin 64GB
+# Capítulo 16 — Testing y Benchmarking de los 10 Mejores Modelos para Jetson AGX Orin 64GB
 
 ## Introducción
 

@@ -1,4 +1,4 @@
-# Capítulo 17 — Entorno de Desarrollo Python con VSCode Remote SSH
+# Capítulo 19 — Entorno de Desarrollo Python con VSCode Remote SSH
 
 ## Introducción
 

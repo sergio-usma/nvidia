@@ -1,4 +1,4 @@
-# Capítulo 5 — Entorno de Shell y Herramientas de Desarrollo
+# Capítulo 6 — Entorno de Shell y Herramientas de Desarrollo
 
 ## Introducción
 

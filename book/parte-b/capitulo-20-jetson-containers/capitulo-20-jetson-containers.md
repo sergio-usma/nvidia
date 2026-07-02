@@ -1,4 +1,4 @@
-# Capítulo 18 — jetson-containers: El Ecosistema de Contenedores de NVIDIA
+# Capítulo 20 — jetson-containers: El Ecosistema de Contenedores de NVIDIA
 
 ## Introducción
 
