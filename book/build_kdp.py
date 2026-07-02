@@ -448,8 +448,9 @@ BOOK_CHAPTERS = [
     # Secciones preliminares
     'prologo/prologo.md',
     'introduccion/introduccion.md',
-    # Parte A — Fundamentos
-    'parte-a/capitulo-01-introduccion/capitulo-01-introduccion.md',
+    # Parte A — Cimientos
+    'parte-a/00-parte-a/parte-a.md',
+    'parte-a/capitulo-01-inicio-rapido/capitulo-01-inicio-rapido.md',
     'parte-a/capitulo-02-primer-arranque/capitulo-02-primer-arranque.md',
     'parte-a/capitulo-03-configuracion-base/capitulo-03-configuracion-base.md',
     'parte-a/capitulo-04-memoria-almacenamiento/capitulo-04-memoria-almacenamiento.md',
@@ -472,6 +473,7 @@ BOOK_CHAPTERS = [
     'parte-a/capitulo-17-produccion/capitulo-17-produccion.md',
     'parte-a/capitulo-18-troubleshooting/capitulo-18-troubleshooting.md',
     # Parte B — Manos a la Obra
+    'parte-b/00-parte-b/parte-b.md',
     'parte-b/capitulo-19-python-vscode/capitulo-19-python-vscode.md',
     'parte-b/capitulo-20-jetson-containers/capitulo-20-jetson-containers.md',
     'parte-b/capitulo-21-pdf-podcast/capitulo-21-pdf-podcast.md',
@@ -483,6 +485,7 @@ BOOK_CHAPTERS = [
     'parte-b/capitulo-27-rag/capitulo-27-rag.md',
     'parte-b/capitulo-28-microservicios-saas/capitulo-28-microservicios-saas.md',
     # Parte C — Capstone
+    'parte-c/00-parte-c/parte-c.md',
     'parte-c/capstone-01-agencia-ia/capstone-01-agencia-ia.md',
     'parte-c/capstone-02-automatizacion-video/capstone-02-automatizacion-video.md',
     # Secciones finales
