@@ -24,7 +24,7 @@ El caso de uso implementado es el canal **"Daily Prayers"** — videos cortos es
 
 ---
 
-## 32.1 Arquitectura del Pipeline
+## C2.1 Arquitectura del Pipeline
 
 <!-- INFOGRAFÍA: Arquitectura del Pipeline de 7 Agentes — Daily Prayers — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -98,9 +98,9 @@ N8N Cron 9:00 PM
 
 ---
 
-## 32.2 Preparación del Entorno
+## C2.2 Preparación del Entorno
 
-### 32.2.1 Dependencias Python
+### C2.2.1 Dependencias Python
 
 ```bash
 #
@@ -116,7 +116,7 @@ pip install \
 echo "[OK] Dependencias instaladas"
 ```
 
-### 32.2.2 Estructura de Directorios
+### C2.2.2 Estructura de Directorios
 
 ```bash
 # Crear estructura del proyecto Daily Prayers
@@ -128,7 +128,7 @@ echo "[OK] Directorios creados"
 ls ~/projects/daily-prayers/
 ```
 
-### 32.2.3 Google Cloud — Habilitar APIs
+### C2.2.3 Google Cloud — Habilitar APIs
 
 Las APIs de Google requieren una cuenta de Google Cloud (gratuita hasta ciertos límites):
 
@@ -157,9 +157,9 @@ ls -la ~/projects/daily-prayers/config/
 
 ---
 
-## 32.3 Parrilla de Contenidos en Google Sheets
+## C2.3 Parrilla de Contenidos en Google Sheets
 
-### 32.3.1 Datos de Versículos (Salmos + Proverbios)
+### C2.3.1 Datos de Versículos (Salmos + Proverbios)
 
 ```python
 #!/usr/bin/env python3
@@ -280,7 +280,7 @@ Primeros 5 grupos:
   Fila 5: Salmos 3:6 – 4:8 (10 versículos)
 ```
 
-### 32.3.2 Importar Parrilla a Google Sheets
+### C2.3.2 Importar Parrilla a Google Sheets
 
 ```python
 #!/usr/bin/env python3
@@ -375,7 +375,7 @@ python3 ~/projects/daily-prayers/scripts/generate_content_calendar.py
 python3 ~/projects/daily-prayers/scripts/setup_google_sheets.py
 ```
 
-### 32.3.3 Obtener el Texto de los Versículos (API Biblia)
+### C2.3.3 Obtener el Texto de los Versículos (API Biblia)
 
 El texto de los versículos se puede rellenar automáticamente usando una API de la Biblia. La columna `versos_texto` en Google Sheets debe tener el texto en español antes de que el Agente 1 lo procese:
 
@@ -446,11 +446,11 @@ def obtener_texto(libro: str, cap_inicio: int, ver_inicio: int,
 
 ---
 
-## 32.4 Agente 1 — Generador de Scripts
+## C2.4 Agente 1 — Generador de Scripts
 
 El Agente 1 toma los versículos del día y genera el guión completo de la plegaria: texto de cada escena, duración, prompt de imagen y arquetipo de personaje.
 
-### 32.4.1 Sistema de Diversidad de Personajes
+### C2.4.1 Sistema de Diversidad de Personajes
 
 ```python
 # config/archetypes.py — 120 arquetipos rotativos para diversidad de representación
@@ -584,7 +584,7 @@ def get_next_archetype(used_count: int) -> str:
     return PERSON_ARCHETYPES[used_count % len(PERSON_ARCHETYPES)]
 ```
 
-### 32.4.2 Prompt del Generador de Scripts
+### C2.4.2 Prompt del Generador de Scripts
 
 ```python
 SCRIPT_PROMPT_TEMPLATE = """Eres un escritor espiritual experto en plegarias universales.
@@ -623,7 +623,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin explicaciones):
 IMAGEN_STYLE = "photorealistic, cinematic lighting, 8k quality, warm tones, peaceful atmosphere, natural environment, no religious symbols"
 ```
 
-### 32.4.3 Script del Agente 1
+### C2.4.3 Script del Agente 1
 
 ```python
 #!/usr/bin/env python3
@@ -741,9 +741,9 @@ def ejecutar(fila: dict, indice_arquetipo: int) -> dict:
 
 ---
 
-## 32.5 Agente 2 — Generador de Imágenes (Stable Diffusion WebUI)
+## C2.5 Agente 2 — Generador de Imágenes (Stable Diffusion WebUI)
 
-### 32.5.1 Instalar Stable Diffusion WebUI
+### C2.5.1 Instalar Stable Diffusion WebUI
 
 ```bash
 # Descargar el container SD WebUI para JP 7.2 [REQUIERE VERIFICACIÓN tag r39.2.0]
@@ -804,7 +804,7 @@ curl -s http://localhost:7860/sdapi/v1/options \
   | python3 -c "import sys,json; opts=json.load(sys.stdin); print('Modelo activo:', opts.get('sd_model_checkpoint','?'))"
 ```
 
-### 32.5.2 Script del Agente 2
+### C2.5.2 Script del Agente 2
 
 ```python
 #!/usr/bin/env python3
@@ -913,9 +913,9 @@ def ejecutar(metadata: dict) -> dict:
 
 ---
 
-## 32.6 Agente 3 — TTS + Subtítulos Sincronizados
+## C2.6 Agente 3 — TTS + Subtítulos Sincronizados
 
-### 32.6.1 Síntesis de Voz con kokoro-tts
+### C2.6.1 Síntesis de Voz con kokoro-tts
 
 ```python
 #!/usr/bin/env python3
@@ -1127,9 +1127,9 @@ def ejecutar(metadata: dict) -> dict:
 
 ---
 
-## 32.7 Agente 4 — Ensamblaje de Video con ffmpeg
+## C2.7 Agente 4 — Ensamblaje de Video con ffmpeg
 
-### 32.7.1 Estrategia de Composición
+### C2.7.1 Estrategia de Composición
 
 Cada imagen recibe un efecto Ken Burns (zoom lento 1.0→1.05, centrado) durante su duración de escena. Las imágenes se concatenan con transiciones `xfade` de 0.5 segundos. Finalmente se mezclan con el audio y se añaden los subtítulos.
 
@@ -1313,7 +1313,7 @@ def ejecutar(metadata: dict) -> dict:
 
 ---
 
-## 32.8 Pipeline FastAPI Server (Puerto 8090)
+## C2.8 Pipeline FastAPI Server (Puerto 8090)
 
 N8N (en Docker bridge) llama al pipeline server vía `http://172.18.0.1:8090/`. El servidor orquesta los 4 agentes secuencialmente y reporta el estado.
 
@@ -1440,9 +1440,9 @@ curl -s http://localhost:8090/health
 
 ---
 
-## 32.9 N8N Workflows
+## C2.9 N8N Workflows
 
-### 32.9.1 Workflow 1 — Producción Diaria (Cron 7 AM)
+### C2.9.1 Workflow 1 — Producción Diaria (Cron 7 AM)
 
 Importar en N8N (`http://localhost:5678`) → Settings → Import Workflow:
 
@@ -1506,7 +1506,7 @@ Importar en N8N (`http://localhost:5678`) → Settings → Import Workflow:
 }
 ```
 
-### 32.9.2 Workflow 2 — Publicación con Aprobación Humana
+### C2.9.2 Workflow 2 — Publicación con Aprobación Humana
 
 > **Filosofía:** Antes de publicar en redes sociales, el video sube a Google Drive y se envía un email con el enlace de previsualización al administrador. Solo después de una aprobación explícita (click en el enlace de aprobación) se publica. Esto evita errores o contenido inesperado en el canal.
 
@@ -1601,7 +1601,7 @@ Notificar para revisión manual
 
 ---
 
-## 32.10 Agente 5 — Publicación en YouTube Shorts
+## C2.10 Agente 5 — Publicación en YouTube Shorts
 
 ```python
 #!/usr/bin/env python3
@@ -1711,7 +1711,7 @@ def publicar_youtube(metadata: dict) -> str:
 
 ---
 
-## 32.11 Agente 6 — Publicación en TikTok
+## C2.11 Agente 6 — Publicación en TikTok
 
 > **[REQUIERE VERIFICACIÓN]:** La TikTok Content Posting API v2 requiere aprobación manual del equipo de TikTok para desarrolladores. El proceso puede tomar 2–4 semanas. Solicitar acceso en: developers.tiktok.com → "Content Posting API".
 
@@ -1798,7 +1798,7 @@ def publicar_tiktok(metadata: dict, titulo: str) -> str:
 
 ---
 
-## 32.12 Agente 7 — Reporte Diario de Analytics
+## C2.12 Agente 7 — Reporte Diario de Analytics
 
 ```python
 #!/usr/bin/env python3
@@ -1895,9 +1895,9 @@ def ejecutar() -> str:
 
 ---
 
-## 32.13 Modo Energético y Prevención OOM
+## C2.13 Modo Energético y Prevención OOM
 
-### 32.13.1 Secuencia de Energía del Pipeline Completo
+### C2.13.1 Secuencia de Energía del Pipeline Completo
 
 ```bash
 # El pipeline_server.py gestiona esto automáticamente.
@@ -1931,7 +1931,7 @@ docker stop kokoro-tts faster-whisper && docker rm kokoro-tts faster-whisper
 pwr-15w  # Ahorro entre publicaciones
 ```
 
-### 32.13.2 Aliases
+### C2.13.2 Aliases
 
 ```bash
 # Agregar al ~/.bash_aliases
@@ -1954,7 +1954,7 @@ source ~/.bash_aliases
 
 ---
 
-## 32.14 Solución de Problemas
+## C2.14 Solución de Problemas
 
 ### SD WebUI: OOM durante generación de imagen
 
@@ -2015,9 +2015,9 @@ sudo apt install -y ffmpeg
 
 ---
 
-## 32.15 Escalabilidad y Extensiones
+## C2.15 Escalabilidad y Extensiones
 
-### 32.15.1 Advertencia de Memoria — Qué Cargar y Cuándo
+### C2.15.1 Advertencia de Memoria — Qué Cargar y Cuándo
 
 El pipeline de video usa múltiples servicios pesados. El Jetson tiene **~59 GB disponibles** (64 GB menos el OS base), pero no todos los agentes deben estar activos simultáneamente:
 
@@ -2044,7 +2044,7 @@ if [ "$RAM_LIBRE" -lt 20 ]; then
 fi
 ```
 
-### 32.15.2 Evaluación de Backend LLM para Generación de Scripts
+### C2.15.2 Evaluación de Backend LLM para Generación de Scripts
 
 El Agente 1 (generación de scripts) es el único que usa un LLM. Los scripts de video son cortos (~200 palabras), lo que limita la ventana de contexto necesaria:
 
@@ -2078,7 +2078,7 @@ huggingface-cli download Qwen/Qwen3.5-4B-GGUF \
 OLLAMA_URL = "http://localhost:11435"   # ← llama.cpp server
 ```
 
-### 32.15.3 Extensión a Otros Tipos de Canal
+### C2.15.3 Extensión a Otros Tipos de Canal
 
 La arquitectura es completamente adaptable. Solo es necesario cambiar el Agente 1 (generador de scripts) y la parrilla de contenidos en Google Sheets:
 

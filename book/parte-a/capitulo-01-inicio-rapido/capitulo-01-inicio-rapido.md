@@ -80,7 +80,7 @@ Si un comando falla, busque primero en la sección de troubleshooting del capít
 
 ---
 
-## 0.1 ¿Qué es la NVIDIA Jetson AGX Orin 64GB?
+## 1.1 ¿Qué es la NVIDIA Jetson AGX Orin 64GB?
 
 La Jetson AGX Orin 64GB es una computadora de alto rendimiento del tamaño de una palma de la mano, diseñada para ejecutar cargas de trabajo de inteligencia artificial directamente en el borde de la red (sin conexión a servidores externos). NVIDIA la posiciona como la plataforma de edge AI más potente de su catálogo: 275 TOPS (Tera-Operaciones Por Segundo) de rendimiento de inferencia, suficiente para ejecutar modelos de lenguaje de hasta 35 mil millones de parámetros en tiempo real.
 
@@ -117,7 +117,7 @@ En una PC con GPU dedicada, la memoria de la GPU (VRAM) está físicamente separ
 
 ---
 
-## 0.2 Especificaciones Técnicas Completas
+## 1.2 Especificaciones Técnicas Completas
 
 ### Hardware
 
@@ -163,7 +163,7 @@ En una PC con GPU dedicada, la memoria de la GPU (VRAM) está físicamente separ
 
 ---
 
-## 0.3 JetPack 7.2 vs JetPack 6.2 — Qué Cambió
+## 1.3 JetPack 7.2 vs JetPack 6.2 — Qué Cambió
 
 Si viene de una instalación anterior con JetPack 6.2, esta tabla resume los cambios críticos que afectan todos los comandos del tutorial:
 
@@ -184,7 +184,7 @@ Si viene de una instalación anterior con JetPack 6.2, esta tabla resume los cam
 
 ---
 
-## 0.4 Arquitectura del Sistema al Final de Este Libro
+## 1.4 Arquitectura del Sistema al Final de Este Libro
 
 <!-- INFOGRAFÍA: Arquitectura del Sistema al Final del Libro — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -227,7 +227,7 @@ JETSON AGX ORIN 64GB (192.168.1.100)
 
 ---
 
-## 0.5 Material Necesario
+## 1.5 Material Necesario
 
 Antes de comenzar, asegúrese de tener lo siguiente:
 
@@ -266,7 +266,7 @@ Antes de comenzar, asegúrese de tener lo siguiente:
 
 ---
 
-## 0.6 Verificación de Especificaciones del Sistema
+## 1.6 Verificación de Especificaciones del Sistema
 
 Una vez que su Jetson esté en funcionamiento (después de el Capítulo 1), puede confirmar en cualquier momento que las especificaciones coinciden ejecutando:
 

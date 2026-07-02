@@ -10,7 +10,7 @@ Este capítulo presenta los 10 modelos más importantes validados para JetPack 7
 
 ---
 
-## 14.1 Configuración Pre-Vuelo — Funciones de Utilidad
+## 16.1 Configuración Pre-Vuelo — Funciones de Utilidad
 
 Antes de trabajar con cualquier modelo, configure estas funciones de utilidad que se usarán a lo largo del capítulo.
 
@@ -153,7 +153,7 @@ mkdir -p ~/jetson-ai-data/benchmarks
 mkdir -p ~/jetson-ai-data/logs/models
 ```
 
-### 14.1.1 Script de tracking de rendimiento
+### 16.1.1 Script de tracking de rendimiento
 
 Guarde este script para registrar automáticamente tokens/s, RAM usada y tiempo hasta primera respuesta (TTFT) en cada prueba:
 
@@ -236,7 +236,7 @@ ls ~/jetson-ai-data/benchmarks/
 cat ~/jetson-ai-data/benchmarks/*.csv | column -t -s,
 ```
 
-### 14.1.2 Prueba via Open WebUI
+### 16.1.2 Prueba via Open WebUI
 
 Además de las pruebas via `curl`, cada modelo puede probarse desde la interfaz web. Esto es especialmente útil para modelos multimodales (imagen, audio):
 
@@ -260,7 +260,7 @@ start-webui
 
 ---
 
-## 14.2 Resumen Comparativo de los 10 Modelos
+## 16.2 Resumen Comparativo de los 10 Modelos
 
 La siguiente tabla resume las características clave de cada modelo. Úsela para seleccionar rápidamente el modelo más apropiado para su caso de uso:
 
@@ -314,7 +314,7 @@ docker images | grep -E "vllm|llama_cpp"
 
 ---
 
-## 14.3 Modelo 1 — Qwen3.5 35B-A3B (Máxima Calidad)
+## 16.3 Modelo 1 — Qwen3.5 35B-A3B (Máxima Calidad)
 
 El Qwen3.5 35B-A3B es un modelo de Mezcla de Expertos (MoE) que activa solo 3B de sus 35B parámetros por inferencia, lo que le permite combinar calidad de un modelo grande con eficiencia computacional de uno pequeño. Es el modelo de mayor calidad razonada disponible para el Jetson AGX Orin 64GB.
 
@@ -512,7 +512,7 @@ echo " [OK]"
 
 ---
 
-## 14.4 Modelo 2 — Nemotron 3 Nano Omni (Multimodal: Texto + Imagen + Audio + Video)
+## 16.4 Modelo 2 — Nemotron 3 Nano Omni (Multimodal: Texto + Imagen + Audio + Video)
 
 El Nemotron 3 Nano Omni es el único modelo en el top 10 que soporta nativamente las cuatro modalidades: texto, imagen, audio y video. Su arquitectura MoE (30B total, 3B activos) permite ejecutarlo en el Jetson con ~24GB de RAM.
 
@@ -616,7 +616,7 @@ sudo sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
 
 ---
 
-## 14.5 Modelo 3 — Qwen3-VL-4B (Visión Eficiente, Solo 6GB RAM)
+## 16.5 Modelo 3 — Qwen3-VL-4B (Visión Eficiente, Solo 6GB RAM)
 
 El Qwen3-VL-4B es un modelo de visión-lenguaje de 4B parámetros cuantizado a AWQ 4-bit. Con apenas ~6GB de RAM, es el modelo de visión más eficiente del top 10 y permite mantener 55GB libres para otras tareas.
 
@@ -689,7 +689,7 @@ docker stop qwen3-vl-4b && docker rm qwen3-vl-4b
 
 ---
 
-## 14.6 Modelo 4 — Cosmos Reason 2 2B (Razonamiento Espacial, Mínima RAM)
+## 16.6 Modelo 4 — Cosmos Reason 2 2B (Razonamiento Espacial, Mínima RAM)
 
 Cosmos Reason 2 es un modelo especializado de NVIDIA para razonamiento espacial, detección de anomalías y análisis de escenas físicas. Con solo 2B parámetros usa ~4GB de RAM y arranca en menos de 1 minuto.
 
@@ -859,7 +859,7 @@ docker rm cosmos-reason2 cosmos-reason2-fp8 2>/dev/null
 
 ---
 
-## 14.7 Modelo 5 — Gemma 4 26B-A4B (MoE, Multimodal con Tool Calling)
+## 16.7 Modelo 5 — Gemma 4 26B-A4B (MoE, Multimodal con Tool Calling)
 
 Gemma 4 26B-A4B es el modelo más versátil del top 10: soporta texto e imagen, incluye tool calling nativo mediante el parser `gemma4`, y su arquitectura MoE (3.8B activos de 25.8B) lo hace eficiente para un modelo de este tamaño.
 
@@ -944,7 +944,7 @@ docker rm gemma4-26b-vllm gemma4-26b-llama 2>/dev/null
 
 ---
 
-## 14.8 Modelo 6 — Qwen3.5 9B (Mejor Velocidad entre Modelos Medianos)
+## 16.8 Modelo 6 — Qwen3.5 9B (Mejor Velocidad entre Modelos Medianos)
 
 El Qwen3.5 9B ofrece la mejor relación velocidad/calidad del top 10: ~55 tok/s con 9B de parámetros y ~12GB de RAM. Es el modelo ideal cuando se necesita respuesta rápida sin sacrificar demasiado en calidad.
 
@@ -996,7 +996,7 @@ docker stop qwen35-9b && docker rm qwen35-9b
 
 ---
 
-## 14.9 Modelo 7 — Nemotron3 Nano 4B (Mínima RAM, Máximo Paralelismo)
+## 16.9 Modelo 7 — Nemotron3 Nano 4B (Mínima RAM, Máximo Paralelismo)
 
 Con solo ~4GB de RAM, el Nemotron3 Nano 4B es el modelo más liviano del top 10. Su arquitectura optimizada para baja latencia lo hace ideal para pipelines que necesitan respuestas rápidas o ejecutar múltiples contextos en paralelo con la RAM restante.
 
@@ -1044,7 +1044,7 @@ docker stop nemotron3-4b && docker rm nemotron3-4b
 
 ---
 
-## 14.10 Modelo 8 — Qwen3.5 4B (Equilibrio Velocidad/Calidad en Paquete Compacto)
+## 16.10 Modelo 8 — Qwen3.5 4B (Equilibrio Velocidad/Calidad en Paquete Compacto)
 
 El Qwen3.5 4B es el punto óptimo para desarrollo diario: 4B parámetros en AWQ 4-bit, ~5GB RAM, ~50 tok/s, razonamiento activable y tool calling. Es el modelo más práctico para desarrollo y pruebas rápidas.
 
@@ -1096,7 +1096,7 @@ docker stop qwen35-4b && docker rm qwen35-4b
 
 ---
 
-## 14.11 Modelo 9 — Gemma 4 E4B (Multimodal Google, Texto + Imagen + Audio)
+## 16.11 Modelo 9 — Gemma 4 E4B (Multimodal Google, Texto + Imagen + Audio)
 
 El Gemma 4 E4B de Google es un modelo multimodal de ~5B parámetros que soporta texto, imagen y audio. Tiene dos modos de despliegue con características muy distintas:
 
@@ -1113,7 +1113,7 @@ El Gemma 4 E4B de Google es un modelo multimodal de ~5B parámetros que soporta 
 
 > **ADVERTENCIA:** La Opción A usa el modelo oficial gated de Google. Debe aceptar los términos en `huggingface.co/google/gemma-4-E4B-it` y tener `$HF_TOKEN` configurado.
 
-### 14.11.1 Opción A — vLLM con bfloat16 (tool calling nativo)
+### 16.11.1 Opción A — vLLM con bfloat16 (tool calling nativo)
 
 ```bash
 # Verificar token HuggingFace antes de iniciar
@@ -1188,7 +1188,7 @@ curl -s http://localhost:8000/v1/chat/completions \
 bench-model 8000 "google/gemma-4-E4B-it" "Explica el concepto de memoria unificada en 80 palabras." 3
 ```
 
-### 14.11.2 Opción B — llama.cpp GGUF (bajo consumo, arranque rapido)
+### 16.11.2 Opción B — llama.cpp GGUF (bajo consumo, arranque rapido)
 
 La versión GGUF cuantizada Q4_K_M de Unsloth no requiere token de HuggingFace y arranca en ~20 segundos:
 
@@ -1248,7 +1248,7 @@ docker stop gemma4-e4b-llama 2>/dev/null; docker rm gemma4-e4b-llama 2>/dev/null
 
 ---
 
-## 14.12 Modelo 10 — GPT OSS 20B (Compatibilidad Drop-in con API OpenAI)
+## 16.12 Modelo 10 — GPT OSS 20B (Compatibilidad Drop-in con API OpenAI)
 
 El GPT OSS 20B de OpenAI es un modelo MoE de 21B parámetros (3.6B activos) con la API completamente compatible con OpenAI. Cualquier aplicación que funcione con `openai.ChatCompletion` funciona con este modelo sin cambios en el código.
 
@@ -1334,7 +1334,7 @@ docker stop gpt-oss-20b && docker rm gpt-oss-20b
 
 ---
 
-## 14.13 Script de Benchmarking Universal
+## 16.13 Script de Benchmarking Universal
 
 El siguiente script mide la velocidad de cualquier modelo activo en cualquier puerto, reportando tokens por segundo promedio después de N iteraciones:
 
@@ -1401,7 +1401,7 @@ bench-model 8000 openai/gpt-oss-20b 3   # 3 iteraciones, modelo específico
 
 ---
 
-## 14.14 Script de Testing Completo en Python
+## 16.14 Script de Testing Completo en Python
 
 ```python
 #!/usr/bin/env python3
@@ -1488,7 +1488,7 @@ python3 ~/scripts/test_model.py --port 8080  # modelos llama.cpp
 
 ---
 
-## 14.15 Resumen de Resultados — Tabla de Benchmarks Consolidada
+## 16.15 Resumen de Resultados — Tabla de Benchmarks Consolidada
 
 Resultados medidos en Jetson AGX Orin 64GB · JetPack 7.2 · modo MAXN (cuando aplica):
 

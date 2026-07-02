@@ -18,7 +18,7 @@ Un entorno de shell bien configurado puede ahorrar horas de trabajo repetitivo d
 
 ---
 
-## 5.1 Estructura de Directorios de Trabajo
+## 6.1 Estructura de Directorios de Trabajo
 
 Antes de instalar herramientas, cree la estructura de directorios que usarán los scripts y pipelines del resto del libro:
 
@@ -56,7 +56,7 @@ drwxrwxr-x  2 jetson jetson  4096 ... venvs
 
 ---
 
-## 5.2 Bloque Completo de ~/.bashrc para JetPack 7.2
+## 6.2 Bloque Completo de ~/.bashrc para JetPack 7.2
 
 El archivo `~/.bashrc` ya tiene las variables críticas al inicio (configuradas en Capítulo 2). Ahora se añade el bloque de aliases y funciones de productividad al final del archivo.
 
@@ -252,7 +252,7 @@ NAME            TYPE      SIZE USED PRIO
 
 ---
 
-## 5.3 Herramientas Adicionales de Desarrollo
+## 6.3 Herramientas Adicionales de Desarrollo
 
 Algunas herramientas no se instalaron en el Capítulo 1 porque no eran críticas para el primer arranque. Instálelas ahora:
 
@@ -294,11 +294,11 @@ echo "[OK] git-lfs inicializado"
 
 ---
 
-## 5.4 Entorno Virtual Python — venv `llm`
+## 6.4 Entorno Virtual Python — venv `llm`
 
 Ubuntu 24.04 protege su instalación de Python del sistema y bloquea `pip install` global con el error `externally-managed-environment`. La solución es crear un entorno virtual aislado donde puede instalar lo que necesite sin riesgo de romper el sistema.
 
-### 5.4.1 Qué es y para qué sirve el venv `llm`
+### 6.4.1 Qué es y para qué sirve el venv `llm`
 
 ```bash
 ~/venvs/llm/                 ← directorio del entorno virtual
@@ -325,7 +325,7 @@ Ubuntu 24.04 protege su instalación de Python del sistema y bloquea `pip instal
 - OpenClaw (`openclaw`, `claw-*`)
 - Comandos de sistema (`ssh`, `tmux`, `git`, `curl`, `htop`)
 
-### 5.4.2 Crear el venv
+### 6.4.2 Crear el venv
 
 ```bash
 # Verificar Python 3.12 disponible
@@ -361,7 +361,7 @@ pip install --upgrade pip setuptools wheel
 Successfully installed pip-24.x.x setuptools-xx.x.x wheel-0.x.x
 ```
 
-### 5.4.3 Instalar paquetes base
+### 6.4.3 Instalar paquetes base
 
 ```bash
 # Paquetes esenciales en el venv llm
@@ -382,7 +382,7 @@ echo "[OK] Paquetes base instalados"
 
 > **NOTA:** PyTorch y torchvision se instalan en el Capítulo 11, porque requieren wheels específicos de JetPack 7.2 que no están en PyPI. No intente `pip install torch` desde PyPI — descargará la versión x86_64 que no funciona en arm64.
 
-### 5.4.4 Autenticar HuggingFace en el venv
+### 6.4.4 Autenticar HuggingFace en el venv
 
 ```bash
 # Con el venv activo, autenticar con el token configurado en Capítulo 2
@@ -416,7 +416,7 @@ deactivate
 
 ---
 
-## 5.5 Script de Auditoría Completa del Sistema
+## 6.5 Script de Auditoría Completa del Sistema
 
 La función `jetson-audit` ya está en `~/.bashrc` (sección 5.2). Pruébela ahora para verificar el estado base del sistema antes de instalar los componentes de inferencia:
 
@@ -469,7 +469,7 @@ Un sistema en estado limpio muestra ~51 GB libres, sin contenedores activos y to
 
 ---
 
-## 5.6 Verificación Final del Capítulo
+## 6.6 Verificación Final del Capítulo
 
 ```bash
 # Verificación completa del entorno de shell

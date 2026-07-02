@@ -58,7 +58,7 @@ TTS kokoro-tts :8880 (Capítulo 17)
 
 ---
 
-## 31.1 Estructura del Proyecto
+## C1.1 Estructura del Proyecto
 
 ```bash
 # Crear la estructura de directorios del capstone
@@ -76,11 +76,11 @@ logs/         ← logs del sistema
 
 ---
 
-## 31.2 Frontend Web con Flask
+## C1.2 Frontend Web con Flask
 
 El frontend recibe el brief del cliente, muestra el estado de procesamiento en tiempo real, y entrega los archivos generados.
 
-### 31.2.1 Instalar Flask y Dependencias
+### C1.2.1 Instalar Flask y Dependencias
 
 ```bash
 #
@@ -90,7 +90,7 @@ pip install flask flask-login flask-wtf werkzeug requests zipfile36
 echo "[OK] Flask y dependencias instaladas"
 ```
 
-### 31.2.2 Aplicación Flask Principal
+### C1.2.2 Aplicación Flask Principal
 
 ```python
 #!/usr/bin/env python3
@@ -485,7 +485,7 @@ HEREDOC
 echo "[OK] app.py guardado en ~/agencia/"
 ```
 
-### 31.2.3 Templates HTML
+### C1.2.3 Templates HTML
 
 ```bash
 # Template base
@@ -663,11 +663,11 @@ EOF
 
 ---
 
-## 31.3 Workflow de N8N para la Agencia
+## C1.3 Workflow de N8N para la Agencia
 
 N8N automatiza las notificaciones y el registro de proyectos. Al recibir un proyecto nuevo, envía email de confirmación al cliente; al completarse, envía los entregables.
 
-### 31.3.1 Configurar los Webhooks en N8N
+### C1.3.1 Configurar los Webhooks en N8N
 
 ```bash
 # Verificar que N8N está activo (Capítulo 27)
@@ -745,7 +745,7 @@ echo "[OK] Tabla proyectos creada"
 
 ---
 
-## 31.4 Integración con OpenClaw para Agentes Especializados
+## C1.4 Integración con OpenClaw para Agentes Especializados
 
 Para casos de uso más complejos, los agentes de OpenClaw reemplazan las llamadas directas al LLM con agentes con memoria, herramientas y contexto persistente.
 
@@ -815,9 +815,9 @@ def llamar_openclaw_agente(agente_id: str, mensaje: str, contexto: dict = None) 
 
 ---
 
-## 31.5 Iniciar el Stack Completo
+## C1.5 Iniciar el Stack Completo
 
-### 31.5.1 Script de Arranque de la Agencia
+### C1.5.1 Script de Arranque de la Agencia
 
 ```bash
 cat > ~/scripts/agency-start.sh << 'EOF'
@@ -962,7 +962,7 @@ EOF
 chmod +x ~/scripts/agency-stop.sh
 ```
 
-### 31.5.2 Aliases Finales
+### C1.5.2 Aliases Finales
 
 ```bash
 # Agregar al ~/.bash_aliases
@@ -982,7 +982,7 @@ source ~/.bash_aliases
 
 ---
 
-## 31.6 Monitoreo del Stack
+## C1.6 Monitoreo del Stack
 
 ```bash
 # Verificar estado completo del sistema durante operación
@@ -997,7 +997,7 @@ tail -f ~/logs/flask_agencia.log ~/logs/ollama.log ~/logs/gateway/access.log
 
 ---
 
-## 31.7 Solución de Problemas
+## C1.7 Solución de Problemas
 
 ### vLLM OOM al procesar proyecto largo
 
@@ -1043,9 +1043,9 @@ export N8N_WEBHOOK_URL="http://$JETSON_IP:5678/webhook/intake"
 
 ---
 
-## 31.8 Escalabilidad — Modo Mixto y Gestión de Memoria
+## C1.8 Escalabilidad — Modo Mixto y Gestión de Memoria
 
-### 31.8.1 Presupuesto de Memoria — Qué Cargar y Cuándo
+### C1.8.1 Presupuesto de Memoria — Qué Cargar y Cuándo
 
 El Jetson AGX Orin 64GB tiene **~59 GB disponibles** para aplicaciones (el OS base consume ~12 GB del sistema de archivos unificado CPU/GPU). La agencia completa en modo activo consume ~46.5 GB, dejando **~17.5 GB de margen** — suficiente para un servicio adicional, pero no para dos modelos grandes simultáneos.
 
@@ -1076,7 +1076,7 @@ if [ "$PROYECTOS_ACTIVOS" -eq 0 ]; then
 fi
 ```
 
-### 31.8.2 Modo Mixto — Integración con OpenRouter
+### C1.8.2 Modo Mixto — Integración con OpenRouter
 
 Para proyectos de cliente que requieran capacidades que superen los modelos locales (análisis de documentos muy largos, traducción a idiomas poco representados, procesamiento multilingüe avanzado), integre OpenRouter como backend alternativo:
 
@@ -1107,7 +1107,7 @@ alias agency-cloud="USE_LOCAL_LLM=false"
 
 > **NOTA:** El modo cloud envía los briefs de los clientes a servidores externos. Informe a sus clientes si sus datos serán procesados fuera de la red local. Para clientes con requerimientos de confidencialidad estrictos, use siempre el modo local.
 
-### 31.8.3 Evaluación de Capacidad de Clientes Simultáneos
+### C1.8.3 Evaluación de Capacidad de Clientes Simultáneos
 
 La arquitectura actual soporta **un proyecto activo a la vez** con el LLM de 35B. Para servir múltiples clientes simultáneamente, configure vLLM con continuous batching:
 

@@ -22,7 +22,7 @@ Cada reunión, conferencia o clase genera información valiosa que se pierde por
 
 ---
 
-## 20.1 Prerrequisito — Verificación del Sistema
+## 22.1 Prerrequisito — Verificación del Sistema
 
 ```bash
 # Verificar recursos antes de iniciar
@@ -52,7 +52,7 @@ pwr-30w
 
 ---
 
-## 20.2 Estructura del Proyecto
+## 22.2 Estructura del Proyecto
 
 ```bash
 mkdir -p ~/projects/transcription-bot/{scripts,input,output,config}
@@ -74,7 +74,7 @@ transcription-bot/
 
 ---
 
-## 20.3 Configuración
+## 22.3 Configuración
 
 ```bash
 # Crear archivo de configuración
@@ -115,7 +115,7 @@ EOF
 
 ---
 
-## 20.4 Script 1 — Transcripción con faster-whisper
+## 22.4 Script 1 — Transcripción con faster-whisper
 
 ```python
 # scripts/01_transcribe.py
@@ -284,7 +284,7 @@ if __name__ == "__main__":
 
 ---
 
-## 20.5 Script 2 — Análisis con LLM
+## 22.5 Script 2 — Análisis con LLM
 
 ```python
 # scripts/02_analyze.py
@@ -500,7 +500,7 @@ if __name__ == "__main__":
 
 ---
 
-## 20.6 Script 3 — Envío por Email
+## 22.6 Script 3 — Envío por Email
 
 ```python
 # scripts/03_send_email.py
@@ -613,7 +613,7 @@ def enviar_informe(
 
 ---
 
-## 20.7 Orquestador Completo
+## 22.7 Orquestador Completo
 
 ```bash
 # transcription_bot.sh
@@ -781,7 +781,7 @@ chmod +x transcription_bot.sh
 
 ---
 
-## 20.8 Caso de Uso — Procesamiento por Lotes
+## 22.8 Caso de Uso — Procesamiento por Lotes
 
 Para procesar múltiples archivos automáticamente:
 
@@ -819,7 +819,7 @@ echo "Resumen: $PROCESADOS procesados correctamente, $ERRORES errores"
 
 ---
 
-## 20.9 Limpieza Post-Pipeline
+## 22.9 Limpieza Post-Pipeline
 
 ```bash
 # Después de terminar todas las transcripciones
@@ -842,7 +842,7 @@ pwr-15w
 
 ---
 
-## 20.10 Verificación Final del Capítulo
+## 22.10 Verificación Final del Capítulo
 
 ```bash
 # Verificación
@@ -885,11 +885,11 @@ echo "════════════════════════�
 
 ---
 
-## 20.11 Escalabilidad — Workflow de Transcripción vía Telegram
+## 22.11 Escalabilidad — Workflow de Transcripción vía Telegram
 
 El bot de transcripción puede integrarse con Telegram para operar de forma completamente autónoma: el usuario envía la grabación de una reunión o clase y recibe la transcripción detallada o el resumen en su chat, en el formato que prefiera.
 
-### 20.11.1 Flujo Telegram → Jetson → Resumen
+### 22.11.1 Flujo Telegram → Jetson → Resumen
 
 ```bash
 Usuario → envía audio .mp3/.wav/.ogg por Telegram
@@ -945,7 +945,7 @@ Nodo 4 — Send Document:
 }
 ```
 
-### 20.11.2 Formatos de Salida
+### 22.11.2 Formatos de Salida
 
 El script de análisis (§20.5) puede generar la salida en múltiples formatos según el tipo de reunión:
 
@@ -976,7 +976,7 @@ Transcripción:
 """
 ```
 
-### 20.11.3 Modo Mixto con OpenRouter
+### 22.11.3 Modo Mixto con OpenRouter
 
 Para reuniones con vocabulario técnico complejo o cuando el modelo local no genere suficiente calidad de resumen, integre OpenRouter como fallback:
 

@@ -19,13 +19,13 @@ Este capítulo configura el Jetson para trabajo completamente remoto y sin monit
 
 ---
 
-## 2.1 Modo Headless — Arranque sin Entorno Gráfico Local
+## 3.1 Modo Headless — Arranque sin Entorno Gráfico Local
 
 Por defecto, Ubuntu 24.04 arranca en `graphical.target`, lo que inicia el servidor gráfico GDM3, el entorno de escritorio GNOME y Wayland. Esto consume aproximadamente 1.5–2 GB de RAM innecesariamente cuando el Jetson opera sin monitor físico. El modo headless elimina esa carga y arranca en `multi-user.target` (solo servicios de red y consola).
 
 > **IMPORTANTE:** El Capítulo 15 (Sección 15.0) documenta `multi-user.target` como la arquitectura de arranque limpio recomendada para producción. Este paso lo establece desde el principio. NoMachine sigue funcionando perfectamente en modo headless — genera su sesión gráfica virtualmente en el servidor y la envía a su PC.
 
-### 2.1.1 Deshabilitar Wayland y configurar GDM3
+### 3.1.1 Deshabilitar Wayland y configurar GDM3
 
 Ubuntu 24.04 usa Wayland por defecto, pero NoMachine necesita X11 para las sesiones gráficas remotas. Antes de pasar a `multi-user.target` completamente, configure GDM3 para que cuando lo inicie manualmente use X11:
 
@@ -57,7 +57,7 @@ XDG_SESSION_TYPE=x11
 EOF
 ```
 
-### 2.1.2 Display virtual 1920×1080 (Xorg Dummy)
+### 3.1.2 Display virtual 1920×1080 (Xorg Dummy)
 
 Sin monitor físico conectado, el framebuffer del Jetson se limita a 640×480. El driver `dummy` crea un display virtual de 1920×1080 en RAM que NoMachine puede usar para renderizar la sesión gráfica remota:
 
@@ -95,7 +95,7 @@ EndSection
 EOF
 ```
 
-### 2.1.3 Establecer multi-user.target como target de arranque
+### 3.1.3 Establecer multi-user.target como target de arranque
 
 ```bash
 # Arrancar en modo texto (sin GUI local)
@@ -132,7 +132,7 @@ multi-user.target
 
 ---
 
-## 2.2 Acceso Remoto — Resumen de Opciones
+## 3.2 Acceso Remoto — Resumen de Opciones
 
 | Método | Puerto | Cliente en Windows | Veredicto |
 |--------|--------|--------------------|-----------|
@@ -146,11 +146,11 @@ multi-user.target
 
 ---
 
-## 2.3 NoMachine — Acceso Gráfico Remoto de Alta Calidad
+## 3.3 NoMachine — Acceso Gráfico Remoto de Alta Calidad
 
 NoMachine es la solución de escritorio remoto recomendada para el Jetson. Ofrece compresión de video de alta calidad, soporte de audio, transferencia de archivos integrada y excelente rendimiento incluso con conexiones de red lentas. Es gratuita para uso personal y comercial hasta 10 usuarios simultáneos.
 
-### 2.3.1 Instalar NoMachine Server
+### 3.3.1 Instalar NoMachine Server
 
 ```bash
 # Verificar la última versión disponible para arm64 en:
@@ -181,7 +181,7 @@ Unpacking nomachine (9.7.3-1) ...
 Setting up nomachine (9.7.3-1) ...
 ```
 
-### 2.3.2 Iniciar y verificar el servidor NoMachine
+### 3.3.2 Iniciar y verificar el servidor NoMachine
 
 ```bash
 # Iniciar el servidor NX
@@ -205,7 +205,7 @@ sudo systemctl enable nxserver 2>/dev/null || \
   sudo /usr/NX/bin/nxserver --startup
 ```
 
-### 2.3.3 Configurar sesión XFCE4 virtual para NoMachine
+### 3.3.3 Configurar sesión XFCE4 virtual para NoMachine
 
 NoMachine en modo headless necesita un entorno gráfico virtual. XFCE4 es la opción recomendada: consume ~200 MB de RAM (vs ~1.5 GB de GNOME), es estable para uso remoto y responde bien con conexiones de red limitadas.
 
@@ -238,7 +238,7 @@ sudo /usr/NX/bin/nxserver --restart
 
 > **Resultado:** XFCE4 proporciona un escritorio completo (gestor de archivos, terminal, navegador ligero) con solo 200 MB de RAM adicionales. Perfecto para administrar el Jetson gráficamente sin comprometer la memoria disponible para los modelos de IA.
 
-### 2.3.4 Conectar desde Windows
+### 3.3.4 Conectar desde Windows
 
 Descargue e instale el cliente NoMachine desde [nomachine.com](https://www.nomachine.com/download):
 
@@ -264,11 +264,11 @@ NX> 161 Enabled service: nxd.
 
 ---
 
-## 2.4 GitHub SSH — Clave para el Jetson
+## 3.4 GitHub SSH — Clave para el Jetson
 
 Si trabaja con repositorios de GitHub desde el Jetson (código, modelos privados, configuraciones), necesita una clave SSH específica del Jetson en su cuenta de GitHub.
 
-### 2.4.1 Generar la clave SSH
+### 3.4.1 Generar la clave SSH
 
 ```bash
 # Generar clave SSH Ed25519 para GitHub
@@ -288,7 +288,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... jetson-orin-jp72-20260628
 
 Agregue esa clave en **github.com/settings/keys** → **New SSH key** → pegue la clave pública.
 
-### 2.4.2 Configurar el cliente SSH del Jetson
+### 3.4.2 Configurar el cliente SSH del Jetson
 
 ```bash
 # Crear/actualizar ~/.ssh/config en el Jetson
@@ -313,7 +313,7 @@ ssh -T git@github.com
 Hi tu-usuario! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
-### 2.4.3 Configuración global de Git
+### 3.4.3 Configuración global de Git
 
 ```bash
 # Configurar identidad de commits
@@ -328,7 +328,7 @@ git config --global url."git@github.com:".insteadOf "https://github.com/"
 
 ---
 
-## 2.5 Variables de Entorno Críticas
+## 3.5 Variables de Entorno Críticas
 
 Ubuntu 24.04 tiene una restricción importante en `~/.bashrc` que afecta a Docker, systemd y todos los scripts no interactivos: el archivo contiene un bloque `case $- in` que hace `return` anticipado cuando el shell no es interactivo. Cualquier `export` colocado **después** de ese bloque es invisible para Docker, systemd y los scripts.
 
@@ -342,7 +342,7 @@ Ubuntu 24.04 tiene una restricción importante en `~/.bashrc` que afecta a Docke
 
 La solución es colocar las variables críticas **antes** de ese bloque, al inicio de `~/.bashrc`.
 
-### 2.5.1 Configurar variables al inicio de ~/.bashrc
+### 3.5.1 Configurar variables al inicio de ~/.bashrc
 
 > **[IMPORTANTE — Leer antes de continuar]** Estas variables se configuran **ahora**, aunque algunos servicios (HuggingFace, vLLM, OpenClaw) no se instalen hasta capítulos posteriores. El motivo es que Docker, systemd y los scripts automatizados solo leen variables definidas **antes** del bloque `case $-` del `~/.bashrc`. Configurarlas aquí garantiza que estén disponibles globalmente desde el primer día. Si al ejecutar un capítulo posterior no tiene aún la variable activa, recargue el shell: `source ~/.bashrc`.
 
@@ -395,7 +395,7 @@ echo "[OK] Variables configuradas. HF_TOKEN: ${HF_TOKEN:0:10}..."
 
 > **IMPORTANTE:** Reemplace `hf_SU_TOKEN_AQUI` con su token real de HuggingFace. Si aún no tiene un token, puede dejarlo vacío por ahora — es necesario en el Capítulo 11 (descarga de modelos con acceso controlado como Llama o Gemma). Obtenga el token gratis en **huggingface.co/settings/tokens**.
 
-### 2.5.2 Propagar variables a Docker y systemd
+### 3.5.2 Propagar variables a Docker y systemd
 
 Docker y systemd no leen `~/.bashrc`. Necesitan las variables en `/etc/environment`:
 
@@ -424,7 +424,7 @@ chmod 600 ~/.cache/huggingface/token
 echo "[OK] Token HuggingFace cacheado"
 ```
 
-### 2.5.3 Verificación de variables
+### 3.5.3 Verificación de variables
 
 ```bash
 # Verificar que las variables están disponibles
@@ -451,11 +451,11 @@ Cuda compilation tools, release 13.2, V13.2.1
 
 ---
 
-## 2.6 Herramientas de Monitoreo del Sistema
+## 3.6 Herramientas de Monitoreo del Sistema
 
 Antes de continuar con la instalación de software adicional, instale las herramientas de monitoreo que se usarán a lo largo de toda la guía. La más importante es `jtop`, diseñada específicamente para el hardware Jetson.
 
-### 2.6.1 jtop — Monitor de GPU/CPU/Memoria en Tiempo Real
+### 3.6.1 jtop — Monitor de GPU/CPU/Memoria en Tiempo Real
 
 `jtop` es parte del paquete `jetson-stats` y proporciona una vista en tiempo real de CPU, GPU, memoria unificada, temperatura y modo de energía activo. Es la herramienta de diagnóstico principal para el Jetson.
 
@@ -489,7 +489,7 @@ jtop
 
 > **NOTA:** `jtop` requiere ser ejecutado como usuario normal (no como root). Si ve el error "Permission denied", asegúrese de no estar usando `sudo jtop`.
 
-### 2.6.2 tegrastats — Monitor de Línea de Comandos
+### 3.6.2 tegrastats — Monitor de Línea de Comandos
 
 `tegrastats` viene preinstalado con JetPack 7.2. Es útil para scripting y logging porque su salida es parseable:
 
@@ -508,11 +508,11 @@ kill $TEGRA_PID
 
 ---
 
-## 2.7 SSH desde Windows y Transferencia de Archivos (SCP)
+## 3.7 SSH desde Windows y Transferencia de Archivos (SCP)
 
 Esta sección configura el cliente SSH de Windows para conectar al Jetson con el alias `ssh jetson`, y cubre los comandos básicos de transferencia de archivos con SCP.
 
-### 2.7.1 Configurar `~/.ssh/config` en Windows
+### 3.7.1 Configurar `~/.ssh/config` en Windows
 
 El archivo `~/.ssh/config` en Windows define hosts nombrados con sus configuraciones. En lugar de escribir `ssh jetson@192.168.1.100 -i ~/.ssh/jetson_orin` cada vez, basta con `ssh jetson`.
 
@@ -590,7 +590,7 @@ ssh jetson
 jetson@jetson-orin:~$
 ```
 
-### 2.7.2 Transferencia de archivos con SCP
+### 3.7.2 Transferencia de archivos con SCP
 
 SCP usa el canal SSH — no requiere configuración adicional:
 
@@ -611,7 +611,7 @@ ssh jetson "du -sh ~/data/models/"
 
 > **CONSEJO:** Para modelos grandes (>4 GB), use `aria2c` en el Jetson para descargas directas desde HuggingFace — es significativamente más rápido que SCP desde Windows (ver Capítulo 6, §6.4).
 
-### 2.7.3 SSH Tunnels — acceso a servicios del Jetson desde Windows
+### 3.7.3 SSH Tunnels — acceso a servicios del Jetson desde Windows
 
 Los SSH tunnels redirigen un puerto local de Windows hacia un puerto en el Jetson:
 
@@ -635,7 +635,7 @@ ssh -L 3000:localhost:3000 \
 
 ---
 
-## 2.8 Verificación Final del Capítulo
+## 3.8 Verificación Final del Capítulo
 
 ```bash
 # Verificacion completa del estado tras Capitulo 2

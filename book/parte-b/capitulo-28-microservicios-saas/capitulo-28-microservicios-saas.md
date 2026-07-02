@@ -39,11 +39,11 @@ El overhead de infraestructura es mínimo — no afecta los modelos de IA.
 
 ---
 
-## 30.1 Nginx como Reverse Proxy
+## 28.1 Nginx como Reverse Proxy
 
 Nginx actúa como el único punto de entrada al Jetson. Enruta las peticiones al servicio correcto según la ruta URL y aplica cabeceras de seguridad globales.
 
-### 30.1.1 Instalar Nginx
+### 28.1.1 Instalar Nginx
 
 ```bash
 sudo apt update
@@ -65,7 +65,7 @@ sudo systemctl disable nginx
 echo "[OK] Nginx instalado, gestionado bajo demanda"
 ```
 
-### 30.1.2 Configuración del Reverse Proxy
+### 28.1.2 Configuración del Reverse Proxy
 
 ```bash
 # Crear la configuración para el Jetson AI gateway
@@ -203,11 +203,11 @@ curl -s http://localhost:8088/health | python3 -m json.tool
 
 ---
 
-## 30.2 Autenticación JWT con FastAPI
+## 28.2 Autenticación JWT con FastAPI
 
 El middleware JWT protege los endpoints de la API. Cada cliente recibe un token único; el middleware lo verifica antes de pasar la petición al servicio correspondiente.
 
-### 30.2.1 Instalar Dependencias
+### 28.2.1 Instalar Dependencias
 
 ```bash
 #
@@ -215,7 +215,7 @@ source ~/venvs/llm/bin/activate
 pip install fastapi uvicorn python-jose[cryptography] python-multipart httpx
 ```
 
-### 30.2.2 Servidor de Autenticación JWT
+### 28.2.2 Servidor de Autenticación JWT
 
 ```python
 #!/usr/bin/env python3
@@ -379,7 +379,7 @@ echo $! > ~/scripts/gateway/jwt_gateway.pid
 echo "[OK] JWT Gateway iniciado en :9100 (PID $(cat ~/scripts/gateway/jwt_gateway.pid))"
 ```
 
-### 30.2.3 Registrar el Primer Cliente
+### 28.2.3 Registrar el Primer Cliente
 
 ```bash
 # Generar claves seguras antes de comenzar
@@ -424,11 +424,11 @@ curl -s http://localhost:9100/auth/verify \
 
 ---
 
-## 30.3 Cloudflare Tunnel: Sin Abrir Puertos en el Router
+## 28.3 Cloudflare Tunnel: Sin Abrir Puertos en el Router
 
 Cloudflare Tunnel establece una conexión saliente cifrada desde el Jetson hacia la red de Cloudflare. No requiere IP estática, no abre puertos en el router, y el tráfico pasa por HTTPS automáticamente.
 
-### 30.3.1 Instalar cloudflared
+### 28.3.1 Instalar cloudflared
 
 ```bash
 # Descargar el binario ARM64 de cloudflared
@@ -446,7 +446,7 @@ cloudflared --version
 cloudflared version 2025.x.x (built ...)
 ```
 
-### 30.3.2 Autenticación con Cloudflare
+### 28.3.2 Autenticación con Cloudflare
 
 ```bash
 # Autenticar con la cuenta de Cloudflare
@@ -464,7 +464,7 @@ If you wish to copy your credentials to a server, they have been saved to:
 /root/.cloudflared/cert.pem
 ```
 
-### 30.3.3 Crear el Túnel
+### 28.3.3 Crear el Túnel
 
 ```bash
 # Crear un túnel nombrado
@@ -488,7 +488,7 @@ TUNNEL_ID=$(cloudflared tunnel list --output json | \
 echo "Tunnel ID: $TUNNEL_ID"
 ```
 
-### 30.3.4 Configurar el Túnel
+### 28.3.4 Configurar el Túnel
 
 ```bash
 # Crear la configuración del túnel
@@ -525,7 +525,7 @@ cloudflared tunnel route dns jetson-ai api.sudominio.com
 cloudflared tunnel ingress validate
 ```
 
-### 30.3.5 Iniciar el Túnel
+### 28.3.5 Iniciar el Túnel
 
 ```bash
 # Test manual (ver logs en tiempo real)
@@ -558,7 +558,7 @@ systemctl status cloudflared
 
 ---
 
-## 30.4 Monitoreo con Uptime Kuma
+## 28.4 Monitoreo con Uptime Kuma
 
 Uptime Kuma es un monitor de disponibilidad self-hosted que alerta cuando un servicio cae. Se ejecuta como contenedor Docker sin GPU.
 
@@ -588,7 +588,7 @@ Una vez accedido a la interfaz web, añadir los siguientes monitores:
 
 ---
 
-## 30.5 Logging Estructurado y Logrotate
+## 28.5 Logging Estructurado y Logrotate
 
 ```bash
 # Crear directorio de logs centralizado
@@ -640,7 +640,7 @@ echo "[OK] Logs JSON activos en ~/logs/gateway/"
 
 ---
 
-## 30.6 Scripts de Gestión del Gateway
+## 28.6 Scripts de Gestión del Gateway
 
 ```bash
 # Script completo de gestión del gateway
@@ -770,7 +770,7 @@ chmod +x ~/scripts/gateway/gateway-manage.sh
 
 ---
 
-## 30.7 Aliases
+## 28.7 Aliases
 
 ```bash
 # Agregar al ~/.bash_aliases
@@ -810,7 +810,7 @@ chmod +x ~/scripts/gateway/new-client.sh
 
 ---
 
-## 30.8 Solución de Problemas
+## 28.8 Solución de Problemas
 
 ### Nginx: `[emerg] bind() to 0.0.0.0:8088 failed`
 
@@ -867,7 +867,7 @@ curl -s "http://localhost:9100/admin/clientes?admin_key=$(grep ADMIN_KEY ~/scrip
 
 ---
 
-## 30.9 Cómo Revertir Esta Configuración
+## 28.9 Cómo Revertir Esta Configuración
 
 Si necesita deshacer la exposición a internet y volver al acceso solo local:
 
@@ -902,11 +902,11 @@ echo "[OK] Jetson en modo local — accesible solo vía SSH (ssh jetson)"
 
 ---
 
-## 30.10 Ciberseguridad — Buenas Prácticas y Lista de Verificación
+## 28.10 Ciberseguridad — Buenas Prácticas y Lista de Verificación
 
 Exponer el Jetson a internet introduce riesgos reales si la configuración no se hace correctamente. Esta sección consolida las prácticas de seguridad esenciales para este despliegue.
 
-### 30.10.1 Puertos que NUNCA deben ser accesibles desde internet
+### 28.10.1 Puertos que NUNCA deben ser accesibles desde internet
 
 Los servicios de IA deben ser accesibles **únicamente a través de Nginx**, no directamente desde internet:
 
@@ -946,7 +946,7 @@ sudo ufw status verbose
 
 > **IMPORTANTE:** Cloudflare Tunnel establece conexiones **salientes** desde el Jetson hacia la red de Cloudflare. No requiere abrir ningún puerto en el router. Si tiene reglas de port-forwarding previas en el router, elimínelas.
 
-### 30.10.2 Autenticación — Nunca deje endpoints sin protección
+### 28.10.2 Autenticación — Nunca deje endpoints sin protección
 
 Todos los endpoints expuestos a internet deben requerir JWT. Verifique que ninguno responde sin token:
 
@@ -960,7 +960,7 @@ curl -s -o /dev/null -w "%{http_code}" https://jetson.sudominio.com/n8n/
 # Salida esperada: 302 (redirect a login de N8N) o 401
 ```
 
-### 30.10.3 Certificados SSL — Alternativas Gratuitas
+### 28.10.3 Certificados SSL — Alternativas Gratuitas
 
 Cloudflare Tunnel gestiona el SSL del tráfico entre el cliente y Cloudflare automáticamente. Para servicios internos o acceso directo por IP (ej. desde la LAN), use certificados gratuitos:
 
@@ -1001,7 +1001,7 @@ echo "0 3 * * 0 root certbot renew --quiet" | sudo tee /etc/cron.d/certbot-renew
 
 > **CONSEJO:** Si usa Cloudflare Tunnel, el SSL público está gestionado por Cloudflare y no necesita Let's Encrypt ni ZeroSSL para el acceso externo. Use mkcert únicamente para acceso seguro dentro de la LAN.
 
-### 30.10.4 Rotación de Secretos
+### 28.10.4 Rotación de Secretos
 
 Los tokens y secretos deben rotarse periódicamente:
 
@@ -1018,7 +1018,7 @@ echo "  2. ~/.bash_aliases  (export JWT_SECRET=...)"
 echo "  3. Reiniciar el servicio JWT: sudo systemctl restart jwt-auth"
 ```
 
-### 30.10.5 Lista de Verificación de Seguridad
+### 28.10.5 Lista de Verificación de Seguridad
 
 Antes de dejar el Jetson expuesto a internet de forma permanente, verifique cada punto:
 

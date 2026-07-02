@@ -18,7 +18,7 @@ La red es el cuello de botella más subestimado en un sistema de inferencia loca
 
 ---
 
-## 6.1 Optimización de Parámetros TCP del Kernel
+## 7.1 Optimización de Parámetros TCP del Kernel
 
 El kernel Linux gestiona las conexiones TCP con un conjunto de parámetros de tamaño de buffer que por defecto están calibrados para consumo de energía y equipos de gama baja. En el Jetson, que tiene 64 GB de RAM, puede ampliar estos buffers significativamente para mejorar el throughput en descargas de archivos grandes.
 
@@ -84,7 +84,7 @@ net.core.somaxconn = 65535
 net.core.netdev_max_backlog = 65535
 ```
 
-### 6.1.1 Verificar TCP BBR activo
+### 7.1.1 Verificar TCP BBR activo
 
 ```bash
 # Verificar que BBR está activo
@@ -111,7 +111,7 @@ net.ipv4.tcp_available_congestion_control = reno cubic bbr
 
 ---
 
-## 6.2 Ajuste de MTU
+## 7.2 Ajuste de MTU
 
 El MTU (Maximum Transmission Unit) define el tamaño máximo de cada paquete de red. El valor por defecto (1500 bytes para Ethernet) es correcto para la mayoría de redes. Sin embargo, si su red local usa VLANs, PPPoE o VPN, un MTU más pequeño puede mejorar la estabilidad:
 
@@ -136,7 +136,7 @@ En la mayoría de redes domésticas con router directo a internet (sin PPPoE), 1
 
 ---
 
-## 6.3 Optimización de APT para Descargas Paralelas
+## 7.3 Optimización de APT para Descargas Paralelas
 
 Cada vez que instala paquetes con `apt`, Ubuntu descarga múltiples archivos de forma secuencial por defecto. Esta configuración habilita descargas paralelas y retry automático:
 
@@ -170,11 +170,11 @@ sudo apt update 2>&1 | tail -5
 
 ---
 
-## 6.4 aria2 — Descargas Multi-Hilo para Modelos Grandes
+## 7.4 aria2 — Descargas Multi-Hilo para Modelos Grandes
 
 `aria2` es un gestor de descargas que abre múltiples conexiones simultáneas al mismo servidor, multiplicando la velocidad de descarga efectiva. Es especialmente útil para descargar modelos de HuggingFace o NVIDIA NGC.
 
-### 6.4.1 Instalar y Configurar aria2
+### 7.4.1 Instalar y Configurar aria2
 
 ```bash
 # Instalar aria2
@@ -211,7 +211,7 @@ EOF
 echo "[OK] aria2 configurado"
 ```
 
-### 6.4.2 Aliases para Descargas de Modelos
+### 7.4.2 Aliases para Descargas de Modelos
 
 ```bash
 # Agregar aliases a ~/.bash_aliases
@@ -234,7 +234,7 @@ EOF
 source ~/.bash_aliases || source ~/.bashrc
 ```
 
-### 6.4.3 Ejemplo de Descarga Directa de Archivo GGUF
+### 7.4.3 Ejemplo de Descarga Directa de Archivo GGUF
 
 ```bash
 # Ejemplo: descargar Gemma4 E2B GGUF para llama.cpp (Capitulo 12)
@@ -260,7 +260,7 @@ ls -lh ~/data/models/gguf/
 # Salida esperada: -rw-r--r-- 1 jetson jetson 3.8G gemma-4-E2B-Q4_K_M.gguf
 ```
 
-### 6.4.4 Script dl-model.sh — Descargas con Autenticacion HuggingFace
+### 7.4.4 Script dl-model.sh — Descargas con Autenticacion HuggingFace
 
 Los modelos "gated" (como Gemma 4 E4B, Llama 3, Mistral) requieren un token de HuggingFace. Este script gestiona la autenticacion automaticamente.
 
@@ -391,7 +391,7 @@ dl-model "https://huggingface.co/Qwen/Qwen2.5-4B-Instruct-GGUF/resolve/main/qwen
 
 ---
 
-### 6.4.5 aria2 para Descargas Generales
+### 7.4.5 aria2 para Descargas Generales
 
 `aria2` no es solo para modelos de IA — es un gestor de descargas de propósito general. Con múltiples conexiones simultáneas acelera cualquier descarga grande: imágenes ISO de Linux, datasets, videos, firmware, etc.
 
@@ -478,7 +478,7 @@ dl-list /tmp/modelos.txt ~/data/models/gguf
 
 ---
 
-## 6.5 Verificación de Velocidad de Red
+## 7.5 Verificación de Velocidad de Red
 
 Antes de descargar los modelos de los Capítulos 12–14, verifique que la red funciona correctamente y mida la velocidad base:
 
@@ -541,7 +541,7 @@ net.ipv6.conf.all.disable_ipv6 = 1
 
 ---
 
-## 6.6 Verificación Final del Capítulo
+## 7.6 Verificación Final del Capítulo
 
 ```bash
 # Verificación completa de red

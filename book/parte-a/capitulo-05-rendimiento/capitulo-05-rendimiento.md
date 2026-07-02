@@ -18,7 +18,7 @@ Esta parte explica los dos mecanismos de control de rendimiento del Jetson, cuá
 
 ---
 
-## 3.1 Dos Mecanismos de Control Independientes
+## 5.1 Dos Mecanismos de Control Independientes
 
 <!-- INFOGRAFÍA: Los Dos Mecanismos de Control de Rendimiento — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -39,9 +39,9 @@ Ambos son necesarios. Solo `nvpmodel -m 0` (MAXN) sin `jetson_clocks` puede deja
 
 ---
 
-## 3.2 Modos de Energía — nvpmodel
+## 5.2 Modos de Energía — nvpmodel
 
-### 3.2.1 Tabla de modos disponibles
+### 5.2.1 Tabla de modos disponibles
 
 El Jetson AGX Orin 64GB con JetPack 7.2 tiene los siguientes modos de energía:
 
@@ -54,7 +54,7 @@ El Jetson AGX Orin 64GB con JetPack 7.2 tiene los siguientes modos de energía:
 
 > **NOTA sobre consumo real:** "MAXN" no tiene un límite de TDP fijo — el sistema usa lo que necesite. En inferencia activa con modelos de 30B, el consumo suele ser de 45–55W. En espera, cae a 8–12W independientemente del modo.
 
-### 3.2.2 Verificar el modo actual
+### 5.2.2 Verificar el modo actual
 
 ```bash
 # Ver el modo de energía activo
@@ -75,7 +75,7 @@ El número final (aquí `2`) es el ID del modo activo.
 sudo nvpmodel -q --verbose | grep -E "MODE_NAME|TDP"
 ```
 
-### 3.2.3 Cambiar de modo
+### 5.2.3 Cambiar de modo
 
 ```bash
 # Cambiar a MAXN (máximo rendimiento)
@@ -111,9 +111,9 @@ NV Power Mode: MAXN
 
 ---
 
-## 3.3 Bloqueo de Frecuencias — jetson_clocks
+## 5.3 Bloqueo de Frecuencias — jetson_clocks
 
-### 3.3.1 Qué hace jetson_clocks
+### 5.3.1 Qué hace jetson_clocks
 
 `nvpmodel` define el límite de energía pero el sistema puede no usar todas las frecuencias disponibles dentro de ese límite (por temperatura, carga detectada o políticas de governor). `jetson_clocks` fuerza todas las frecuencias (CPU, GPU y bus de memoria EMC) a su valor máximo permitido por el modo activo:
 
@@ -138,7 +138,7 @@ EMC MinFreq=204000000 MaxFreq=3199000000 CurrentFreq=3199000000
 
 La columna `CurrentFreq` debe ser igual a `MaxFreq` en todos los componentes.
 
-### 3.3.2 Impacto real en inferencia
+### 5.3.2 Impacto real en inferencia
 
 | Configuración | GPU Frec. | Velocidad (modelo 7B Q4) |
 |---------------|-----------|--------------------------|
@@ -150,7 +150,7 @@ La combinación `nvpmodel -m 0` + `jetson_clocks` entrega la mejora de rendimien
 
 ---
 
-## 3.4 Aliases de Energía — Control Rápido desde la Terminal
+## 5.4 Aliases de Energía — Control Rápido desde la Terminal
 
 Configure estos aliases en `~/.bashrc` para cambiar modos al instante:
 
@@ -186,7 +186,7 @@ pwr-status
 
 ---
 
-## 3.5 Hacer jetson_clocks Permanente (Opcional)
+## 5.5 Hacer jetson_clocks Permanente (Opcional)
 
 `jetson_clocks` se resetea en cada reboot. Si siempre trabaja en MAXN, puede crear un servicio systemd que lo aplique automáticamente al arrancar:
 
@@ -226,11 +226,11 @@ sudo systemctl status jetson-clocks-lock
 
 ---
 
-## 3.6 Monitoreo de Temperatura y Consumo
+## 5.6 Monitoreo de Temperatura y Consumo
 
 En MAXN con inferencia activa, el ventilador del Jetson se acelera automáticamente. El sistema de refrigeración del Developer Kit está diseñado para esta carga, pero es útil monitorear la temperatura durante los primeros usos intensivos.
 
-### 3.6.1 jtop — monitor integrado
+### 5.6.1 jtop — monitor integrado
 
 ```bash
 # Abrir el monitor de recursos del Jetson
@@ -244,7 +244,7 @@ Navegue con las teclas numéricas:
 - **4** — CPU: uso por núcleo y frecuencias
 - **5** — MEM: memoria unificada, swap, ZRAM
 
-### 3.6.2 tegrastats — monitoreo en terminal
+### 5.6.2 tegrastats — monitoreo en terminal
 
 ```bash
 # Monitoreo continuo cada segundo (Ctrl+C para salir)
@@ -268,7 +268,7 @@ Valores de referencia durante inferencia activa:
 
 > **ADVERTENCIA:** Si ve `throttle=1` en `tegrastats`, el sistema está reduciendo frecuencias por temperatura. Causas más comunes: ventilador bloqueado o vents de ventilación cubiertos. Verifique que el Jetson tiene ventilación libre en los 4 costados.
 
-### 3.6.3 Script de diagnóstico rápido
+### 5.6.3 Script de diagnóstico rápido
 
 ```bash
 # Agregar al ~/.bashrc
@@ -300,7 +300,7 @@ perf-status
 
 ---
 
-## 3.7 Cuándo Usar Cada Modo
+## 5.7 Cuándo Usar Cada Modo
 
 | Situación | Modo recomendado | Comando |
 |-----------|-----------------|---------|
@@ -313,7 +313,7 @@ perf-status
 
 ---
 
-## 3.8 Verificación Final del Capítulo
+## 5.8 Verificación Final del Capítulo
 
 ```bash
 # Aplicar MAXN + jetson_clocks y verificar

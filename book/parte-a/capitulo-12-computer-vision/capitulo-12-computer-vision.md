@@ -30,9 +30,9 @@ Este capítulo cubre cuatro categorías de visión artificial:
 
 ---
 
-## 28.1 OCR Clásico: Extracción de Texto de Imágenes
+## 12.1 OCR Clásico: Extracción de Texto de Imágenes
 
-### 28.1.1 Pytesseract (CPU, Mínima RAM)
+### 12.1.1 Pytesseract (CPU, Mínima RAM)
 
 Pytesseract es una interfaz Python para el motor OCR de Google Tesseract. Es el método más rápido para texto en imágenes simples (documentos escaneados, capturas de pantalla con texto claro).
 
@@ -121,7 +121,7 @@ Jetson AGX Orin 64GB — JetPack 7.2
 Prueba de OCR con Tesseract 5.x
 ```
 
-### 28.1.2 EasyOCR (GPU Acelerada, Mejor para Texto en Imágenes Complejas)
+### 12.1.2 EasyOCR (GPU Acelerada, Mejor para Texto en Imágenes Complejas)
 
 EasyOCR usa redes neuronales con aceleración GPU — más lento en la primera imagen (carga el modelo) pero significativamente mejor para texto rotado, con fondos complejos o en múltiples idiomas simultáneos.
 
@@ -203,7 +203,7 @@ python3 ~/scripts/ocr_easyocr.py /tmp/test_ocr.png
 
 ---
 
-## 28.2 Pipeline OCR → LLM (Extracción Estructurada)
+## 12.2 Pipeline OCR → LLM (Extracción Estructurada)
 
 Combine OCR con el LLM local para extraer información estructurada de documentos:
 
@@ -284,9 +284,9 @@ python3 ~/scripts/ocr_llm_pipeline.py /ruta/a/factura.jpg factura
 
 ---
 
-## 28.3 Modelos de Visión-Lenguaje (VLM)
+## 12.3 Modelos de Visión-Lenguaje (VLM)
 
-### 28.3.1 Gemma 4 E4B via llama.cpp (Image Captioning Offline, Solo 3 GB)
+### 12.3.1 Gemma 4 E4B via llama.cpp (Image Captioning Offline, Solo 3 GB)
 
 La opción más eficiente para image captioning y VQA (Visual Question Answering) en el Jetson:
 
@@ -385,7 +385,7 @@ if __name__ == "__main__":
 
 > **NOTA:** VILA (Visual Language Model) de NVIDIA no está verificado en el Jetson AGX Orin 64GB con JetPack 7.2. La imagen `dustynv/vila:r39.2.0` no estaba disponible en Docker Hub al momento de escritura. Para comprensión visual avanzada en JP 7.2, use Gemma 4 E4B (§28.3.1) — es más eficiente y completamente verificada. Consulte los releases futuros de NVIDIA para soporte oficial de VILA en JetPack 7.x.
 
-## 28.4 Detección de Objetos con nanoowl
+## 12.4 Detección de Objetos con nanoowl
 
 nanoowl es un detector de objetos zero-shot basado en CLIP, optimizado con TensorRT para el Jetson. "Zero-shot" significa que puede detectar cualquier objeto simplemente describiendo en texto lo que busca — sin reentrenamiento.
 
@@ -496,9 +496,9 @@ python3 ~/scripts/object_detection_nanoowl.py camara "una persona" "una silla" "
 
 ---
 
-## 28.5 Procesamiento de Video con OpenCV
+## 12.5 Procesamiento de Video con OpenCV
 
-### 28.5.1 Configuración de Cámara USB/CSI
+### 12.5.1 Configuración de Cámara USB/CSI
 
 ```bash
 # Listar dispositivos de video conectados
@@ -532,7 +532,7 @@ else:
 "
 ```
 
-### 28.5.2 Pipeline de Análisis de Video Frame por Frame
+### 12.5.2 Pipeline de Análisis de Video Frame por Frame
 
 ```python
 #!/usr/bin/env python3
@@ -647,7 +647,7 @@ docker logs gemma4-e4b-llama --follow
 
 ---
 
-## 28.6 Integración: OCR → RAG → LLM
+## 12.6 Integración: OCR → RAG → LLM
 
 El pipeline más potente para procesamiento de documentos combina OCR, almacenamiento en vector store y consulta via LLM:
 
@@ -712,7 +712,7 @@ if __name__ == "__main__":
 
 ---
 
-## 28.7 Aliases y Scripts del Capítulo
+## 12.7 Aliases y Scripts del Capítulo
 
 > **CONSEJO:** Los scripts de este capítulo se editan cómodamente desde Windows con VSCode Remote SSH (Capítulo 7). Abra `~/scripts/` en VSCode, edite, guarde — los cambios se aplican de inmediato en el Jetson.
 
@@ -739,7 +739,7 @@ source ~/.bash_aliases || source ~/.bashrc
 
 ---
 
-## 28.8 Solución de Problemas
+## 12.8 Solución de Problemas
 
 ### EasyOCR falla con `CUDA out of memory`
 

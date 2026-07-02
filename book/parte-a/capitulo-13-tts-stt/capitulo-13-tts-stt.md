@@ -32,9 +32,9 @@ El Jetson AGX Orin 64GB puede ejecutar pipelines completos de voz — transcripc
 
 ---
 
-## 29.1 STT con faster-whisper
+## 13.1 STT con faster-whisper
 
-### 29.1.1 Comparativa de Motores STT para Español
+### 13.1.1 Comparativa de Motores STT para Español
 
 | Motor | Modelo | Velocidad (ratio vs tiempo real) | Calidad Español | WER* | RAM |
 |-------|--------|----------------------------------|-----------------|------|-----|
@@ -46,7 +46,7 @@ El Jetson AGX Orin 64GB puede ejecutar pipelines completos de voz — transcripc
 
 *WER = Word Error Rate — menor es mejor. Medido con corpus de español latinoamericano.
 
-### 29.1.2 Instalar faster-whisper via Container NVIDIA
+### 13.1.2 Instalar faster-whisper via Container NVIDIA
 
 ```bash
 # Descargar el container de faster-whisper para JP 7.2
@@ -86,7 +86,7 @@ docker logs faster-whisper --follow &
 
 > **NOTA sobre el puerto:** faster-whisper usa el puerto 8000 por defecto, el mismo que vLLM. **No inicie vLLM y faster-whisper simultáneamente** a menos que cambie el puerto de uno de ellos con `-e PORT=8001` o similar. Para pipelines STT→LLM, inicie primero faster-whisper, haga la transcripción, párelo, y luego inicie vLLM.
 
-### 29.1.3 Transcripción de Audio
+### 13.1.3 Transcripción de Audio
 
 El método más efectivo para probar faster-whisper es usar **su propia voz** en vez de archivos de prueba genéricos: así verifica que el sistema reconoce su acento y cadencia de habla real.
 
@@ -162,7 +162,7 @@ Timestamps por palabra:
   ...
 ```
 
-### 29.1.4 Diarización de Hablantes (¿Quién Habló Cuándo?)
+### 13.1.4 Diarización de Hablantes (¿Quién Habló Cuándo?)
 
 La diarización identifica automáticamente cuántos hablantes hay en el audio y cuándo habló cada uno. Es esencial para transcripción de reuniones y conferencias.
 
@@ -285,9 +285,9 @@ python3 ~/scripts/diarize_and_transcribe.py ~/jetson-ai-data/audio/reunion.wav
 
 ---
 
-## 29.2 TTS con kokoro-tts
+## 13.2 TTS con kokoro-tts
 
-### 29.2.1 Voces Disponibles en Español
+### 13.2.1 Voces Disponibles en Español
 
 kokoro-tts ofrece múltiples voces con diferentes acentos y registros:
 
@@ -300,7 +300,7 @@ kokoro-tts ofrece múltiples voces con diferentes acentos y registros:
 | `bm_george` | Inglés | Masculino | Británico | Profesional, ideal para narración |
 | `am_adam` | Inglés | Masculino | Americano | Casual, conversacional |
 
-### 29.2.2 Instalar kokoro-tts
+### 13.2.2 Instalar kokoro-tts
 
 ```bash
 # Descargar container kokoro-tts
@@ -326,7 +326,7 @@ echo " [OK] kokoro-tts en :8880"
 docker logs kokoro-tts --follow &
 ```
 
-### 29.2.3 Síntesis de Voz con kokoro-tts
+### 13.2.3 Síntesis de Voz con kokoro-tts
 
 ```bash
 # Test básico de síntesis de voz
@@ -438,7 +438,7 @@ if __name__ == "__main__":
 
 ---
 
-## 29.3 TTS con piper-tts (Síntesis Ultrarrápida)
+## 13.3 TTS con piper-tts (Síntesis Ultrarrápida)
 
 Piper-tts es un sintetizador neuronal ultraligero que corre completamente en CPU con latencia <200ms. Ideal para respuestas cortas en el asistente de voz.
 
@@ -508,7 +508,7 @@ if __name__ == "__main__":
     subprocess.run(["aplay", "-q", ruta])
 ```
 
-### 29.3.1 Tabla Comparativa kokoro-tts vs piper
+### 13.3.1 Tabla Comparativa kokoro-tts vs piper
 
 | Característica | kokoro-tts | piper-tts |
 |--------------|-----------|-----------|
@@ -524,7 +524,7 @@ if __name__ == "__main__":
 
 ---
 
-## 29.4 Pipeline Completo: STT → LLM → TTS (Asistente de Voz)
+## 13.4 Pipeline Completo: STT → LLM → TTS (Asistente de Voz)
 
 <!-- INFOGRAFÍA: Pipeline STT→LLM→TTS en el Jetson AGX Orin — diagrama de flujo mostrando: Micrófono USB → pyaudio (VAD) → faster-whisper (STT) → texto → vLLM Qwen3.5-4B (LLM) → respuesta de texto → piper-tts (TTS) → WAV → altavoz USB. Incluir latencias de cada etapa: grabación ~1s, STT ~0.5s, LLM ~1-2s, TTS <200ms. Total: <3s. Paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light — pendiente de diseño gráfico -->
 
@@ -770,7 +770,7 @@ python3 ~/scripts/voice_assistant_pipeline.py
 
 ---
 
-## 29.5 Monitoreo
+## 13.5 Monitoreo
 
 ```bash
 # Ver logs de faster-whisper
@@ -793,7 +793,7 @@ aplay /tmp/test_audio.wav
 
 ---
 
-## 29.6 Aliases
+## 13.6 Aliases
 
 ```bash
 # Agregar a ~/.bash_aliases
@@ -827,7 +827,7 @@ source ~/.bash_aliases || source ~/.bashrc
 
 ---
 
-## 29.7 Solución de Problemas
+## 13.7 Solución de Problemas
 
 ### faster-whisper: `CUDA out of memory` con modelo large-v3
 

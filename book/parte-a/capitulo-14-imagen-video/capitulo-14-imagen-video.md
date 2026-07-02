@@ -36,7 +36,7 @@ Ambas usan la misma colección de modelos (checkpoints, LoRA, VAE) almacenada en
 
 ---
 
-## 19.1 Prerrequisito — Verificación del Sistema
+## 14.1 Prerrequisito — Verificación del Sistema
 
 ```bash
 # Verificar recursos antes de iniciar
@@ -73,7 +73,7 @@ Cuda compilation tools, release 13.2, V13.2.1
 
 ---
 
-## 19.2 Estructura de Directorios para Modelos Compartidos
+## 14.2 Estructura de Directorios para Modelos Compartidos
 
 La clave de esta configuración es que **ambos programas — ComfyUI y SD WebUI — leen modelos desde el mismo directorio `~/models/`**. Descargue cada modelo una sola vez y estará disponible en ambas interfaces.
 
@@ -100,11 +100,11 @@ models/
 
 ---
 
-## 19.3 ComfyUI — Pipeline Visual de Generación de Imágenes
+## 14.3 ComfyUI — Pipeline Visual de Generación de Imágenes
 
 ComfyUI usa un sistema de **nodos conectados** (similar a Blender o TouchDesigner). Cada nodo realiza una operación: cargar modelo, codificar prompt, hacer denoising, decodificar imagen. La flexibilidad es enorme: puede construir pipelines complejos con ControlNet, AnimateDiff e img2img en el mismo workflow.
 
-### 19.3.1 Verificar Disponibilidad de la Imagen para JP 7.2
+### 14.3.1 Verificar Disponibilidad de la Imagen para JP 7.2
 
 ```bash
 # Verificar que el tag r39.2.0 está disponible para ComfyUI
@@ -129,7 +129,7 @@ Tags disponibles:
   ...
 ```
 
-### 19.3.2 Descargar la Imagen de ComfyUI
+### 14.3.2 Descargar la Imagen de ComfyUI
 
 ```bash
 # Descargar ComfyUI para JP 7.2 (tarda 10-20 min)
@@ -143,7 +143,7 @@ r39.2.0: Pulling from dustynv/comfyui
 Status: Downloaded newer image for dustynv/comfyui:r39.2.0
 ```
 
-### 19.3.3 Docker Compose para ComfyUI
+### 14.3.3 Docker Compose para ComfyUI
 
 ```bash
 # Crear el archivo docker-compose.yml para ComfyUI
@@ -178,7 +178,7 @@ mkdir -p ~/stacks/comfyui/{output,workflows}
 echo "[OK] Docker Compose de ComfyUI listo en ~/stacks/comfyui/"
 ```
 
-### 19.3.4 Arrancar ComfyUI
+### 14.3.4 Arrancar ComfyUI
 
 ```bash
 # Iniciar ComfyUI
@@ -209,7 +209,7 @@ http://<IP-del-Jetson>:8188
 
 > **NOTA — Acceso remoto:** Para acceder a ComfyUI desde Windows, use el SSH tunnel definido en Capítulo 7: `ssh -L 8188:localhost:8188 jetson`. Luego abra `http://localhost:8188` en su navegador.
 
-### 19.3.5 Instalación del Primer Checkpoint (SD 1.5)
+### 14.3.5 Instalación del Primer Checkpoint (SD 1.5)
 
 El **checkpoint** es el modelo principal. Stable Diffusion 1.5 (SD 1.5) es el punto de partida: pesa ~2 GB, genera imágenes 512×512 en ~10–20 segundos en el Jetson, y es compatible con miles de LoRA y extensiones.
 
@@ -276,11 +276,11 @@ chmod +x ~/scripts/download-sd-models.sh
 
 ---
 
-## 19.4 Stable Diffusion WebUI (AUTOMATIC1111)
+## 14.4 Stable Diffusion WebUI (AUTOMATIC1111)
 
 SD WebUI ofrece una interfaz más tradicional con pestañas: `txt2img`, `img2img`, `Extras` (upscaling), `PNG Info` e `Inpainting`. Es ideal para exploración rápida sin necesidad de construir grafos de nodos.
 
-### 19.4.1 Verificar Disponibilidad de la Imagen
+### 14.4.1 Verificar Disponibilidad de la Imagen
 
 ```bash
 # Verificar tag r39.2.0 para stable-diffusion-webui
@@ -298,7 +298,7 @@ if not any('r39.2' in t for t in tags):
 "
 ```
 
-### 19.4.2 Docker Compose para SD WebUI
+### 14.4.2 Docker Compose para SD WebUI
 
 ```bash
 # Crear docker-compose.yml para SD WebUI
@@ -336,7 +336,7 @@ echo "[OK] Docker Compose de SD WebUI listo en ~/stacks/sd-webui/"
 > - `--no-half-vae` evita problemas de color en imágenes en Jetson
 > - `--xformers` mejora el rendimiento de atención en GPU Ampere
 
-### 19.4.3 Arrancar SD WebUI
+### 14.4.3 Arrancar SD WebUI
 
 ```bash
 # Iniciar SD WebUI
@@ -354,7 +354,7 @@ Startup time: 45.3s ...
 Model loaded in 12.4s (load weights from disk: 8.1s, ...)
 ```
 
-### 19.4.4 Primera Imagen en SD WebUI
+### 14.4.4 Primera Imagen en SD WebUI
 
 En la interfaz web (`http://<IP-Jetson>:7860`):
 
@@ -373,11 +373,11 @@ En la interfaz web (`http://<IP-Jetson>:7860`):
 
 ---
 
-## 19.5 Modelos SDXL para Mayor Calidad
+## 14.5 Modelos SDXL para Mayor Calidad
 
 Stable Diffusion XL (SDXL) genera imágenes de 1024×1024 con calidad notablemente superior a SD 1.5. Requiere ~7–8 GB de VRAM — perfectamente manejable con los 64 GB de memoria unificada del Jetson.
 
-### 19.5.1 Descargar SDXL Base
+### 14.5.1 Descargar SDXL Base
 
 ```bash
 # Descargar SDXL 1.0 base (~6.9 GB) — tarda 15-20 minutos
@@ -390,7 +390,7 @@ wget -q --show-progress \
 echo "[OK] SDXL base descargado: $(du -h ~/models/checkpoints/sd_xl_base_1.0.safetensors | cut -f1)"
 ```
 
-### 19.5.2 Modelos Recomendados por Caso de Uso
+### 14.5.2 Modelos Recomendados por Caso de Uso
 
 | Modelo | Tamaño | Caso de uso | Tiempo/imagen Jetson |
 |--------|--------|-------------|---------------------|
@@ -404,11 +404,11 @@ echo "[OK] SDXL base descargado: $(du -h ~/models/checkpoints/sd_xl_base_1.0.saf
 
 ---
 
-## 19.6 Generación de Imágenes de Estilo Anime
+## 14.6 Generación de Imágenes de Estilo Anime
 
 Los modelos de anime en SD usan técnicas de fine-tuning en datasets de manga y anime. Son modelos SD 1.5 o Pony Diffusion con estilo visual específico.
 
-### 19.6.1 Descargar Modelo de Anime
+### 14.6.1 Descargar Modelo de Anime
 
 ```bash
 # Anything V5 — modelo anime popular (~2.2 GB)
@@ -420,7 +420,7 @@ wget -q --show-progress \
 echo "[OK] Anything V5 descargado"
 ```
 
-### 19.6.2 Prompts y Parámetros para Anime
+### 14.6.2 Prompts y Parámetros para Anime
 
 La sintaxis de prompts para anime difiere del fotorrealismo:
 
@@ -437,7 +437,7 @@ fused fingers, bad proportions, gross proportions, nsfw
 
 > **NOTA — Sintaxis de pesos:** `(texto:1.3)` aumenta la importancia del término al 130%. Use con moderación — pesos > 1.5 producen resultados inestables.
 
-### 19.6.3 Script API para Generación en Lote
+### 14.6.3 Script API para Generación en Lote
 
 ```python
 #!/usr/bin/env python3
@@ -499,11 +499,11 @@ python3 ~/scripts/generate-anime-batch.py
 
 ---
 
-## 19.7 Generación de Video con AnimateDiff
+## 14.7 Generación de Video con AnimateDiff
 
 AnimateDiff es una extensión de ComfyUI que agrega **motion modules** a los modelos SD 1.5, permitiendo generar clips de video de 8–24 fotogramas a partir de un prompt de texto. Los clips son cortos (~1–3 segundos), pero la calidad del movimiento es notablemente fluida.
 
-### 19.7.1 Requisitos de Memoria para AnimateDiff
+### 14.7.1 Requisitos de Memoria para AnimateDiff
 
 AnimateDiff requiere significativamente más memoria que la generación de imágenes estáticas:
 
@@ -515,7 +515,7 @@ AnimateDiff requiere significativamente más memoria que la generación de imág
 
 > **ADVERTENCIA:** Con 64 GB de memoria unificada, estos valores son manejables, pero generar más de 16 frames a 512×512 puede causar que el sistema swap a disco — monitoree con `jtop` durante la generación.
 
-### 19.7.2 Descargar el Motion Module de AnimateDiff
+### 14.7.2 Descargar el Motion Module de AnimateDiff
 
 ```bash
 # AnimateDiff v3 motion module — el más compatible con SD 1.5 (~1.7 GB)
@@ -527,7 +527,7 @@ wget -q --show-progress \
 echo "[OK] AnimateDiff motion module: $(du -h ~/models/animatediff/mm_sd_v15_v3.ckpt | cut -f1)"
 ```
 
-### 19.7.3 Instalar el Nodo AnimateDiff en ComfyUI
+### 14.7.3 Instalar el Nodo AnimateDiff en ComfyUI
 
 ```bash
 # Acceder al contenedor ComfyUI para instalar el custom node
@@ -552,7 +552,7 @@ done
 echo "[OK] ComfyUI reiniciado con AnimateDiff"
 ```
 
-### 19.7.4 Workflow de AnimateDiff via API
+### 14.7.4 Workflow de AnimateDiff via API
 
 ComfyUI permite enviar workflows completos como JSON via API, sin necesidad de la interfaz gráfica:
 
@@ -684,7 +684,7 @@ if __name__ == "__main__":
 python3 ~/scripts/generate-animatediff.py
 ```
 
-### 19.7.5 Convertir el Video a GIF para Compartir
+### 14.7.5 Convertir el Video a GIF para Compartir
 
 ```bash
 # Convertir el MP4 generado a GIF (instalar ffmpeg si no está disponible)
@@ -709,11 +709,11 @@ fi
 
 ---
 
-## 19.8 PixArt-Alpha y Alternativas Ligeras
+## 14.8 PixArt-Alpha y Alternativas Ligeras
 
 PixArt-Alpha es un modelo de difusión basado en transformers (no UNet) que produce imágenes de alta calidad con modelos de solo ~500 MB — ideal cuando la memoria es limitada o cuando los checkpoints SDXL son demasiado pesados.
 
-### 19.8.1 Generación con PixArt via Diffusers
+### 14.8.1 Generación con PixArt via Diffusers
 
 ```bash
 # Instalar diffusers en el venv de IA (o crear uno dedicado)
@@ -791,7 +791,7 @@ Downloading shards: 100%|██████████| 2/2 [03:45<00:00]
 
 ---
 
-## 19.9 Aliases y Scripts de Gestión
+## 14.9 Aliases y Scripts de Gestión
 
 ```bash
 # Agregar aliases al ~/.bash_aliases
@@ -831,7 +831,7 @@ source ~/.bash_aliases
 echo "[OK] Aliases de generacion de imagenes cargados"
 ```
 
-### 19.9.1 Script de Estado General
+### 14.9.1 Script de Estado General
 
 ```bash
 cat > ~/scripts/status-image-generation.sh << 'EOF'
@@ -887,7 +887,7 @@ echo "[OK] Script de estado listo"
 
 ---
 
-## 19.10 Monitoreo Durante la Generación
+## 14.10 Monitoreo Durante la Generación
 
 La generación de imágenes es intensiva en GPU y memoria. Use estas herramientas en una segunda terminal SSH para monitorear el sistema mientras genera:
 
@@ -918,7 +918,7 @@ a3b4c5d6e7f8   comfyui     248%    11.2GiB / 62GiB     18.1%   ...
 
 > **ATENCIÓN — RAM alta:** Si `MEM USAGE` supera 40 GB mientras genera, el sistema empezará a usar swap, ralentizando drásticamente la generación. En ese caso: reduzca el número de frames en AnimateDiff, o cambie a modelos SD 1.5 en lugar de SDXL, o detenga Ollama y otros servicios antes de generar.
 
-### 19.10.1 Script de Pre-vuelo para Generación
+### 14.10.1 Script de Pre-vuelo para Generación
 
 ```bash
 cat > ~/scripts/preflight-image-gen.sh << 'EOF'
@@ -972,7 +972,7 @@ chmod +x ~/scripts/preflight-image-gen.sh
 
 ---
 
-## 19.11 Resolución de Problemas Frecuentes
+## 14.11 Resolución de Problemas Frecuentes
 
 ### Error: "CUDA out of memory"
 
@@ -1024,7 +1024,7 @@ ls -lh ~/models/vae/
 
 ---
 
-## 19.12 Resumen del Capítulo
+## 14.12 Resumen del Capítulo
 
 En este capítulo configuró un sistema completo de generación de imágenes y video en el Jetson AGX Orin:
 

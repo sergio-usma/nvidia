@@ -20,7 +20,7 @@ El sistema usa OpenClaw como orquestador (ya instalado en el Capítulo 13) y Oll
 
 ---
 
-## 21.1 Prerrequisito — Verificación del Sistema
+## 23.1 Prerrequisito — Verificación del Sistema
 
 ```bash
 # Verificar que OpenClaw está activo
@@ -41,7 +41,7 @@ pwr-30w
 
 ---
 
-## 21.2 Arquitectura del Sistema
+## 23.2 Arquitectura del Sistema
 
 <!-- INFOGRAFÍA: Arquitectura del Sistema de Agencia de Turismo Virtual — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -76,7 +76,7 @@ pwr-30w
 
 ---
 
-## 21.3 Configurar los Agentes en OpenClaw
+## 23.3 Configurar los Agentes en OpenClaw
 
 ```bash
 # Crear el directorio del proyecto
@@ -84,7 +84,7 @@ mkdir -p ~/projects/tourism-agency
 cd ~/projects/tourism-agency
 ```
 
-### 21.3.1 Definición de Agentes via API de OpenClaw
+### 23.3.1 Definición de Agentes via API de OpenClaw
 
 ```python
 # setup_agents.py
@@ -190,7 +190,7 @@ python setup_agents.py
 
 ---
 
-## 21.4 Interfaz de Conversación por Terminal
+## 23.4 Interfaz de Conversación por Terminal
 
 ```python
 # tourism_chat.py
@@ -383,7 +383,7 @@ Día 1: Llegada y Shinjuku
 
 ---
 
-## 21.5 Modo Canal Externo (Telegram / WhatsApp via NemoClaw Gateway)
+## 23.5 Modo Canal Externo (Telegram / WhatsApp via NemoClaw Gateway)
 
 Si tiene NemoClaw configurado con un gateway de mensajería (Capítulo 13), puede conectar la agencia de turismo directamente. El canal primario recomendado es **Telegram** (bot via NemoClaw); WhatsApp requiere Business API y es opcional:
 
@@ -458,7 +458,7 @@ python telegram_bridge.py &
 
 ---
 
-## 21.6 Limpieza Post-Pipeline
+## 23.6 Limpieza Post-Pipeline
 
 ```bash
 # Detener servidores del pipeline
@@ -476,7 +476,7 @@ echo "[OK] Pipeline de agencia de turismo detenido"
 
 ---
 
-## 21.7 Verificación Final
+## 23.7 Verificación Final
 
 ```bash
 echo "╔═══════════════════════════════════════════════════════╗"
@@ -516,9 +516,9 @@ echo "════════════════════════�
 
 ---
 
-## 21.8 Escalabilidad y Extensiones
+## 23.8 Escalabilidad y Extensiones
 
-### 21.8.1 Bot de Telegram para la Agencia de Turismo
+### 23.8.1 Bot de Telegram para la Agencia de Turismo
 
 La agencia multi-agente puede integrarse con Telegram para atender consultas de viajeros directamente desde la mensajería. El usuario escribe su destino y preferencias; el Jetson responde con el itinerario completo.
 
@@ -557,7 +557,7 @@ Nodo 3 — Send Message:
 }
 ```
 
-### 21.8.2 Modo Mixto con OpenRouter
+### 23.8.2 Modo Mixto con OpenRouter
 
 Para destinos exóticos o cuando el modelo local no tenga suficiente conocimiento geográfico actualizado, integre OpenRouter como backend alternativo:
 
@@ -584,7 +584,7 @@ alias turismo-local="USE_LOCAL_LLM=true  python3 ~/projects/tourism-agency/main.
 alias turismo-cloud="USE_LOCAL_LLM=false python3 ~/projects/tourism-agency/main.py"
 ```
 
-### 21.8.3 Evaluación de Backend de Inferencia
+### 23.8.3 Evaluación de Backend de Inferencia
 
 Para una agencia multi-agente con múltiples llamadas secuenciales al LLM por cada consulta:
 
