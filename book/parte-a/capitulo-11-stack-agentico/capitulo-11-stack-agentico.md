@@ -15,9 +15,9 @@ Este capítulo cubre las cuatro capas del stack:
 
 ---
 
-## 13.1 OpenClaw — El Agente Central
+## 11.1 OpenClaw — El Agente Central
 
-### 13.1.1 Arquitectura de OpenClaw en JetPack 7.2
+### 11.1.1 Arquitectura de OpenClaw en JetPack 7.2
 
 OpenClaw actúa como intermediario inteligente entre los canales de entrada (WhatsApp, navegador, terminal) y los backends de inferencia (vLLM, llama.cpp, Ollama). El modelo de lenguaje es el "cerebro"; OpenClaw es el "sistema nervioso" que conecta ese cerebro con el mundo.
 
@@ -44,7 +44,7 @@ Windows / Teléfono            Jetson AGX Orin 64GB
 
 La restricción principal de la memoria unificada del Jetson se aplica aquí: **solo un modelo grande puede estar activo a la vez**. El script `switch-model.sh` (documentado en el Capítulo 12) gestiona este ciclo de vida automáticamente y actualiza la configuración de OpenClaw después de cada cambio.
 
-### 13.1.2 Prerrequisitos para OpenClaw
+### 11.1.2 Prerrequisitos para OpenClaw
 
 OpenClaw es una aplicación Node.js. JetPack 7.2 incluye Node.js v22 en su imagen base, pero si la instalación no está disponible, ejecute:
 
@@ -70,7 +70,7 @@ npm --version    # 10.x.x
 
 > **NOTA:** No use el Node.js del repositorio de Ubuntu 24.04 (`apt install nodejs` sin el repositorio de NodeSource). Esa versión es la 18.x, demasiado antigua para OpenClaw.
 
-### 13.1.3 Instalación de OpenClaw
+### 11.1.3 Instalación de OpenClaw
 
 El método recomendado utiliza el instalador oficial de OpenClaw, que verifica la versión de Node, instala el daemon y ejecuta el onboarding inicial:
 
@@ -112,7 +112,7 @@ openclaw onboard --install-daemon
 openclaw --version   # 2026.6.10 o superior
 ```
 
-### 13.1.4 Configuración de Producción de OpenClaw
+### 11.1.4 Configuración de Producción de OpenClaw
 
 La configuración de OpenClaw reside en `~/.openclaw/openclaw.json`. A continuación se presenta la configuración completa verificada en producción con todos los parches aplicados.
 
@@ -281,7 +281,7 @@ openclaw doctor
 | `models.providers.vllm.models[].maxTokens` | `65536` | `4096` | Si maxTokens == contextWindow, no queda espacio para el input |
 | `agents.defaults.memorySearch.enabled` | `true` | `false` | Falla sin API key de OpenAI configurada |
 
-### 13.1.5 Web UI de OpenClaw desde Windows
+### 11.1.5 Web UI de OpenClaw desde Windows
 
 OpenClaw incluye una interfaz web que escucha en el puerto 18789 del Jetson, enlazada únicamente a `loopback` (127.0.0.1) por seguridad. Para acceder desde un equipo Windows en la misma red local, es necesario crear un túnel SSH.
 
@@ -317,7 +317,7 @@ http://127.0.0.1:18789/#token=TU_TOKEN
 
 Esta opción es más sencilla y no requiere mantener abierto el túnel SSH.
 
-### 13.1.6 Canal WhatsApp — Configuración Inicial
+### 11.1.6 Canal WhatsApp — Configuración Inicial
 
 WhatsApp es el canal principal de interacción con el agente OpenClaw. La configuración inicial requiere escanear un código QR desde el teléfono.
 
@@ -374,7 +374,7 @@ openclaw config set channels.whatsapp.dmPolicy allowlist
 openclaw config set channels.whatsapp.dmAllowFrom '["+573XXXXXXXXX","+571XXXXXXXX"]'
 ```
 
-### 13.1.7 Gestión del Gateway en el Día a Día
+### 11.1.7 Gestión del Gateway en el Día a Día
 
 ```bash
 # Ver estado completo del gateway
@@ -406,7 +406,7 @@ curl -s http://localhost:8000/v1/models \
 # google/gemma-4-E2B-it
 ```
 
-### 13.1.8 Skills de OpenClaw
+### 11.1.8 Skills de OpenClaw
 
 Los skills amplían las capacidades del agente con herramientas adicionales. OpenClaw 2026.6.x incluye por defecto: memory core (memoria entre sesiones), web search (búsqueda Brave), y file transfer.
 
@@ -428,11 +428,11 @@ openclaw skills check
 
 ---
 
-## 13.2 NemoClaw — Capa de Seguridad sobre OpenClaw
+## 11.2 NemoClaw — Capa de Seguridad sobre OpenClaw
 
 NemoClaw agrega privacidad y control de seguridad a OpenClaw mediante un proxy de políticas que intercepta todas las solicitudes antes de que lleguen al gateway. Con JetPack 7.2, Jetson viene preconfigurado con las dependencias necesarias para NemoClaw sin configuración manual adicional.
 
-### 13.2.1 Arquitectura de NemoClaw
+### 11.2.1 Arquitectura de NemoClaw
 
 ```bash
 Arquitectura NemoClaw — JetPack 7.2
@@ -465,7 +465,7 @@ NemoClaw añade tres capas de protección que OpenClaw por sí solo no tiene:
 2. **Aislamiento del sistema de archivos**: el agente solo puede leer/escribir en directorios explícitamente permitidos
 3. **Control de red**: puede prohibir que el agente haga solicitudes hacia internet o hacia IPs privadas de la red corporativa
 
-### 13.2.2 Instalación con un Solo Comando (JP 7.2)
+### 11.2.2 Instalación con un Solo Comando (JP 7.2)
 
 ```bash
 # Instalación oficial NVIDIA — un solo comando
@@ -477,7 +477,7 @@ nemoclaw --version 2>/dev/null || \
   python3 -c "import nemoclaw; print('NemoClaw instalado')" 2>/dev/null
 ```
 
-### 13.2.3 Verificación de la Instalación y Gestión Manual
+### 11.2.3 Verificación de la Instalación y Gestión Manual
 
 Una vez instalado con el script oficial, gestione NemoClaw directamente mediante su CLI:
 
@@ -501,7 +501,7 @@ nemoclaw restart
 
 > **ADVERTENCIA:** El script `curl -fsSL nvidia.com/nemoclaw.sh | bash` crea el servicio pero **no lo habilita en boot** de forma automática. Esto es correcto para la arquitectura clean-start del Jetson. Utilice `nemoclaw start` cuando necesite el proxy activo.
 
-### 13.2.4 Recuperación Después de un Reinicio
+### 11.2.4 Recuperación Después de un Reinicio
 
 NemoClaw no persiste entre reinicios salvo que se configure explícitamente (no recomendado en esta guía). La secuencia de recuperación tras reinicio es:
 
@@ -526,7 +526,7 @@ curl -sf http://localhost:18789/health && echo "[OK] Gateway en :18789 activo"
 
 > **CONSEJO:** Añada el alias `start-nemoclaw='nemoclaw start'` a `~/.bashrc` para lanzarlo bajo demanda. El Capítulo 15 §15.8 documenta el patrón completo de aliases start/stop para todos los servicios del stack.
 
-### 13.2.5 Configurar el Proveedor de Inferencia Local
+### 11.2.5 Configurar el Proveedor de Inferencia Local
 
 Para ejecutar NemoClaw en modo completamente offline y privado, apuntarlo al servidor vLLM o Ollama local:
 
@@ -554,7 +554,7 @@ nemoclaw config show
 
 ---
 
-## 13.3 Jetson Agent Skills — Habilidades Automatizadas para el Dispositivo
+## 11.3 Jetson Agent Skills — Habilidades Automatizadas para el Dispositivo
 
 Los Jetson Agent Skills son paquetes de instrucciones ejecutables por el agente que automatizan tareas específicas del hardware Jetson: optimización de memoria, benchmarking de modelos, configuración del BSP (Board Support Package), perfiles de ventilador y diagnósticos de hardware.
 
@@ -562,7 +562,7 @@ Existen dos repositorios principales:
 - **jetson-device-skills**: Habilidades de software (memoria, benchmarking, diagnósticos)
 - **jetson-bsp-skills**: Habilidades de hardware (BSP, carrier board, I/O, energía)
 
-### 13.3.1 Jetson Device Skills — Instalación
+### 11.3.1 Jetson Device Skills — Instalación
 
 ```bash
 # Clonar Jetson Device Skills
@@ -590,7 +590,7 @@ ls skills/ 2>/dev/null || cat README.md | head -80
 | Package Recommendations | Sugiere el contenedor óptimo para la carga de trabajo | Ahorra horas de investigación de compatibilidad |
 | Diagnostics | Verificaciones de salud de GPU, térmica y memoria | Depuración rápida de problemas de rendimiento |
 
-### 13.3.2 Skill de Optimización de Memoria
+### 11.3.2 Skill de Optimización de Memoria
 
 El skill de optimización de memoria analiza el estado actual del sistema y sugiere (y opcionalmente aplica) configuraciones que liberan RAM para los modelos LLM:
 
@@ -618,7 +618,7 @@ python3 run_skill.py \
 free -h
 ```
 
-### 13.3.3 Skill de Benchmarking de Modelos
+### 11.3.3 Skill de Benchmarking de Modelos
 
 Este skill mide el rendimiento de diferentes modelos y motores de inferencia y genera un reporte comparativo:
 
@@ -648,7 +648,7 @@ python3 -m json.tool ~/jetson-ai-data/benchmark_results.json
 
 > **NOTA:** El Capítulo 14 de este libro cubre el benchmarking en detalle: top 10 modelos recomendados para el Jetson AGX Orin 64GB, metodología de medición y tablas comparativas completas.
 
-### 13.3.4 Jetson BSP Skills — Configuración del Board Support Package
+### 11.3.4 Jetson BSP Skills — Configuración del Board Support Package
 
 Los BSP Skills automatizan tareas de configuración a nivel de hardware que normalmente requerirían editar manualmente archivos de configuración del kernel o del gestor de energía:
 
@@ -691,11 +691,11 @@ python3 run_skill.py --skill diagnostics --full-report \
 
 ---
 
-## 13.4 Open WebUI — Interfaz Gráfica para Todos los Motores
+## 11.4 Open WebUI — Interfaz Gráfica para Todos los Motores
 
 Open WebUI proporciona una interfaz web estilo ChatGPT que conecta con cualquier motor de inferencia compatible con la API de OpenAI. Es la opción más accesible para usuarios que prefieren una interfaz gráfica en lugar de la terminal o WhatsApp.
 
-### 13.4.1 Instalación de Open WebUI
+### 11.4.1 Instalación de Open WebUI
 
 ```bash
 # Iniciar Open WebUI conectado a Ollama
@@ -734,7 +734,7 @@ En la primera visita, Open WebUI le pedirá crear una cuenta de administrador lo
 
 > **ADVERTENCIA:** El puerto por defecto de Open WebUI es 8080, lo que genera conflicto con el servidor llama.cpp (también en 8080). En la configuración de este libro, Open WebUI usa el **puerto 3000** para evitar este conflicto. Si ya tiene Open WebUI corriendo en 8080, detenga el contenedor y reinícielo con `-p 3000:8080`.
 
-### 13.4.2 Conectar Open WebUI a Múltiples Motores de Inferencia
+### 11.4.2 Conectar Open WebUI a Múltiples Motores de Inferencia
 
 Open WebUI puede conectarse simultáneamente a Ollama y a cualquier endpoint compatible con la API de OpenAI (vLLM, llama.cpp):
 
@@ -760,7 +760,7 @@ Alternativamente, desde la interfaz gráfica:
 - Agregar URL: `http://localhost:8000/v1` (vLLM) con API Key: `vllm-local`
 - Agregar URL: `http://localhost:8080/v1` (llama.cpp) con API Key: cualquier texto
 
-### 13.4.3 Configuración para Open WebUI como Interfaz de OpenClaw
+### 11.4.3 Configuración para Open WebUI como Interfaz de OpenClaw
 
 Open WebUI también puede usarse como interfaz de chat para el gateway OpenClaw, apuntando al endpoint local de vLLM que OpenClaw utiliza:
 
@@ -777,7 +777,7 @@ curl -s http://localhost:8000/v1/models \
 # Los mismos modelos que vLLM sirve aparecen disponibles automáticamente
 ```
 
-### 13.4.4 Mapa de Puertos del Stack Agéntico Completo
+### 11.4.4 Mapa de Puertos del Stack Agéntico Completo
 
 Una vez instalados todos los componentes, el Jetson expone los siguientes puertos:
 
@@ -793,7 +793,7 @@ Una vez instalados todos los componentes, el Jetson expone los siguientes puerto
 
 ---
 
-## 13.5 Verificación del Stack Completo
+## 11.5 Verificación del Stack Completo
 
 Ejecute este script de verificación para confirmar que todos los componentes están operativos:
 
@@ -895,7 +895,7 @@ chmod +x ~/scripts/verify-agentic-stack.sh
 
 ---
 
-## 13.6 Solución de Problemas Comunes
+## 11.6 Solución de Problemas Comunes
 
 ### OpenClaw: `Error: model not found`
 

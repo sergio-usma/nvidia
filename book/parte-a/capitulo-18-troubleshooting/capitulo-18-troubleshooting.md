@@ -8,7 +8,7 @@ Los errores están organizados por área: Docker y contenedores, modelos LLM, au
 
 ---
 
-## 16.1 Errores de Docker y Contenedores
+## 18.1 Errores de Docker y Contenedores
 
 ### Error 16.1.1 — "docker: Error response from daemon: unknown or invalid runtime name: nvidia"
 
@@ -156,7 +156,7 @@ docker run ... --restart no ...
 
 ---
 
-## 16.2 Errores de Modelos LLM
+## 18.2 Errores de Modelos LLM
 
 ### Error 16.2.1 — La respuesta del modelo llega como "content: None"
 
@@ -312,7 +312,7 @@ docker run ... --ipc host --shm-size 16g ...
 
 ---
 
-## 16.3 Errores de Red y Acceso Remoto
+## 18.3 Errores de Red y Acceso Remoto
 
 ### Error 16.3.1 — "Connection refused" desde otra máquina al Jetson
 
@@ -437,7 +437,7 @@ sudo systemctl restart gdm3
 
 ---
 
-## 16.4 Errores del Sistema Operativo
+## 18.4 Errores del Sistema Operativo
 
 ### Error 16.4.1 — El Jetson no arranca después de `apt upgrade`
 
@@ -585,7 +585,7 @@ which nvpmodel && nvpmodel -q
 
 ---
 
-## 16.5 Errores de vLLM y llama.cpp
+## 18.5 Errores de vLLM y llama.cpp
 
 ### Error 16.5.1 — "ValueError: max_model_len is too large"
 
@@ -633,9 +633,9 @@ docker run ... \
 
 ---
 
-## 16.6 Mejores Prácticas — Resumen
+## 18.6 Mejores Prácticas — Resumen
 
-### 16.6.1 Reglas de oro para el Jetson
+### 18.6.1 Reglas de oro para el Jetson
 
 | Práctica | Nunca | Siempre |
 |---------|-------|---------|
@@ -647,7 +647,7 @@ docker run ... \
 | Antes de lanzar un modelo grande | Sin verificar RAM libre | `check-ready 20 "nombre"` |
 | Temperatura máxima segura | >85°C sostenida | Configurar alertas en `jtop` |
 
-### 16.6.2 Comandos de diagnóstico más útiles
+### 18.6.2 Comandos de diagnóstico más útiles
 
 ```bash
 # Estado completo del sistema
@@ -670,7 +670,7 @@ du -sh ~/.cache/* 2>/dev/null | sort -h -r | head -10
 clean-ai-containers && jetson-clean && pwr-15w && sleep 10 && sys-status
 ```
 
-### 16.6.3 Checklist antes de reportar un problema
+### 18.6.3 Checklist antes de reportar un problema
 
 Antes de buscar ayuda en los foros de NVIDIA o abrir un issue, verifique:
 
@@ -704,7 +704,7 @@ df -h / /data 2>/dev/null
 
 ---
 
-## 16.7 Recursos de Ayuda
+## 18.7 Recursos de Ayuda
 
 **Comunidades oficiales:**
 - NVIDIA Developer Forums — Jetson AGX Orin: `forums.developer.nvidia.com`

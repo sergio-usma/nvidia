@@ -25,11 +25,11 @@ Con esta configuración, el Jetson es el servidor donde se ejecuta el código �
 
 ---
 
-## 17.1 Configurar VSCode Remote SSH
+## 19.1 Configurar VSCode Remote SSH
 
 > **NOTA — Capítulo previo:** Si configuró el acceso remoto SSH en el Capítulo 7, ya tiene una conexión SSH funcional al Jetson y su clave pública instalada. En ese caso, puede saltarse la sección 17.1.2 (ya tiene el archivo `~/.ssh/config` creado) e ir directamente a la sección 17.1.3 para conectar VSCode. Si se saltó el Capítulo 7, siga todos los pasos de esta sección.
 
-### 17.1.1 Instalar la Extensión Remote SSH en VSCode
+### 19.1.1 Instalar la Extensión Remote SSH en VSCode
 
 En su computadora (Windows/macOS/Linux):
 
@@ -42,7 +42,7 @@ También instale las extensiones complementarias:
 - **Remote - SSH: Editing Configuration Files** (misma colección de Microsoft)
 - **Python** (Microsoft) — se instalará automáticamente en el Jetson cuando conecte
 
-### 17.1.2 Configurar el Archivo SSH Config
+### 19.1.2 Configurar el Archivo SSH Config
 
 **En Windows (PowerShell o Notepad):** Edite `C:\Users\<SuUsuario>\.ssh\config`
 
@@ -61,7 +61,7 @@ Host jetson
 
 > Reemplace `192.168.1.100` con la IP estática del Jetson configurada en el Capítulo 7.
 
-### 17.1.3 Conectar VSCode al Jetson
+### 19.1.3 Conectar VSCode al Jetson
 
 1. En VSCode, pulse `F1` (o `Ctrl+Shift+P`) para abrir el Command Palette
 2. Escriba **Remote-SSH: Connect to Host...**
@@ -71,7 +71,7 @@ Host jetson
 
 La primera conexión tarda ~1 minuto mientras VSCode instala su servidor en el Jetson. Las siguientes conexiones son inmediatas.
 
-### 17.1.4 Instalar Extensiones Python en el Jetson (desde VSCode)
+### 19.1.4 Instalar Extensiones Python en el Jetson (desde VSCode)
 
 Con la ventana de VSCode conectada al Jetson:
 
@@ -85,11 +85,11 @@ Estas extensiones se instalan en el Jetson y se ejecutan allí. Su PC solo muest
 
 ---
 
-## 17.2 Crear el Entorno Virtual de Desarrollo
+## 19.2 Crear el Entorno Virtual de Desarrollo
 
 > **NOTA — Capítulo previo:** En el Capítulo 5 (Entorno de Shell) se creó el venv `~/venvs/llm` para los motores de inferencia. En este capítulo crearemos un venv separado `~/venvs/dev` dedicado al desarrollo Python — más limpio que instalar librerías de desarrollo en el mismo venv que los motores. Si ya creó el entorno `dev` en algún capítulo anterior, verifique con `ls ~/venvs/` y omita la creación.
 
-### 17.2.1 Entorno Virtual para Desarrollo Python
+### 19.2.1 Entorno Virtual para Desarrollo Python
 
 Abra un terminal integrado en VSCode (`Ctrl+Ñ` o `Ctrl+` ` `): verá una terminal que se ejecuta directamente en el Jetson.
 
@@ -115,7 +115,7 @@ pip install --upgrade pip wheel setuptools
 pip install ipykernel notebook jupyterlab rich requests httpx
 ```
 
-### 17.2.2 Seleccionar el Intérprete Python en VSCode
+### 19.2.2 Seleccionar el Intérprete Python en VSCode
 
 1. Pulse `F1` → **Python: Select Interpreter**
 2. Seleccione: **Enter interpreter path...**
@@ -124,7 +124,7 @@ pip install ipykernel notebook jupyterlab rich requests httpx
 
 ---
 
-## 17.3 PyTorch con CUDA 13.2.1 para JetPack 7.2
+## 19.3 PyTorch con CUDA 13.2.1 para JetPack 7.2
 
 > **NOTA — Conceptos clave para principiantes:**
 >
@@ -140,7 +140,7 @@ pip install ipykernel notebook jupyterlab rich requests httpx
 
 PyTorch en el Jetson no se instala con el pip normal — el wheel genérico de PyPI está compilado para x86_64. NVIDIA proporciona wheels específicos para JP 7.2.
 
-### 17.3.1 Instalar PyTorch para JP 7.2
+### 19.3.1 Instalar PyTorch para JP 7.2
 
 ```bash
 # Activar el venv de desarrollo
@@ -176,7 +176,7 @@ Dispositivo: Orin (nvgpu)
 Memoria GPU total: 64.0 GB
 ```
 
-### 17.3.2 Prueba de Tensor CUDA
+### 19.3.2 Prueba de Tensor CUDA
 
 ```python
 # test_cuda.py
@@ -214,11 +214,11 @@ Suma: 312.45   ← este valor varía con cada ejecución (números aleatorios)
 
 ---
 
-## 17.4 Jupyter Notebooks en el Jetson
+## 19.4 Jupyter Notebooks en el Jetson
 
 Jupyter Notebooks permiten combinar código Python, texto, gráficas y outputs en un solo documento interactivo. Con VSCode Remote SSH puede abrir notebooks en el browser de su PC mientras el código se ejecuta en el Jetson.
 
-### 17.4.1 Iniciar JupyterLab
+### 19.4.1 Iniciar JupyterLab
 
 ```bash
 # En el terminal del Jetson (via VSCode)
@@ -238,7 +238,7 @@ Abra en el browser de su PC: `http://192.168.1.100:8888/lab?token=jetson2024`
 
 Verá la interfaz de JupyterLab. El código que ejecute allí corre en el Jetson.
 
-### 17.4.2 Notebooks desde VSCode
+### 19.4.2 Notebooks desde VSCode
 
 VSCode con la extensión Jupyter puede abrir archivos `.ipynb` directamente:
 
@@ -250,11 +250,11 @@ El código corre en el Jetson pero la interfaz aparece en su PC.
 
 ---
 
-## 17.5 Experimento 1 — Llamar a Ollama desde Python
+## 19.5 Experimento 1 — Llamar a Ollama desde Python
 
 Este experimento conecta Python con el servidor Ollama local (instalado en el Capítulo 12) usando la API compatible con OpenAI.
 
-### 17.5.1 Prerrequisitos de Memoria
+### 19.5.1 Prerrequisitos de Memoria
 
 Antes de iniciar este experimento, verifique el estado del sistema:
 
@@ -271,7 +271,7 @@ ollama-start    # alias de Capítulo 12, o:
 sudo systemctl start ollama
 ```
 
-### 17.5.2 Cliente Python con SDK de OpenAI
+### 19.5.2 Cliente Python con SDK de OpenAI
 
 ```bash
 # Instalar el SDK de OpenAI (compatible con Ollama, vLLM y llama.cpp)
@@ -330,7 +330,7 @@ La memoria unificada del Jetson AGX Orin ofrece varias ventajas clave para la in
   Total: 332
 ```
 
-### 17.5.3 Streaming de Tokens en Tiempo Real
+### 19.5.3 Streaming de Tokens en Tiempo Real
 
 ```python
 # experimento_1b_streaming.py
@@ -357,11 +357,11 @@ print("\n\n[OK] Streaming completado")
 
 ---
 
-## 17.6 Experimento 2 — Llamar a vLLM desde Python
+## 19.6 Experimento 2 — Llamar a vLLM desde Python
 
 vLLM expone exactamente la misma API que OpenAI, con el mismo SDK. Solo cambia el `base_url` y el nombre del modelo.
 
-### 17.6.1 Prerrequisitos de Memoria
+### 19.6.1 Prerrequisitos de Memoria
 
 ```bash
 # Lanzar vLLM si no está activo (alias de Capítulo 15)
@@ -369,7 +369,7 @@ start-qwen35    # lanza el modelo 35B de Capítulo 14
 # o start-qwen4b para el modelo de 4B (más rápido, usa menos RAM)
 ```
 
-### 17.6.2 Cliente Python para vLLM
+### 19.6.2 Cliente Python para vLLM
 
 ```python
 # experimento_2_vllm.py
@@ -410,7 +410,7 @@ print(f"\n── Respuesta ──")
 print(respuesta.choices[0].message.content)
 ```
 
-### 17.6.3 Comparar Velocidad entre Motores
+### 19.6.3 Comparar Velocidad entre Motores
 
 ```python
 # experimento_2b_benchmark.py
@@ -445,18 +445,18 @@ print("════════════════════════�
 
 ---
 
-## 17.7 Experimento 3 — Hugging Face Transformers Directo (sin contenedor)
+## 19.7 Experimento 3 — Hugging Face Transformers Directo (sin contenedor)
 
 Para modelos pequeños (≤3B parámetros), puede cargarlos directamente en Python usando la librería `transformers` de Hugging Face, sin necesidad de contenedores ni servidores HTTP.
 
-### 17.7.1 Instalar Transformers
+### 19.7.1 Instalar Transformers
 
 ```bash
 # En el venv de desarrollo
 pip install transformers accelerate sentencepiece
 ```
 
-### 17.7.2 Cargar un Modelo Pequeño Directamente
+### 19.7.2 Cargar un Modelo Pequeño Directamente
 
 ```python
 # experimento_3_transformers.py
@@ -487,7 +487,7 @@ resultado = pipe(
 print(resultado[0]["generated_text"])
 ```
 
-### 17.7.3 Limpieza de Memoria tras el Experimento
+### 19.7.3 Limpieza de Memoria tras el Experimento
 
 ```python
 # Siempre liberar memoria GPU después de terminar con un modelo directo
@@ -516,7 +516,7 @@ Memoria GPU asignada: 0.00 GB
 
 ---
 
-## 17.8 Patrón de Desarrollo Recomendado
+## 19.8 Patrón de Desarrollo Recomendado
 
 <!-- INFOGRAFÍA: Patrón de Desarrollo en Jetson AGX Orin — diagrama circular/cíclico de 5 pasos: 1. Verificar estado (motors-status / free -h) → 2. Lanzar motor (start-qwen35 / ollama / vllm) → 3. Desarrollar/Experimentar (VSCode + Jupyter + Python) → 4. Terminar y Limpiar (kill model / gc.collect()) → 5. Verificar memoria libre → vuelve al paso 1. Paleta NVIDIA #0F3D3D / #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light — pendiente de diseño gráfico -->
 
@@ -545,7 +545,7 @@ El flujo de trabajo eficiente para desarrollar con LLMs en el Jetson sigue este 
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### 17.8.1 Script de Verificación Pre-Experimento
+### 19.8.1 Script de Verificación Pre-Experimento
 
 ```python
 # utils/pre_check.py — ejecutar al inicio de cada notebook
@@ -594,7 +594,7 @@ pip install psutil
 
 ---
 
-## 17.9 Limpieza Post-Experimento
+## 19.9 Limpieza Post-Experimento
 
 ```bash
 # Limpieza completa después de una sesión de desarrollo
@@ -620,7 +620,7 @@ pwr-15w
 
 ---
 
-## 17.10 Verificación Final del Capítulo
+## 19.10 Verificación Final del Capítulo
 
 ```bash
 # Verificación de configuración de desarrollo
@@ -684,13 +684,13 @@ echo "════════════════════════�
 
 ---
 
-## 17.9 Mini-Proyecto: Transcriptor de Audio con GPU
+## 19.9 Mini-Proyecto: Transcriptor de Audio con GPU
 
 Este proyecto une todo lo aprendido en el capítulo: VSCode Remote SSH para editar el notebook, el venv `dev` como kernel, y la GPU del Jetson para acelerar la transcripción de audio en español.
 
 **Factor wow:** Con su Jetson, puede transcribir un audio de 10 minutos en menos de 2 minutos — completamente offline, sin enviar datos a ningún servidor externo, con calidad comparable a servicios cloud.
 
-### 17.9.1 Requisito Previo: faster-whisper activo
+### 19.9.1 Requisito Previo: faster-whisper activo
 
 ```bash
 # Verificar que faster-whisper está corriendo (capítulo 13)
@@ -698,7 +698,7 @@ curl -sf http://localhost:8000/health && echo "[OK] faster-whisper activo" \
   || echo "[!] Iniciar faster-whisper primero (ver Capítulo 13, sección 29.1.2)"
 ```
 
-### 17.9.2 Notebook — audio_transcriber.ipynb
+### 19.9.2 Notebook — audio_transcriber.ipynb
 
 Cree el archivo `~/notebooks/audio_transcriber.ipynb` en VSCode y agregue las siguientes celdas:
 

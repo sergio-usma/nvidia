@@ -21,7 +21,7 @@ El resultado: en lugar de compilar Whisper desde fuente (3–4 horas), ejecuta u
 
 ---
 
-## 18.1 Por qué no usar Docker Hub genérico
+## 20.1 Por qué no usar Docker Hub genérico
 
 <!-- INFOGRAFÍA: Por Qué jetson-containers en Lugar de Docker Hub Genérico — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -51,7 +51,7 @@ Las imágenes de Docker Hub estándar (como `openai/whisper` o `pytorch/pytorch`
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 18.1.1 ¿Qué hace `jetson-containers` diferente?
+### 20.1.1 ¿Qué hace `jetson-containers` diferente?
 
 1. **Compilación nativa ARM64** — no emulación
 2. **CUDA con librerías Tegra** — incluye `libcuda.so.1`, `libcurand`, `libcudnn` para Jetson
@@ -61,7 +61,7 @@ Las imágenes de Docker Hub estándar (como `openai/whisper` o `pytorch/pytorch`
 
 ---
 
-## 18.2 Sistema de Tags de jetson-containers
+## 20.2 Sistema de Tags de jetson-containers
 
 Cada imagen de jetson-containers sigue el esquema:
 
@@ -75,7 +75,7 @@ Ejemplos:
 - `dustynv/kokoro-tts:r39.2.0` — JP 7.2
 - `dustynv/ollama:r39.2.0` — JP 7.2
 
-### 18.2.1 Cómo verificar tags disponibles para JP 7.2
+### 20.2.1 Cómo verificar tags disponibles para JP 7.2
 
 ```bash
 # Verificar tags disponibles para un contenedor específico
@@ -123,7 +123,7 @@ except:
 done
 ```
 
-### 18.2.2 Tag de Fallback
+### 20.2.2 Tag de Fallback
 
 Si `r39.2.0` no existe para un contenedor específico, use el tag `r36.4.0` con precaución:
 
@@ -139,13 +139,13 @@ docker pull dustynv/<servicio>:r36.4.0
 
 ---
 
-## 18.3 Catálogo de Contenedores más Relevantes
+## 20.3 Catálogo de Contenedores más Relevantes
 
 > **NOTA — Compatibilidad con JP 7.2:** Los tags `r39.2.0` corresponden a JetPack 7.2 (L4T r39.x). Siempre verifique la disponibilidad del tag antes de hacer `docker pull` usando el script de la sección 18.2.1. Si `r39.2.0` no está disponible, use `r36.4.0` (JP 6.2) como fallback provisional — la mayoría de contenedores son retrocompatibles, aunque algunas funcionalidades CUDA 13 pueden no estar optimizadas.
 
 > **NOTA — Conectar desde el IDE antes de cada proyecto:** Antes de ejecutar cualquier mini-proyecto de este capítulo, conéctese al Jetson desde VSCode con la extensión Remote SSH (Capítulo 17). Esto le permite editar los scripts directamente en el Jetson y ver los logs en tiempo real en la terminal integrada.
 
-### 18.3.1 Modelos de Lenguaje y Servidores de Inferencia
+### 20.3.1 Modelos de Lenguaje y Servidores de Inferencia
 
 | Contenedor | Descripción | Puerto | JP 7.2 | Uso en el libro |
 |-----------|-------------|--------|--------|----------------|
@@ -155,7 +155,7 @@ docker pull dustynv/<servicio>:r36.4.0
 | `dustynv/text-generation-webui` | Interfaz web oobabooga | 7860 | Pendiente r39.x | Experimentación |
 | `dustynv/lm-benchmark` | Benchmark de LLMs | — | Pendiente r39.x | Testing |
 
-### 18.3.2 Speech-to-Text (STT)
+### 20.3.2 Speech-to-Text (STT)
 
 | Contenedor | Descripción | Puerto | JP 7.2 | Uso |
 |-----------|-------------|--------|--------|-----|
@@ -166,7 +166,7 @@ docker pull dustynv/<servicio>:r36.4.0
 
 > **Recomendación:** Use `faster-whisper` para transcripción de archivos y `speaches` para voz en tiempo real (streaming optimizado).
 
-### 18.3.3 Text-to-Speech (TTS)
+### 20.3.3 Text-to-Speech (TTS)
 
 | Contenedor | Descripción | Puerto | JP 7.2 | Voces |
 |-----------|-------------|--------|--------|-------|
@@ -176,7 +176,7 @@ docker pull dustynv/<servicio>:r36.4.0
 
 > **Recomendación:** `kokoro-tts` para calidad (pódcast, presentaciones); `piper-tts` para velocidad (<200ms, ideal para asistente de voz).
 
-### 18.3.4 Visión Computacional
+### 20.3.4 Visión Computacional
 
 | Contenedor | Descripción | Puerto | Uso |
 |-----------|-------------|--------|-----|
@@ -186,7 +186,7 @@ docker pull dustynv/<servicio>:r36.4.0
 | `dustynv/nanoowl` | Object detection zero-shot | — | Robótica |
 | `dustynv/nanosam` | Segment Anything Model | — | Visión |
 
-### 18.3.5 Embeddings y RAG
+### 20.3.5 Embeddings y RAG
 
 | Contenedor | Descripción | Puerto | Uso |
 |-----------|-------------|--------|-----|
@@ -194,7 +194,7 @@ docker pull dustynv/<servicio>:r36.4.0
 | `dustynv/clip-trt` | CLIP multimodal (TensorRT) | — | Embeddings imagen |
 | `dustynv/text-embeddings-inference` | Embeddings texto vía API | 8080 | RAG |
 
-### 18.3.6 Robótica y ROS
+### 20.3.6 Robótica y ROS
 
 | Contenedor | Descripción | Uso |
 |-----------|-------------|-----|
@@ -202,7 +202,7 @@ docker pull dustynv/<servicio>:r36.4.0
 | `dustynv/ros:iron` | ROS 2 Iron | Robótica |
 | `dustynv/isaac-ros-visual-slam` | Visual SLAM | Navegación autónoma |
 
-### 18.3.7 Herramientas de Desarrollo
+### 20.3.7 Herramientas de Desarrollo
 
 | Contenedor | Descripción | Puerto |
 |-----------|-------------|--------|
@@ -213,7 +213,7 @@ docker pull dustynv/<servicio>:r36.4.0
 
 ---
 
-## 18.4 Mapa de Puertos — Referencia Completa
+## 20.4 Mapa de Puertos — Referencia Completa
 
 <!-- INFOGRAFÍA: Mapa de Puertos — Todos los Servicios del Jetson — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -247,11 +247,11 @@ REGLA: Nunca más de 2 contenedores GPU activos simultáneamente
 
 ---
 
-## 18.5 Tutorial Completo — Primer Contenedor: faster-whisper
+## 20.5 Tutorial Completo — Primer Contenedor: faster-whisper
 
 Este tutorial completo le enseña el ciclo de vida de cualquier contenedor de jetson-containers: pull → verificar → ejecutar → probar → detener → limpiar.
 
-### 18.5.1 Verificar el Tag Correcto para JP 7.2
+### 20.5.1 Verificar el Tag Correcto para JP 7.2
 
 ```bash
 # Verificar tags disponibles de faster-whisper
@@ -273,7 +273,7 @@ Tags de faster-whisper:
   ...
 ```
 
-### 18.5.2 Descargar la Imagen
+### 20.5.2 Descargar la Imagen
 
 ```bash
 # Descargar la imagen para JP 7.2 (tarda 5-10 min dependiendo de la conexión)
@@ -298,7 +298,7 @@ docker images | grep faster-whisper
 dustynv/faster-whisper   1.0.3-r39.2.0   <id>    <date>   2.85GB
 ```
 
-### 18.5.3 Ejecutar faster-whisper
+### 20.5.3 Ejecutar faster-whisper
 
 ```bash
 # Iniciar el servidor faster-whisper en modo daemon
@@ -345,7 +345,7 @@ Uvicorn running on http://0.0.0.0:8000
 
 > Para español, use `medium` o `large-v3`. Para inglés exclusivamente, `base.en` ofrece excelente relación velocidad/calidad.
 
-### 18.5.4 Probar la Transcripción con su Propia Voz
+### 20.5.4 Probar la Transcripción con su Propia Voz
 
 El mejor audio de prueba es **una grabación real suya**: el modelo reconocerá su acento y cadencia natural, lo que hace la prueba mucho más útil que un tono generado artificialmente.
 
@@ -394,7 +394,7 @@ funciona correctamente con español latinoamericano.
 > ```
 > El audio sintético es menos representativo pero sirve para verificar que el servidor responde.
 
-### 18.5.5 Script Python de Transcripción Completa
+### 20.5.5 Script Python de Transcripción Completa
 
 ```python
 # test_faster_whisper.py
@@ -427,7 +427,7 @@ resultado = transcribir("/tmp/test_audio.wav", modelo="base.en")
 print(f"Transcripción: {resultado.get('text', 'Sin resultado')}")
 ```
 
-### 18.5.6 Detener y Limpiar
+### 20.5.6 Detener y Limpiar
 
 ```bash
 # Detener el contenedor (el modelo descargado permanece en el caché)
@@ -448,9 +448,9 @@ CONTAINER ID   IMAGE   COMMAND   CREATED   STATUS   PORTS   NAMES
 
 ---
 
-## 18.6 Tutorial Completo — Second Contenedor: kokoro-tts
+## 20.6 Tutorial Completo — Second Contenedor: kokoro-tts
 
-### 18.6.1 Descargar y Ejecutar kokoro-tts
+### 20.6.1 Descargar y Ejecutar kokoro-tts
 
 ```bash
 # Verificar tag disponible primero
@@ -475,7 +475,7 @@ sleep 15
 kill %1 2>/dev/null
 ```
 
-### 18.6.2 Probar Síntesis de Voz
+### 20.6.2 Probar Síntesis de Voz
 
 ```bash
 # Sintetizar texto a audio
@@ -518,7 +518,7 @@ aplay /tmp/salida_tts.wav
 curl -s http://localhost:8880/v1/voices | python3 -m json.tool
 ```
 
-### 18.6.3 Limpiar Después del Mini-Proyecto
+### 20.6.3 Limpiar Después del Mini-Proyecto
 
 ```bash
 # Detener y eliminar el contenedor kokoro-tts
@@ -533,11 +533,11 @@ free -h | awk '/^Mem:/{printf "RAM libre: %s de %s\n", $7, $2}'
 
 ---
 
-## 18.7 Gestión de Imágenes y Espacio en Disco
+## 20.7 Gestión de Imágenes y Espacio en Disco
 
 Las imágenes de jetson-containers son grandes (1–5 GB cada una). Gestione el espacio con cuidado.
 
-### 18.7.1 Monitorear Uso de Espacio
+### 20.7.1 Monitorear Uso de Espacio
 
 ```bash
 # Ver espacio total de Docker
@@ -557,7 +557,7 @@ dustynv/faster-whisper:1.0.3-r39.2.0        2.85GB
 dustynv/kokoro-tts:r39.2.0                  1.24GB
 ```
 
-### 18.7.2 Limpieza Selectiva
+### 20.7.2 Limpieza Selectiva
 
 ```bash
 # Eliminar una imagen específica
@@ -571,7 +571,7 @@ docker image prune -a -f
 # docker system prune -a -f
 ```
 
-### 18.7.3 Script de Estado del Ecosistema jetson-containers
+### 20.7.3 Script de Estado del Ecosistema jetson-containers
 
 ```bash
 # Crear el script
@@ -630,7 +630,7 @@ source ~/.bash_aliases || source ~/.bashrc
 
 ---
 
-## 18.8 Script de Limpieza de Contenedores de Proyectos
+## 20.8 Script de Limpieza de Contenedores de Proyectos
 
 ```bash
 # Crear el script de limpieza
@@ -678,7 +678,7 @@ source ~/.bash_aliases || source ~/.bashrc
 
 ---
 
-## 18.9 Uso de la CLI Oficial jetson-containers (Opcional)
+## 20.9 Uso de la CLI Oficial jetson-containers (Opcional)
 
 Además de los comandos `docker` manuales, el proyecto ofrece una CLI que automatiza la construcción local desde código fuente.
 
@@ -703,7 +703,7 @@ jetson-containers run dustynv/faster-whisper
 
 ---
 
-## 18.10 Prerrequisito Memory Check por Pipeline
+## 20.10 Prerrequisito Memory Check por Pipeline
 
 Antes de cada pipeline de , valide la memoria disponible:
 
@@ -757,7 +757,7 @@ check-ready 20 "PDF-to-podcast"
 
 ---
 
-## 18.11 Verificación Final del Capítulo
+## 20.11 Verificación Final del Capítulo
 
 ```bash
 # Verificación de configuración de jetson-containers

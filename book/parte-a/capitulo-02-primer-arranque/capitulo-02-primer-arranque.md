@@ -18,7 +18,7 @@ Esta parte cubre los pasos que van desde un Jetson AGX Orin recién sacado de la
 
 ---
 
-## 1.1 Paso 0 — Respaldar el Sistema Anterior (si aplica)
+## 2.1 Paso 0 — Respaldar el Sistema Anterior (si aplica)
 
 Si su Jetson tiene JetPack 6.x instalado con configuraciones que quiere conservar, respalde lo necesario antes de flashear. El proceso de flash borra completamente el almacenamiento interno.
 
@@ -53,11 +53,11 @@ scp -r jetson@192.168.1.100:~/jp62_backup/ C:\Users\TuUsuario\jetson_backup\
 
 ---
 
-## 1.2 Paso 1 — Flashear JetPack 7.2 con ISO
+## 2.2 Paso 1 — Flashear JetPack 7.2 con ISO
 
 JetPack 7.2 introduce un método de instalación basado en **imagen ISO unificada** — a diferencia de versiones anteriores, no necesita una máquina Linux auxiliar ni el SDK Manager. El proceso es equivalente a instalar Ubuntu desde un USB: crea el USB en Windows, lo inserta en el Jetson y arranca desde él.
 
-### 1.2.1 Descargar la imagen ISO
+### 2.2.1 Descargar la imagen ISO
 
 Vaya a la página oficial de descargas de NVIDIA JetPack:
 
@@ -70,7 +70,7 @@ Seleccione:
 
 El archivo descargado tendrá un nombre similar a `jetpack_7.2_agx_orin.iso` y ocupa aproximadamente 5–8 GB.
 
-### 1.2.2 Crear el USB booteable desde Windows
+### 2.2.2 Crear el USB booteable desde Windows
 
 La herramienta **recomendada oficialmente por NVIDIA** es **Balena Etcher** (etcher.balena.io), disponible gratuitamente para Windows, macOS y Linux:
 
@@ -86,7 +86,7 @@ La herramienta **recomendada oficialmente por NVIDIA** es **Balena Etcher** (etc
 
 > **ALTERNATIVA — Rufus:** Si prefiere usar Rufus (rufus.ie), configure: Device = su USB, Boot selection = ISO de JetPack 7.2, Partition scheme = GPT, Target system = UEFI (non CSM), File system = FAT32, y haga clic en START. Ambas herramientas producen un resultado equivalente.
 
-### 1.2.3 Poner el Jetson en modo Force Recovery
+### 2.2.3 Poner el Jetson en modo Force Recovery
 
 <!-- INFOGRAFÍA: Pasos para Poner el Jetson en Modo Force Recovery — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -129,7 +129,7 @@ Si el método de Force Recovery no le funciona o no está seguro de qué puerto 
 
 > **NOTA:** Este método alternativo puede funcionar mejor en algunos kits de desarrollo. Consulte también la guía oficial del fabricante en `docs.nvidia.com/jetson/agx-orin-devkit/user-guide/latest/quick_start.html` si tiene dudas sobre el procedimiento específico de su hardware.
 
-### 1.2.4 Proceso de flash
+### 2.2.4 Proceso de flash
 
 El Jetson arrancará desde el USB y mostrará una interfaz gráfica de instalación de JetPack. Siga las instrucciones en pantalla:
 
@@ -144,11 +144,11 @@ Al terminar, el Jetson se reiniciará automáticamente. Retire el USB cuando vea
 
 ---
 
-## 1.3 Paso 2 — Primer Boot y Wizard OEM
+## 2.3 Paso 2 — Primer Boot y Wizard OEM
 
 Cuando el Jetson arranque por primera vez tras el flash, mostrará el **asistente de configuración inicial** (oem-config). Necesitará monitor, teclado y mouse para este paso. Es la única vez.
 
-### 1.3.1 Configuración durante el wizard
+### 2.3.1 Configuración durante el wizard
 
 Complete el wizard con los siguientes valores. Algunos son sugeridos — puede cambiarlos si lo prefiere, pero las rutas en este tutorial asumen `jetson` como nombre de usuario:
 
@@ -163,7 +163,7 @@ Complete el wizard con los siguientes valores. Algunos son sugeridos — puede c
 
 Cuando el wizard termine, verá el escritorio de Ubuntu 24.04. Abra una terminal con `Ctrl+Alt+T`.
 
-### 1.3.2 Verificación inmediata del sistema
+### 2.3.2 Verificación inmediata del sistema
 
 Lo primero que debe hacer tras el wizard es confirmar que JetPack 7.2 se instaló correctamente:
 
@@ -189,11 +189,11 @@ ls /usr/local/cuda/bin/nvcc && echo "nvcc encontrado" || echo "nvcc: se configur
 
 ---
 
-## 1.4 Paso 3 — Configuración Base del Sistema
+## 2.4 Paso 3 — Configuración Base del Sistema
 
 Este paso configura el sistema operativo Ubuntu 24.04 para uso con el Jetson: actualización, herramientas esenciales, `jtop` (el monitor especializado del Jetson), hostname y path de CUDA.
 
-### 1.4.1 Actualización del sistema
+### 2.4.1 Actualización del sistema
 
 ```bash
 # Actualizar lista de paquetes e instalar actualizaciones
@@ -212,7 +212,7 @@ Get:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease [256 kB]
 
 > **IMPORTANTE:** En el Jetson, NUNCA use `sudo apt dist-upgrade` ni `sudo apt full-upgrade`. Estos comandos pueden actualizar el kernel o los paquetes de JetPack a versiones incompatibles con los drivers de NVIDIA, dejando el sistema sin GPU. Use únicamente `sudo apt upgrade -y`.
 
-### 1.4.2 Instalar herramientas esenciales
+### 2.4.2 Instalar herramientas esenciales
 
 ```bash
 # Instalar herramientas de desarrollo y administración
@@ -247,7 +247,7 @@ Setting up build-essential (12.10ubuntu1) ...
 | `python3-venv pipx` | Ubuntu 24.04 requiere entornos virtuales para pip |
 | `libopenblas-dev` | Dependencia de compilación para PyTorch y llama.cpp |
 
-### 1.4.3 Configurar PATH de CUDA
+### 2.4.3 Configurar PATH de CUDA
 
 En JetPack 7.2, el compilador CUDA (`nvcc`) está instalado en `/usr/local/cuda/bin/` pero esa ruta no está en el PATH por defecto. Este es el "fix requerido" que aparece en las especificaciones del sistema:
 
@@ -270,7 +270,7 @@ Cuda compilation tools, release 13.2, V13.2.1
 Build cuda_13.2.r13.2/compiler.xxxxx_0
 ```
 
-### 1.4.4 Instalar jtop (monitor especializado del Jetson)
+### 2.4.4 Instalar jtop (monitor especializado del Jetson)
 
 `jtop` es el equivalente de `htop` para el Jetson: muestra el uso de CPU, GPU, temperatura, frecuencias, modo de energía y consumo en tiempo real. Es la herramienta de diagnóstico más importante para este sistema.
 
@@ -310,7 +310,7 @@ Presione `q` para salir de jtop.
 
 > **NOTA:** Si `jtop` dice `Service not running` al primer inicio, ejecute `sudo systemctl start jtop` y luego vuelva a lanzarlo.
 
-### 1.4.5 Configurar hostname
+### 2.4.5 Configurar hostname
 
 El hostname `jetson-orin` identifica el equipo en la red y aparece en el prompt de la terminal:
 
@@ -335,7 +335,7 @@ bash
 # El prompt debe mostrar: jetson@jetson-orin:~$
 ```
 
-### 1.4.6 Configurar tmux para trabajo headless
+### 2.4.6 Configurar tmux para trabajo headless
 
 `tmux` es un multiplexor de terminal que permite mantener sesiones activas aunque se desconecte de SSH. Es imprescindible para tareas largas como compilaciones (que tardan 30–60 minutos) o descargas de modelos (que pueden tomar horas).
 
@@ -407,11 +407,11 @@ main: 1 windows (created ...)
 
 ---
 
-## 1.5 Paso 4 — Red y Dirección IP Estática
+## 2.5 Paso 4 — Red y Dirección IP Estática
 
 Asignar una IP estática al Jetson es fundamental para que SSH siempre conecte a la misma dirección. Sin IP estática, el router puede asignar una IP diferente tras cada reinicio y perdería el acceso.
 
-### 1.5.1 Identificar la conexión Ethernet
+### 2.5.1 Identificar la conexión Ethernet
 
 ```bash
 # Ver conexiones de red disponibles
@@ -432,7 +432,7 @@ lo        loopback  unmanaged  --
 ip addr show eth0 | grep "inet "
 ```
 
-### 1.5.2 Asignar IP estática con NetworkManager
+### 2.5.2 Asignar IP estática con NetworkManager
 
 ```bash
 # Reemplazar "Wired connection 1" con el nombre real de su conexión
@@ -466,7 +466,7 @@ hostname -I
 
 > **IMPORTANTE:** Si la IP de su red local no es `192.168.1.x`, ajuste la dirección, gateway y DNS según corresponda. Las partes avanzadas del tutorial (Capítulo 13 — OpenClaw) referencias esta IP. Si cambia la IP, también deberá actualizar los archivos de configuración SSH en Windows.
 
-### 1.5.3 Deshabilitar la espera de red en el arranque
+### 2.5.3 Deshabilitar la espera de red en el arranque
 
 Por defecto, Ubuntu espera hasta 2 minutos a que la red esté disponible antes de completar el boot. Esto ralentiza innecesariamente el inicio del sistema:
 
@@ -479,11 +479,11 @@ echo "[OK] Espera de red en boot deshabilitada"
 
 ---
 
-## 1.6 Paso 5 — SSH: Primera Conexión desde Windows
+## 2.6 Paso 5 — SSH: Primera Conexión desde Windows
 
 A partir de este paso, todo el trabajo se realiza desde Windows vía SSH. Puede desconectar el monitor del Jetson.
 
-### 1.6.1 Instalar y configurar SSH server en el Jetson
+### 2.6.1 Instalar y configurar SSH server en el Jetson
 
 ```bash
 # Instalar SSH server
@@ -533,7 +533,7 @@ sudo systemctl status ssh | grep -E "Active|Loaded"
      Active: active (running) since ...
 ```
 
-### 1.6.2 Configurar SSH en Windows
+### 2.6.2 Configurar SSH en Windows
 
 **En Windows PowerShell** (no en el Jetson), genere una clave SSH y cópiela al Jetson:
 
@@ -583,7 +583,7 @@ jetson@jetson-orin:~$
 
 **A partir de este momento, todas las operaciones se realizan desde la terminal SSH en Windows.** Puede desconectar el monitor, teclado y mouse del Jetson.
 
-### 1.6.3 Agregar el Jetson al archivo hosts de Windows (opcional pero recomendado)
+### 2.6.3 Agregar el Jetson al archivo hosts de Windows (opcional pero recomendado)
 
 ```powershell
 # Ejecutar como Administrador en Windows PowerShell [EN WINDOWS POWERSHELL]
@@ -592,7 +592,7 @@ Add-Content "C:\Windows\System32\drivers\etc\hosts" "192.168.1.100`tjetson-orin"
 ping jetson-orin
 ```
 
-### 1.6.4 Deshabilitar autenticación por contraseña (después de confirmar las claves)
+### 2.6.4 Deshabilitar autenticación por contraseña (después de confirmar las claves)
 
 Una vez que SSH funciona sin contraseña, desactive la autenticación por contraseña para mayor seguridad:
 
@@ -608,7 +608,7 @@ echo "[OK] Autenticación por contraseña deshabilitada"
 
 ---
 
-## 1.7 Verificación Final del Capítulo
+## 2.7 Verificación Final del Capítulo
 
 Al final de esta parte, ejecute la verificación completa desde SSH en Windows:
 

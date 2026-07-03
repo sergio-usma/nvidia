@@ -16,7 +16,7 @@ Con el Jetson funcionando en modo headless (Capítulo 2), SSH activo y NoMachine
 
 ---
 
-## 7.1 Verificar Conectividad SSH desde Windows
+## 8.1 Verificar Conectividad SSH desde Windows
 
 Antes de configurar los IDEs, confirme que la conexión SSH base funciona correctamente:
 
@@ -31,7 +31,7 @@ ssh jetson
 jetson@jetson-orin:~$
 ```
 
-### 7.1.1 Configurar `ssh jetson` si no existe
+### 8.1.1 Configurar `ssh jetson` si no existe
 
 Si el alias `ssh jetson` no está configurado, créelo ahora en Windows:
 
@@ -64,11 +64,11 @@ ssh jetson
 
 ---
 
-## 7.2 VSCode Remote SSH
+## 8.2 VSCode Remote SSH
 
 VSCode Remote SSH es la forma más eficiente de desarrollar en el Jetson. El editor corre en Windows con toda la UI familiar, pero el servidor de lenguaje, el terminal integrado, las extensiones de Python y la ejecución de código ocurren 100% en el Jetson.
 
-### 7.2.1 Instalar la Extensión Remote SSH
+### 8.2.1 Instalar la Extensión Remote SSH
 
 1. Abra VSCode en Windows
 2. Presione `Ctrl+Shift+X` (Extensiones)
@@ -79,7 +79,7 @@ También instale estas extensiones relacionadas:
 - **Remote - SSH: Editing Configuration Files** (para editar `~/.ssh/config` desde VSCode)
 - **Python** (publicada por Microsoft) — se instalará también en el Jetson automáticamente
 
-### 7.2.2 Conectar VSCode al Jetson
+### 8.2.2 Conectar VSCode al Jetson
 
 1. Presione `Ctrl+Shift+P` → escriba `Remote-SSH: Connect to Host...`
 2. Seleccione `jetson` (aparecerá desde su `~/.ssh/config`)
@@ -94,7 +94,7 @@ También instale estas extensiones relacionadas:
 [11:23:48.001] Connected!
 ```
 
-### 7.2.3 Abrir la carpeta de trabajo en el Jetson
+### 8.2.3 Abrir la carpeta de trabajo en el Jetson
 
 Una vez conectado:
 
@@ -104,7 +104,7 @@ Una vez conectado:
 
 Ahora puede crear, editar y ejecutar archivos directamente en el Jetson. El terminal integrado (`Ctrl+\``) abre una terminal en el Jetson.
 
-### 7.2.4 Instalar extensiones Python en el Jetson
+### 8.2.4 Instalar extensiones Python en el Jetson
 
 Con la conexión activa, instale las extensiones en el **servidor remoto** (el Jetson):
 
@@ -115,7 +115,7 @@ Con la conexión activa, instale las extensiones en el **servidor remoto** (el J
 
 Las extensiones marcadas con `(SSH: jetson)` corren en el Jetson y tienen acceso a CUDA, PyTorch y todas las bibliotecas instaladas.
 
-### 7.2.5 Seleccionar el intérprete Python
+### 8.2.5 Seleccionar el intérprete Python
 
 ```bash
 # Ctrl+Shift+P -> "Python: Select Interpreter"
@@ -135,7 +135,7 @@ Las extensiones marcadas con `(SSH: jetson)` corren en el Jetson y tienen acceso
 }
 ```
 
-### 7.2.6 Ejecutar y depurar código en el Jetson
+### 8.2.6 Ejecutar y depurar código en el Jetson
 
 Con VSCode remoto, el botón "Run" (`F5`) ejecuta el script directamente en el Jetson con acceso a la GPU. El depurador funciona igual que localmente — puntos de interrupción, inspección de variables, call stack.
 
@@ -156,19 +156,19 @@ VRAM: 62.8 GB
 
 ---
 
-## 7.3 PyCharm via JetBrains Gateway
+## 8.3 PyCharm via JetBrains Gateway
 
 PyCharm Professional ofrece el depurador más completo para Python, con soporte de Django, Flask, profiling y análisis de memoria. JetBrains Gateway permite conectarlo al Jetson sin instalar PyCharm en el dispositivo.
 
 > **IMPORTANTE:** JetBrains Gateway requiere una suscripción a PyCharm Professional (a partir de ~8 USD/mes). Existe un **período de prueba gratuito de 30 días** — suficiente para seguir los capítulos de proyectos avanzados de este libro antes de decidir si continuar.
 
-### 7.3.1 Instalar JetBrains Gateway en Windows
+### 8.3.1 Instalar JetBrains Gateway en Windows
 
 1. Descargue JetBrains Gateway desde `jetbrains.com/remote-development/gateway`
 2. Instale y abra Gateway
 3. En la pantalla principal, seleccione **SSH**
 
-### 7.3.2 Crear una conexión SSH al Jetson
+### 8.3.2 Crear una conexión SSH al Jetson
 
 1. Clic en **New Connection**
 2. Host: `192.168.1.100` (su IP estática del Capítulo 2) | Puerto: `22` | Usuario: `jetson`
@@ -181,7 +181,7 @@ Connection test successful.
 SSH fingerprint: SHA256:... (accept once)
 ```
 
-### 7.3.3 Seleccionar IDE y carpeta remota
+### 8.3.3 Seleccionar IDE y carpeta remota
 
 1. En la siguiente pantalla, seleccione **PyCharm** como IDE
 2. Gateway descargará e instalará el servidor de PyCharm en el Jetson (~300 MB, una sola vez)
@@ -190,7 +190,7 @@ SSH fingerprint: SHA256:... (accept once)
 
 Después de 1–2 minutos, PyCharm se abrirá en su PC conectado al Jetson.
 
-### 7.3.4 Configurar el intérprete Python en PyCharm
+### 8.3.4 Configurar el intérprete Python en PyCharm
 
 1. `File → Settings → Project → Python Interpreter`
 2. Clic en el engranaje → **Add Interpreter → On SSH**
@@ -210,11 +210,11 @@ Orin (Ampere)
 
 ---
 
-## 7.4 Transferencia de Archivos: SCP y rsync
+## 8.4 Transferencia de Archivos: SCP y rsync
 
 SCP (Secure Copy) y rsync transfieren archivos entre su PC Windows y el Jetson sin software adicional — usan el mismo canal SSH ya configurado en el Capítulo 2.
 
-### 7.4.1 Copiar archivos desde Windows al Jetson
+### 8.4.1 Copiar archivos desde Windows al Jetson
 
 ```bash
 # [EN WINDOWS POWERSHELL] Copiar un archivo al Jetson
@@ -227,7 +227,7 @@ scp -r C:\Users\sergi\Documents\proyecto\ jetson:~/projects/
 scp -p C:\Users\sergi\scripts\setup.sh jetson:~/scripts/
 ```
 
-### 7.4.2 Descargar archivos del Jetson a Windows
+### 8.4.2 Descargar archivos del Jetson a Windows
 
 ```bash
 # [EN WINDOWS POWERSHELL] Descargar un archivo del Jetson
@@ -245,7 +245,7 @@ ssh jetson du -sh ~/data/models/gguf/
 8.1G    /home/jetson/data/models/gguf/
 ```
 
-### 7.4.3 Sincronización eficiente con rsync
+### 8.4.3 Sincronización eficiente con rsync
 
 Para transferencias frecuentes o directorios grandes, rsync es más eficiente que scp — solo transfiere los cambios:
 
@@ -267,11 +267,11 @@ sent 1,247 bytes  received 62 bytes  1,309.00 bytes/sec
 
 ---
 
-## 7.5 SSH Tunnels — Acceso a Servicios del Jetson desde Windows
+## 8.5 SSH Tunnels — Acceso a Servicios del Jetson desde Windows
 
 Los SSH tunnels permiten acceder desde su PC Windows a servicios que corren en el Jetson (APIs, interfaces web, Jupyter) sin exponer puertos directamente a internet.
 
-### 7.5.1 ¿Para qué sirven?
+### 8.5.1 ¿Para qué sirven?
 
 | Servicio en el Jetson | Puerto | Acceso desde Windows con tunnel |
 |-----------------------|--------|---------------------------------|
@@ -283,7 +283,7 @@ Los SSH tunnels permiten acceder desde su PC Windows a servicios que corren en e
 | N8N | 5678 | `http://localhost:5678` |
 | FastAPI (proyectos) | 5000 | `http://localhost:5000` |
 
-### 7.5.2 Tunnel simple (un solo puerto)
+### 8.5.2 Tunnel simple (un solo puerto)
 
 ```bash
 # [EN WINDOWS POWERSHELL] Abrir tunnel para Open WebUI
@@ -306,7 +306,7 @@ ssh -L 8888:localhost:8888 jetson -N
 
 > **NOTA:** El flag `-N` indica que no se abre shell — la conexión solo mantiene el tunnel activo. Para cerrar el tunnel, presione `Ctrl+C` en esa terminal.
 
-### 7.5.3 Tunnel multi-puerto (todos los servicios a la vez)
+### 8.5.3 Tunnel multi-puerto (todos los servicios a la vez)
 
 ```bash
 # [EN WINDOWS POWERSHELL] Abrir tunnels para todos los servicios principales
@@ -320,7 +320,7 @@ ssh -L 3000:localhost:3000 \
     jetson -N
 ```
 
-### 7.5.4 Tunnel permanente con ~/.ssh/config
+### 8.5.4 Tunnel permanente con ~/.ssh/config
 
 Para no escribir el comando cada vez, agregue los tunnels al archivo `~/.ssh/config` de Windows:
 
@@ -344,7 +344,7 @@ Host jetson-tunnels
 ssh -N jetson-tunnels
 ```
 
-### 7.5.5 JupyterLab via SSH tunnel
+### 8.5.5 JupyterLab via SSH tunnel
 
 JupyterLab es ideal para experimentos con PyTorch, exploración de datos y prototipos rápidos en el Jetson:
 
@@ -377,7 +377,7 @@ ssh -L 8888:localhost:8888 jetson -N
 
 ---
 
-## 7.6 Flujo de Trabajo Típico con IDE Remoto
+## 8.6 Flujo de Trabajo Típico con IDE Remoto
 
 ### Caso A — Desarrollo con VSCode (más común)
 
@@ -404,7 +404,7 @@ ssh -L 8888:localhost:8888 jetson -N
 
 ---
 
-## 7.7 Aliases para Desarrollo Remoto
+## 8.7 Aliases para Desarrollo Remoto
 
 Agregue estos aliases en el Jetson para facilitar el flujo de trabajo:
 
@@ -432,7 +432,7 @@ source ~/.bash_aliases || source ~/.bashrc
 
 ---
 
-## 7.8 Errores Frecuentes
+## 8.8 Errores Frecuentes
 
 ### [ERROR] "Could not establish connection to jetson" en VSCode
 
@@ -483,7 +483,7 @@ ssh jetson "rm -rf ~/.vscode-server/"
 
 ---
 
-## 7.9 Verificación Final del Capítulo
+## 8.9 Verificación Final del Capítulo
 
 ```bash
 # Ejecutar desde Windows PowerShell para verificar todo:

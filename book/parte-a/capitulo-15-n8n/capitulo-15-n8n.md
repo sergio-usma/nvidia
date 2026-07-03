@@ -23,7 +23,7 @@ La propuesta de valor en el contexto del Jetson es clara: N8N actúa como el *or
 
 ---
 
-## 27.1 Compatibilidad ARM64 con JetPack 7.2
+## 15.1 Compatibilidad ARM64 con JetPack 7.2
 
 Antes de instalar, verifique que la imagen oficial de N8N tiene soporte para ARM64 (arquitectura del Jetson):
 
@@ -58,11 +58,11 @@ PostgreSQL arquitectura: arm64
 
 ---
 
-## 27.2 Instalación con Docker Compose
+## 15.2 Instalación con Docker Compose
 
 N8N requiere una base de datos persistente para guardar flujos, credenciales y ejecuciones. PostgreSQL es la opción recomendada sobre SQLite para entornos de producción.
 
-### 27.2.1 Crear el Directorio y el Archivo Compose
+### 15.2.1 Crear el Directorio y el Archivo Compose
 
 ```bash
 # Crear directorio de trabajo para N8N
@@ -180,7 +180,7 @@ COMPOSE_EOF
 echo "[OK] docker-compose.yml creado"
 ```
 
-### 27.2.2 Iniciar el Stack
+### 15.2.2 Iniciar el Stack
 
 ```bash
 # Iniciar N8N y PostgreSQL
@@ -230,9 +230,9 @@ En la primera visita, N8N solicita crear una cuenta de administrador local.
 
 ---
 
-## 27.3 Configuración de Acceso Seguro
+## 15.3 Configuración de Acceso Seguro
 
-### 27.3.1 Autenticación Básica (Opción A — Más Simple)
+### 15.3.1 Autenticación Básica (Opción A — Más Simple)
 
 ```bash
 # Agregar autenticación básica al archivo .env
@@ -248,7 +248,7 @@ EOF
 cd ~/stacks/n8n && docker compose restart n8n
 ```
 
-### 27.3.2 Verificar Webhook URL
+### 15.3.2 Verificar Webhook URL
 
 Los webhooks de N8N reciben peticiones en la URL configurada. Verifique que la URL de webhook está configurada correctamente:
 
@@ -264,9 +264,9 @@ curl -I http://localhost:5678/
 
 ---
 
-## 27.4 Primeros Nodos: Llamar a los Motores de Inferencia
+## 15.4 Primeros Nodos: Llamar a los Motores de Inferencia
 
-### 27.4.1 Nodo HTTP Request → Ollama
+### 15.4.1 Nodo HTTP Request → Ollama
 
 N8N se conecta a Ollama mediante el nodo "HTTP Request". Desde la interfaz web:
 
@@ -300,7 +300,7 @@ curl -s http://localhost:11434/api/generate \
   }' | python3 -c "import sys,json; print(json.load(sys.stdin)['response'])"
 ```
 
-### 27.4.2 Nodo HTTP Request → vLLM (API OpenAI)
+### 15.4.2 Nodo HTTP Request → vLLM (API OpenAI)
 
 vLLM expone la API OpenAI estándar. Configuración del nodo HTTP Request para vLLM:
 
@@ -337,11 +337,11 @@ curl -s http://localhost:8000/v1/chat/completions \
 
 ---
 
-## 27.5 Pipeline de Ejemplo: Webhook → LLM → Email
+## 15.5 Pipeline de Ejemplo: Webhook → LLM → Email
 
 Este pipeline completo recibe una pregunta via webhook, la procesa con el LLM local y envía la respuesta por email.
 
-### 27.5.1 Diseño del Pipeline
+### 15.5.1 Diseño del Pipeline
 
 <!-- INFOGRAFÍA: Diseño del Pipeline: Webhook → LLM → Email — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -364,7 +364,7 @@ Trigger: Webhook POST /webhook/pregunta-llm
          Respuesta HTTP → {"status": "enviado", "preview": "..."}
 ```
 
-### 27.5.2 Crear el Pipeline via Importación JSON
+### 15.5.2 Crear el Pipeline via Importación JSON
 
 ```bash
 # Guardar el flujo N8N como JSON para importar
@@ -452,7 +452,7 @@ echo "[OK] Flujo exportado en ~/stacks/n8n/local-files/flujo-webhook-llm-email.j
 echo "Para importar: N8N → File → Import from file → seleccionar el archivo"
 ```
 
-### 27.5.3 Probar el Pipeline
+### 15.5.3 Probar el Pipeline
 
 ```bash
 # Activar el flujo desde la interfaz de N8N primero (botón "Activate")
@@ -484,7 +484,7 @@ Respuesta: Las tres ventajas principales del edge AI son: 1) Latencia mínima �
 
 ---
 
-## 27.6 Pipeline de Integración con OpenClaw
+## 15.6 Pipeline de Integración con OpenClaw
 
 Este pipeline recibe un mensaje de texto via webhook y lo envía al gateway de OpenClaw como una instrucción de agente:
 
@@ -526,7 +526,7 @@ curl -s -X POST http://localhost:18789/api/agent/run \
 
 ---
 
-## 27.7 Pipeline de Procesamiento de Email Entrante
+## 15.7 Pipeline de Procesamiento de Email Entrante
 
 <!-- INFOGRAFÍA: Pipeline: Email Entrante → LLM → Respuesta Automática — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -572,7 +572,7 @@ print(json.dumps({
 
 ---
 
-## 27.8 Monitoreo y Logs
+## 15.8 Monitoreo y Logs
 
 ```bash
 # Ver logs de N8N en tiempo real
@@ -602,7 +602,7 @@ def456         n8n-postgres  0.8%    185MiB / 62.7GiB      0.3%
 
 ---
 
-## 27.9 Scripts y Aliases
+## 15.9 Scripts y Aliases
 
 ```bash
 # Crear scripts de gestión para N8N
@@ -681,7 +681,7 @@ source ~/.bash_aliases
 echo "[OK] Aliases de N8N configurados"
 ```
 
-### 27.9.1 Flujo Típico de Trabajo
+### 15.9.1 Flujo Típico de Trabajo
 
 ```bash
 # Iniciar el stack completo para una sesión de automatización
@@ -706,7 +706,7 @@ pwr-15w          # modo ahorro energético
 
 ---
 
-## 27.10 Integración Avanzada: N8N + OpenClaw + vLLM
+## 15.10 Integración Avanzada: N8N + OpenClaw + vLLM
 
 <!-- INFOGRAFÍA: Integración: N8N + OpenClaw + vLLM — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -767,7 +767,7 @@ source ~/.bash_aliases
 
 ---
 
-## 27.11 Solución de Problemas
+## 15.11 Solución de Problemas
 
 ### N8N no puede conectar a PostgreSQL al iniciar
 
@@ -839,7 +839,7 @@ docker stats n8n --no-stream | awk '{print "CPU:", $3, "RAM:", $4}'
 
 ---
 
-## 27.12 Backup y Restauración
+## 15.12 Backup y Restauración
 
 ```bash
 # Backup completo de N8N (flujos + credenciales + ejecuciones)

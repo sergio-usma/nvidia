@@ -27,7 +27,7 @@ Este capítulo construye ese pipeline completo en el Jetson AGX Orin 64GB. El pr
 
 ---
 
-## 19.1 Prerrequisito — Verificación del Sistema
+## 21.1 Prerrequisito — Verificación del Sistema
 
 ```bash
 # Verificar recursos antes de iniciar
@@ -59,7 +59,7 @@ echo "[OK] kokoro-tts listo en puerto 8880"
 
 ---
 
-## 19.2 Estructura del Proyecto
+## 21.2 Estructura del Proyecto
 
 ```bash
 # Crear la estructura del proyecto
@@ -82,7 +82,7 @@ pdf2podcast/
 
 ---
 
-## 19.3 Script 1 — Extracción de Texto del PDF
+## 21.3 Script 1 — Extracción de Texto del PDF
 
 ```bash
 # Instalar dependencias en el venv de desarrollo
@@ -216,7 +216,7 @@ python scripts/01_extract_text.py input/mi_articulo.pdf tmp/extracted.json
 
 ---
 
-## 19.4 Script 2 — Generación del Guión con LLM
+## 21.4 Script 2 — Generación del Guión con LLM
 
 ```python
 # scripts/02_generate_script.py
@@ -430,7 +430,7 @@ python scripts/02_generate_script.py tmp/extracted.json tmp/script.json
 
 ---
 
-## 19.5 Script 3 — Síntesis de Voz con kokoro-tts
+## 21.5 Script 3 — Síntesis de Voz con kokoro-tts
 
 ```python
 # scripts/03_synthesize_voices.py
@@ -573,7 +573,7 @@ if __name__ == "__main__":
 
 ---
 
-## 19.6 Script 4 — Ensamblaje Final con ffmpeg
+## 21.6 Script 4 — Ensamblaje Final con ffmpeg
 
 ```python
 # scripts/04_assemble_podcast.py
@@ -713,7 +713,7 @@ if __name__ == "__main__":
 
 ---
 
-## 19.7 Orquestador Completo
+## 21.7 Orquestador Completo
 
 ```bash
 # pdf2podcast.sh — ejecuta el pipeline completo
@@ -857,7 +857,7 @@ docker stats kokoro-tts --no-stream
 
 ---
 
-## 19.8 Limpieza Post-Pipeline
+## 21.8 Limpieza Post-Pipeline
 
 ```bash
 # Limpieza después de generar el podcast
@@ -882,7 +882,7 @@ echo "[OK] Limpieza completada"
 
 ---
 
-## 19.9 Verificación Final del Capítulo
+## 21.9 Verificación Final del Capítulo
 
 ```bash
 # Verificación de instalación del pipeline
@@ -932,11 +932,11 @@ echo "════════════════════════�
 
 ---
 
-## 19.10 Escalabilidad y Extensiones
+## 21.10 Escalabilidad y Extensiones
 
 El pipeline PDF-to-Podcast puede integrarse con plataformas de mensajería y APIs externas para operar de forma completamente autónoma.
 
-### 19.10.1 Bot de Telegram para PDF-to-Podcast
+### 21.10.1 Bot de Telegram para PDF-to-Podcast
 
 Con **N8N** (ver Capítulo 14) u **OpenClaw** (ver Capítulo 11A), cualquier usuario puede enviar un PDF a un bot de Telegram y recibir el episodio de audio sin tocar el Jetson.
 
@@ -997,7 +997,7 @@ Añada este bloque de hooks en su `openclaw.json` (ver §11A.4.2 para la estruct
 
 > **NOTA:** El tiempo de procesamiento depende del tamaño del PDF y del modelo elegido. Para PDFs de 10–20 páginas espere entre 3 y 8 minutos. Configure el timeout del bot en consecuencia para evitar que el usuario reciba un error por tiempo de espera antes de que el audio esté listo.
 
-### 19.10.2 Modo Mixto Offline + Online con OpenRouter
+### 21.10.2 Modo Mixto Offline + Online con OpenRouter
 
 Para PDFs extensos o cuando se requiera mayor calidad narrativa en el guión, puede alternar entre el LLM local (Ollama o vLLM en el Jetson) y modelos externos gratuitos vía **OpenRouter**.
 

@@ -22,7 +22,7 @@ El Jetson AGX Orin 64GB es ideal para RAG empresarial: tiene suficiente RAM para
 
 ---
 
-## 25.1 Prerrequisito — Instalar nomic-embed-text
+## 27.1 Prerrequisito — Instalar nomic-embed-text
 
 ```bash
 # Descargar el modelo de embeddings
@@ -47,7 +47,7 @@ pip install chromadb pymupdf python-docx langchain langchain-community langchain
 
 ---
 
-## 25.2 Estructura del Proyecto
+## 27.2 Estructura del Proyecto
 
 ```bash
 mkdir -p ~/projects/rag-empresarial/{data,documents,scripts,api}
@@ -69,7 +69,7 @@ rag-empresarial/
 
 ---
 
-## 25.3 Script 1 — Indexador de Documentos
+## 27.3 Script 1 — Indexador de Documentos
 
 ```python
 # scripts/indexer.py
@@ -358,7 +358,7 @@ Indexación completada:
 
 ---
 
-## 25.4 Script 2 — Motor de Consultas RAG
+## 27.4 Script 2 — Motor de Consultas RAG
 
 ```python
 # scripts/retriever.py
@@ -564,7 +564,7 @@ if __name__ == "__main__":
 
 ---
 
-## 25.5 API REST (FastAPI)
+## 27.5 API REST (FastAPI)
 
 ```python
 # api/rag_api.py
@@ -643,7 +643,7 @@ curl -X POST http://localhost:9000/query \
 
 ---
 
-## 25.6 Flujo de Uso Completo
+## 27.6 Flujo de Uso Completo
 
 ```bash
 # 1. Indexar documentos
@@ -665,7 +665,7 @@ uvicorn api.rag_api:app --host 0.0.0.0 --port 9000
 
 ---
 
-## 25.7 Limpieza Post-Pipeline
+## 27.7 Limpieza Post-Pipeline
 
 ```bash
 # Detener la API y Ollama
@@ -681,7 +681,7 @@ echo "[OK] Sistema RAG detenido (base de datos conservada en /data/rag-db)"
 
 ---
 
-## 25.8 Verificación Final del Capítulo
+## 27.8 Verificación Final del Capítulo
 
 ```bash
 echo "╔═══════════════════════════════════════════════════════╗"
@@ -731,9 +731,9 @@ echo "════════════════════════�
 
 ---
 
-## 25.9 Escalabilidad y Extensiones
+## 27.9 Escalabilidad y Extensiones
 
-### 25.9.1 Consulta de Documentos vía Telegram
+### 27.9.1 Consulta de Documentos vía Telegram
 
 El sistema RAG puede integrarse con Telegram para que cualquier miembro del equipo consulte documentos empresariales desde su teléfono, sin acceso directo al Jetson.
 
@@ -777,7 +777,7 @@ Nodo 3 — Send Message:
 
 > **NOTA:** La API REST del sistema RAG (§25.5) ya está diseñada para recibir consultas HTTP, lo que simplifica la integración con N8N y OpenClaw — no se requiere modificar el código del RAG.
 
-### 25.9.2 Modo Mixto con OpenRouter
+### 27.9.2 Modo Mixto con OpenRouter
 
 Para preguntas que requieran síntesis de información dispersa en múltiples documentos o razonamiento complejo, use OpenRouter como alternativa al modelo local:
 
@@ -805,7 +805,7 @@ alias rag-local="USE_LOCAL_LLM=true  python3 ~/projects/rag-empresarial/scripts/
 alias rag-cloud="USE_LOCAL_LLM=false python3 ~/projects/rag-empresarial/scripts/query.py"
 ```
 
-### 25.9.3 Evaluación de Backend para Alta Concurrencia
+### 27.9.3 Evaluación de Backend para Alta Concurrencia
 
 El sistema RAG vía API REST puede recibir múltiples consultas simultáneas de distintos usuarios. El backend de inferencia impacta directamente en la capacidad de atenderlas:
 

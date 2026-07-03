@@ -15,9 +15,9 @@ LinkedIn es la red profesional más importante del mundo, pero crear contenido q
 
 ---
 
-## 23.1 Prerrequisito — LinkedIn Developer Setup
+## 25.1 Prerrequisito — LinkedIn Developer Setup
 
-### 23.1.1 Crear la Aplicación OAuth2
+### 25.1.1 Crear la Aplicación OAuth2
 
 1. Vaya a [developer.linkedin.com](https://developer.linkedin.com) → **My Apps** → **Create App**
 2. Seleccione su empresa (o créela)
@@ -25,7 +25,7 @@ LinkedIn es la red profesional más importante del mundo, pero crear contenido q
 4. En **Auth**, anote: `Client ID` y `Client Secret`
 5. Configure **Authorized redirect URLs**: `http://localhost:8765/callback`
 
-### 23.1.2 Obtener el Access Token (Flujo OAuth2)
+### 25.1.2 Obtener el Access Token (Flujo OAuth2)
 
 ```python
 # scripts/linkedin_auth.py
@@ -140,7 +140,7 @@ python scripts/linkedin_auth.py
 
 ---
 
-## 23.2 Script 1 — Generador de Posts con Few-Shot Prompting
+## 25.2 Script 1 — Generador de Posts con Few-Shot Prompting
 
 ```python
 # scripts/post_generator.py
@@ -279,7 +279,7 @@ Escribe SOLO el post final listo para publicar."""
 
 ---
 
-## 23.3 Script 2 — Publicador en LinkedIn
+## 25.3 Script 2 — Publicador en LinkedIn
 
 ```python
 # scripts/linkedin_publisher.py
@@ -395,7 +395,7 @@ def publicar_post(
 
 ---
 
-## 23.4 Pipeline Interactivo Completo
+## 25.4 Pipeline Interactivo Completo
 
 ```python
 # linkedin_main.py
@@ -515,7 +515,7 @@ python linkedin_main.py
 
 ---
 
-## 23.5 Guardar Estilo Personal (Few-Shot Training)
+## 25.5 Guardar Estilo Personal (Few-Shot Training)
 
 Para que el generador aprenda su estilo, guarde sus mejores posts como ejemplos:
 
@@ -541,7 +541,7 @@ Cuantos más ejemplos proporcione (mínimo 3, ideal 10), mejor capturará el gen
 
 ---
 
-## 23.6 Limpieza Post-Pipeline
+## 25.6 Limpieza Post-Pipeline
 
 ```bash
 # Pipeline sin contenedores GPU pesados
@@ -552,7 +552,7 @@ echo "[OK] Pipeline LinkedIn detenido"
 
 ---
 
-## 23.7 Verificación Final
+## 25.7 Verificación Final
 
 ```bash
 echo "╔═══════════════════════════════════════════════════════╗"
@@ -579,9 +579,9 @@ echo "════════════════════════�
 
 ---
 
-## 23.8 Escalabilidad y Extensiones
+## 25.8 Escalabilidad y Extensiones
 
-### 23.8.1 Bot de Telegram para Generar y Publicar en LinkedIn
+### 25.8.1 Bot de Telegram para Generar y Publicar en LinkedIn
 
 El pipeline puede integrarse con Telegram para recibir temas o ideas por chat y publicar automáticamente en LinkedIn sin acceso directo al Jetson.
 
@@ -620,7 +620,7 @@ Nodo 3 — Send Message:
 }
 ```
 
-### 23.8.2 Evaluación del Hermes Agent para Aprendizaje Adaptativo de Tendencias
+### 25.8.2 Evaluación del Hermes Agent para Aprendizaje Adaptativo de Tendencias
 
 **Hermes Agent** (NVIDIA NIM / local) es un modelo especializado en **function calling** y memoria episódica a largo plazo. Para el pipeline de LinkedIn, resulta especialmente útil porque puede:
 
@@ -669,7 +669,7 @@ alias linkedin-hermes="LINKEDIN_MODEL=hermes3:8b  python3 ~/projects/linkedin-co
 
 > **EVALUACIÓN:** Hermes-3 es viable para este pipeline en el Jetson AGX Orin 64GB (8B cabe en ~6 GB VRAM). Su ventaja real aparece al implementar un sistema de memoria episódica que almacene las publicaciones anteriores en ChromaDB y las recupere como contexto — combinación RAG + Hermes que supera el few-shot manual de los otros modelos para mantener consistencia de estilo a lo largo del tiempo.
 
-### 23.8.3 Modo Mixto con OpenRouter
+### 25.8.3 Modo Mixto con OpenRouter
 
 Para publicaciones de gran visibilidad (artículos, noticias de empresa), use modelos de mayor capacidad vía OpenRouter:
 

@@ -16,13 +16,13 @@ Este capítulo cubre las cinco áreas críticas del despliegue en producción:
 
 ---
 
-## 15.0 Arquitectura de Arranque Limpio
+## 17.0 Arquitectura de Arranque Limpio
 
 El problema más frecuente al poner el Jetson en producción no es técnico sino operativo: el sistema arranca con demasiados servicios activos. Ollama instala por defecto un servicio systemd con `Restart=always`. Los contenedores Docker creados sin `--restart no` se reinician solos. Scripts en `~/.bashrc` pueden lanzar modelos al iniciar sesión. El resultado es que al encender el Jetson ya hay 20–30 GB de RAM comprometidos antes de que el usuario elija qué modelo quiere ejecutar.
 
 La arquitectura de arranque limpio resuelve esto con un principio simple: **el Jetson no inicia ningún motor de inferencia por sí solo**. Al arrancar solo están activos SSH y los componentes necesarios para NoMachine. Todo lo demás se activa explícitamente mediante scripts del usuario.
 
-### 15.0.1 Estado Objetivo del Sistema tras el Boot
+### 17.0.1 Estado Objetivo del Sistema tras el Boot
 
 <!-- INFOGRAFÍA: Estado Objetivo del Sistema tras Boot Limpio — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -59,7 +59,7 @@ Usuario conecta por SSH
         └─→ combinación        → switch-model.sh (Capítulo 12)
 ```
 
-### 15.0.2 Procedimiento: Configurar el Arranque Limpio
+### 17.0.2 Procedimiento: Configurar el Arranque Limpio
 
 Ejecute estos pasos **una sola vez** después de instalar todos los componentes del stack.
 
@@ -195,13 +195,13 @@ Mem:            62Gi       10Gi       50Gi      ...
 
 Con ~50 GB libres tras el boot, el sistema está listo para recibir el modelo que el usuario elija.
 
-### 15.0.3 Regla de Operación
+### 17.0.3 Regla de Operación
 
 > **REGLA FUNDAMENTAL:** El Jetson no inicia ningún motor de inferencia por sí solo. La activación de vLLM, Ollama o llama.cpp ocurre **solo mediante comandos explícitos del usuario**, nunca por arranque del sistema. Los scripts de activación (`vllm-start`, `llama-start`, `ollama-start`) y el script de limpieza (`jetson-clean`) son el mecanismo de control. El sistema debe comportarse como base limpia de ejecución, no como servidor persistente de LLM.
 
 ---
 
-## 15.1 Endurecimiento del Sistema
+## 17.1 Endurecimiento del Sistema
 
 El "hardening" (endurecimiento) en el contexto del Jetson consiste principalmente en prevenir tres categorías de problemas:
 
@@ -209,7 +209,7 @@ El "hardening" (endurecimiento) en el contexto del Jetson consiste principalment
 2. **Fallos por falta de memoria (OOM)** — que pueden bloquear el sistema o matar procesos críticos
 3. **Configuraciones de Ollama subóptimas** — que mantienen modelos cargados en GPU consumiendo RAM sin ser usados
 
-### 15.1.1 Política de Restart para Contenedores LLM
+### 17.1.1 Política de Restart para Contenedores LLM
 
 La regla más importante del Jetson en producción: **todos los contenedores LLM deben tener `restart=no`**. Si un contenedor LLM arranca automáticamente en el boot, puede pre-alocar toda la memoria GPU/RAM y bloquear el sistema antes de que el usuario tenga oportunidad de elegir qué modelo cargar.
 
@@ -250,7 +250,7 @@ echo "[OK] Open WebUI → restart=unless-stopped (se reinicia automáticamente)"
 
 > **IMPORTANTE:** `--restart no` NO significa que el contenedor se detenga cuando falla. Solo significa que no se reinicia automáticamente cuando Docker (o el sistema) arrancan. Un contenedor con `--restart no` puede seguir corriendo indefinidamente si no lo detiene manualmente o si el sistema no se reinicia.
 
-### 15.1.2 Configuración de Ollama para Producción
+### 17.1.2 Configuración de Ollama para Producción
 
 Ollama por defecto mantiene los modelos cargados en GPU durante 5 minutos después del último uso. En producción esto es peligroso porque consume RAM que otros procesos podrían necesitar.
 
@@ -285,7 +285,7 @@ systemctl show ollama --property=Environment
 # Environment=OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS=* OLLAMA_NUM_PARALLEL=2 OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_KEEP_ALIVE=0
 ```
 
-### 15.1.3 Protección OOM del Kernel
+### 17.1.3 Protección OOM del Kernel
 
 El kernel Linux tiene un mecanismo llamado OOM Killer que termina procesos cuando la memoria se agota. En el Jetson, es preferible que el OOM Killer actúe antes de que el sistema entre en pánico:
 
@@ -319,7 +319,7 @@ sysctl vm.panic_on_oom vm.oom_kill_allocating_task vm.swappiness vm.vfs_cache_pr
 # vm.vfs_cache_pressure = 200
 ```
 
-### 15.1.4 Script de Hardening Completo (Ejecutar una Vez)
+### 17.1.4 Script de Hardening Completo (Ejecutar una Vez)
 
 ```bash
 # Crear y ejecutar el script de hardening completo
@@ -428,7 +428,7 @@ echo 'alias jetson-harden="~/scripts/harden.sh"' >> ~/.bashrc
 ~/scripts/harden.sh
 ```
 
-### 15.1.5 Cómo Revertir el Hardening (para usuarios que prefieren autostart)
+### 17.1.5 Cómo Revertir el Hardening (para usuarios que prefieren autostart)
 
 Si decide que prefiere que los servicios arranquen automáticamente en lugar de on-demand, estos son los pasos para revertir cada acción del hardening:
 
@@ -474,11 +474,11 @@ docker update --restart unless-stopped open-webui
 
 ---
 
-## 15.2 Firewall UFW — Control de Acceso a la Red
+## 17.2 Firewall UFW — Control de Acceso a la Red
 
 UFW (Uncomplicated Firewall) controla qué puertos son accesibles desde la red local. Por defecto en Ubuntu 24.04, UFW está deshabilitado. En producción debe activarse con reglas específicas para el Jetson.
 
-### 15.2.1 Activación y Reglas Base
+### 17.2.1 Activación y Reglas Base
 
 ```bash
 # Verificar estado actual de UFW
@@ -530,7 +530,7 @@ sudo ufw status numbered
 
 > **CONSEJO:** Si solo desea acceso desde su red local (no desde internet), restrinja cada regla a la subred local: `sudo ufw allow from 192.168.1.0/24 to any port 8000 comment "vLLM solo red local"`. Adapte `192.168.1.0/24` a su rango de red.
 
-### 15.2.2 Restricción a Red Local Únicamente (Más Seguro)
+### 17.2.2 Restricción a Red Local Únicamente (Más Seguro)
 
 ```bash
 # Configuración más restrictiva: solo permitir acceso desde la red local
@@ -549,7 +549,7 @@ sudo ufw reload
 sudo ufw status numbered
 ```
 
-### 15.2.3 Gestión de UFW en el Día a Día
+### 17.2.3 Gestión de UFW en el Día a Día
 
 ```bash
 # Ver estado completo
@@ -572,7 +572,7 @@ sudo ufw enable
 
 ---
 
-## 15.3 Script de Arranque Inteligente (Startup)
+## 17.3 Script de Arranque Inteligente (Startup)
 
 Después de un reinicio del Jetson, el stack de IA no vuelve a su estado anterior automáticamente (esto es intencionado — los contenedores LLM tienen `restart=no`). Sin embargo, los servicios base (SSH, XRDP, NoMachine, Ollama, OpenClaw) sí deben arrancar automáticamente.
 
@@ -651,7 +651,7 @@ alias jetson-startup='~/scripts/startup.sh'
 echo 'alias jetson-startup="~/scripts/startup.sh"' >> ~/.bashrc
 ```
 
-### 15.3.1 Ejecutar Startup Automáticamente al Arrancar (cron)
+### 17.3.1 Ejecutar Startup Automáticamente al Arrancar (cron)
 
 Para ejecutar el script de startup automáticamente al reiniciar, use `@reboot` en el cron del usuario:
 
@@ -669,11 +669,11 @@ El `sleep 30` permite que los servicios del sistema (Docker, systemd) terminen d
 
 ---
 
-## 15.4 Watchdog — Monitoreo y Recuperación Automática
+## 17.4 Watchdog — Monitoreo y Recuperación Automática
 
 Un watchdog verifica periódicamente el estado de los servicios críticos y los reinicia si detecta fallos. En el Jetson, el OpenClaw Gateway es el servicio más crítico en producción porque sin él, el agente WhatsApp no responde.
 
-### 15.4.1 Watchdog del Gateway OpenClaw
+### 17.4.1 Watchdog del Gateway OpenClaw
 
 ```bash
 # Crear script watchdog
@@ -721,7 +721,7 @@ crontab -l | grep watchdog
 echo "[OK] Watchdog de OpenClaw: verificación cada 5 minutos"
 ```
 
-### 15.4.2 Script de Verificación del Stack Completo
+### 17.4.2 Script de Verificación del Stack Completo
 
 ```bash
 # Crear script de verificación completa del stack
@@ -839,9 +839,9 @@ echo 'alias jetson-verify="~/scripts/verify-stack.sh"' >> ~/.bashrc
 
 ---
 
-## 15.5 Operación Diaria en Producción
+## 17.5 Operación Diaria en Producción
 
-### 15.5.1 Rutina de Conexión SSH Diaria
+### 17.5.1 Rutina de Conexión SSH Diaria
 
 > **NOTA:** Los aliases usados en esta rutina están definidos en este mismo capítulo:
 > - `jetson-verify` → definido en §15.4.2 (Script de Verificación del Stack)
@@ -870,7 +870,7 @@ openclaw channels status --probe
 # Salida esperada: Telegram default: enabled, configured, linked, running, connected [OK]
 ```
 
-### 15.5.2 Rutina Pre-Carga Pesada
+### 17.5.2 Rutina Pre-Carga Pesada
 
 Para trabajos intensivos (PDFs de 100MB, audio largo, múltiples requests en paralelo), ejecutar antes:
 
@@ -895,7 +895,7 @@ mode-multimodal # para audio o video (Nemotron Omni, multimodal)
 jetson-mem      # verificar que hay >50GB libres antes de continuar
 ```
 
-### 15.5.3 Modos de Trabajo y sus Aliases
+### 17.5.3 Modos de Trabajo y sus Aliases
 
 ```bash
 # Agregar aliases al ~/.bashrc
@@ -951,7 +951,7 @@ source ~/.bashrc
 
 ---
 
-## 15.6 Mapa de Puertos y Servicios del Sistema en Producción
+## 17.6 Mapa de Puertos y Servicios del Sistema en Producción
 
 La siguiente tabla describe todos los puertos del stack agéntico completo en producción:
 
@@ -972,7 +972,7 @@ La siguiente tabla describe todos los puertos del stack agéntico completo en pr
 
 ---
 
-## 15.7 22 Errores Comunes en Producción — Causas y Soluciones
+## 17.7 22 Errores Comunes en Producción — Causas y Soluciones
 
 Estos son los errores más frecuentes que encontrará al configurar y operar el stack completo del Jetson AGX Orin con JetPack 7.2. Para cada uno se indica el componente afectado, la causa raíz y la solución verificada:
 
@@ -1003,7 +1003,7 @@ Estos son los errores más frecuentes que encontrará al configurar y operar el 
 
 ---
 
-## 15.7.5 Script de Variables de Entorno LLM (`llm-env.sh`)
+## 17.7.5 Script de Variables de Entorno LLM (`llm-env.sh`)
 
 Los motores de inferencia necesitan varias variables de entorno para funcionar correctamente: el token de HuggingFace para modelos privados (Gemma 4 E4B, GPT OSS 20B), la clave de API de vLLM si se configura seguridad, y las rutas CUDA. En lugar de definirlas en `.bashrc` directamente (donde podrían ser leídas por otros procesos), se concentran en un script dedicado que se activa solo cuando se va a lanzar un motor.
 
@@ -1087,13 +1087,13 @@ source ~/.bashrc
 
 ---
 
-## 15.8 Lanzamiento bajo Demanda — Aliases para los Motores de Inferencia
+## 17.8 Lanzamiento bajo Demanda — Aliases para los Motores de Inferencia
 
 La arquitectura de arranque limpio (§15.0) establece que ningún motor de inferencia arranca automáticamente. El complemento indispensable de esta política es disponer de aliases de lanzamiento que permitan activar cada motor con un solo comando, sin tener que recordar las decenas de parámetros del `docker run`.
 
 Los aliases que se presentan a continuación siguen un patrón consistente: `start-<motor>` para lanzar, `stop-<motor>` para detener (sin borrar el contenedor), y `kill-<motor>` para detener y eliminar. Los contenedores de inferencia se crean siempre con `--restart no`; Open WebUI (que no carga modelos en GPU) puede usar `--restart unless-stopped`.
 
-### 15.8.1 Alias de Lanzamiento bajo Demanda
+### 17.8.1 Alias de Lanzamiento bajo Demanda
 
 ```bash
 # Agregar todos los aliases al ~/.bashrc
@@ -1249,7 +1249,7 @@ alias stop-qwen4b='...'
 alias stop-webui='...'
 ```
 
-### 15.8.2 Flujo Típico de Trabajo
+### 17.8.2 Flujo Típico de Trabajo
 
 **Ejemplo A — Sesion de trabajo con modelo grande desde Windows:**
 ```bash
@@ -1293,7 +1293,7 @@ kill-nemotron
 
 ---
 
-## 15.9 Verificación Final del Sistema en Producción
+## 17.9 Verificación Final del Sistema en Producción
 
 Ejecute este script como verificación final antes de dar el sistema por "listo para producción":
 

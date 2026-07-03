@@ -18,11 +18,11 @@ El NVIDIA Container Toolkit es la pieza que conecta Docker con el GPU del Jetson
 
 ---
 
-## 8.0 Conceptos Básicos de Docker (lectura antes de instalar)
+## 9.0 Conceptos Básicos de Docker (lectura antes de instalar)
 
 Si ya conoce Docker, puede saltar directamente a §8.1. Esta sección explica los conceptos que se usan en todos los capítulos de este libro.
 
-### 8.0.1 Imagen, contenedor e instancia
+### 9.0.1 Imagen, contenedor e instancia
 
 | Concepto | Analogía | Descripción práctica |
 |----------|----------|----------------------|
@@ -52,7 +52,7 @@ Containers      3       2       234MB     0B (0%)
 Local Volumes   5       3       4.2GB     1.1GB (26%)
 ```
 
-### 8.0.2 Ciclo de vida de un contenedor
+### 9.0.2 Ciclo de vida de un contenedor
 
 ```bash
 # Crear y arrancar un contenedor en segundo plano (-d = detached):
@@ -78,7 +78,7 @@ docker rm -f mi-servicio
 docker exec -it mi-servicio bash
 ```
 
-### 8.0.3 Limpieza de recursos
+### 9.0.3 Limpieza de recursos
 
 ```bash
 # Eliminar contenedores detenidos + imagenes huerfanas + cache de build:
@@ -98,7 +98,7 @@ a3f7c2e9d4b1   open-webui    0.5%    312MiB / 60.7GiB     0.5%
 8b2c4e1f9a3d   vllm-container  48.2%   14.8GiB / 60.7GiB   24.4%
 ```
 
-### 8.0.4 Directorios de almacenamiento
+### 9.0.4 Directorios de almacenamiento
 
 Por defecto, Docker almacena todo en `/var/lib/docker/`. En el Jetson con NVMe, conviene moverlo o usar volumes nombrados:
 
@@ -118,11 +118,11 @@ ls /var/lib/docker/overlay2/ | wc -l  # numero de capas
 
 ---
 
-## 8.1 Instalar Docker Engine
+## 9.1 Instalar Docker Engine
 
 Ubuntu 24.04 en el Jetson viene sin Docker instalado. Se instala desde el repositorio oficial de Docker (no desde los paquetes de Ubuntu, que suelen estar desactualizados).
 
-### 8.1.1 Instalación desde el Repositorio Oficial de Docker
+### 9.1.1 Instalación desde el Repositorio Oficial de Docker
 
 ```bash
 # 1. Instalar dependencias
@@ -165,7 +165,7 @@ To generate this message, Docker took the following steps:
  1. The Docker client contacted the Docker daemon...
 ```
 
-### 8.1.2 Usar Docker sin sudo
+### 9.1.2 Usar Docker sin sudo
 
 Por defecto, Docker requiere `sudo`. Agréguese al grupo `docker` para evitarlo:
 
@@ -187,7 +187,7 @@ Hello from Docker!
 
 > **NOTA DE SEGURIDAD:** Los miembros del grupo `docker` tienen acceso root efectivo al sistema. En un servidor de producción compartido esto sería una vulnerabilidad; en el Jetson personal es el comportamiento esperado y cómodo.
 
-### 8.1.3 Configurar Docker para el Arranque Limpio
+### 9.1.3 Configurar Docker para el Arranque Limpio
 
 Siguiendo la arquitectura de arranque limpio (Capítulo 15 §15.0), Docker no debe iniciarse automáticamente en cada reboot:
 
@@ -209,11 +209,11 @@ disabled
 
 ---
 
-## 8.2 Instalar NVIDIA Container Toolkit
+## 9.2 Instalar NVIDIA Container Toolkit
 
 El NVIDIA Container Toolkit (NCT) le permite a Docker pasar el GPU del Jetson a los contenedores. Sin él, cualquier imagen que use CUDA fallará.
 
-### 8.2.1 Instalación del NVIDIA Container Toolkit
+### 9.2.1 Instalación del NVIDIA Container Toolkit
 
 ```bash
 # 1. Agregar el repositorio de NVIDIA para el NCT
@@ -246,7 +246,7 @@ INFO[0000] It is recommended that the docker daemon be restarted.
 sudo systemctl restart docker
 ```
 
-### 8.2.2 Verificar el NVIDIA Container Toolkit
+### 9.2.2 Verificar el NVIDIA Container Toolkit
 
 ```bash
 # Ejecutar un contenedor con acceso al GPU y verificar CUDA
@@ -283,7 +283,7 @@ Build cuda_13.2...
 
 ---
 
-## 8.3 Arquitectura de GPU en Contenedores Jetson
+## 9.3 Arquitectura de GPU en Contenedores Jetson
 
 <!-- INFOGRAFÍA: Arquitectura de GPU en Contenedores Jetson — pendiente de diseño gráfico (paleta NVIDIA #0F3D3D / accent #1D9CB8, texto mínimo 10pt, optimizado para KDP Kindle dark/light) -->
 
@@ -322,9 +322,9 @@ En GPUs discretas (PC/servidor), `nvidia-smi` muestra estadísticas del GPU incl
 
 ---
 
-## 8.4 Comandos Esenciales de Docker para el Jetson
+## 9.4 Comandos Esenciales de Docker para el Jetson
 
-### 8.4.1 Gestión de Imágenes
+### 9.4.1 Gestión de Imágenes
 
 ```bash
 # Ver imágenes descargadas (ordenadas por tamaño)
@@ -343,7 +343,7 @@ docker image prune -f
 docker system df
 ```
 
-### 8.4.2 Gestión de Contenedores
+### 9.4.2 Gestión de Contenedores
 
 ```bash
 # Ver contenedores activos
@@ -368,7 +368,7 @@ docker rm nombre-contenedor
 docker stop nombre-contenedor && docker rm nombre-contenedor
 ```
 
-### 8.4.3 Estructura de un docker run para Jetson
+### 9.4.3 Estructura de un docker run para Jetson
 
 Todo `docker run` de modelos LLM en el Jetson sigue este patrón:
 
@@ -388,7 +388,7 @@ sudo docker run \
 
 **Por qué `--network host`:** Al compartir la red del host, el contenedor escucha directamente en la IP del Jetson (ej: `:8000`). Sin `--network host`, necesitaría `-p 8000:8000` para publicar el puerto y usar la IP del Jetson para acceder desde otras máquinas.
 
-### 8.4.4 Tres ejemplos concretos de docker run en el Jetson
+### 9.4.4 Tres ejemplos concretos de docker run en el Jetson
 
 **Ejemplo 1 — vLLM con Gemma 4 E2B (API OpenAI-compatible, puerto 8000):**
 
@@ -484,11 +484,11 @@ docker logs -f cosmos-predict | grep -E "ready|error|port"
 
 ---
 
-## 8.5 Configurar el Directorio de Caché de Modelos
+## 9.5 Configurar el Directorio de Caché de Modelos
 
 Los modelos de lenguaje pesan entre 2 GB y 30 GB. Sin un directorio de caché persistente montado como volumen, cada vez que borre o recree un contenedor tendría que volver a descargar el modelo completo. La configuración correcta descarga el modelo una vez y lo reutiliza indefinidamente.
 
-### 8.5.1 Crear el directorio de caché
+### 9.5.1 Crear el directorio de caché
 
 ```bash
 # Opcion A: cache en el directorio home (eMMC o NVMe, segun donde este /)
@@ -507,7 +507,7 @@ mkdir -p ~/.cache/huggingface
 df -h ~/.cache/huggingface
 ```
 
-### 8.5.2 La regla universal del volumen de caché
+### 9.5.2 La regla universal del volumen de caché
 
 > **REGLA:** Todo `docker run` que descargue o use un modelo de HuggingFace **debe** incluir este flag:
 >
@@ -525,7 +525,7 @@ docker run --rm \
 # Si el cache tiene modelos, los vera listados. Si esta vacio, mostrara nada.
 ```
 
-### 8.5.3 Mover el cache de Docker a NVMe (opcional, para ahorrar eMMC)
+### 9.5.3 Mover el cache de Docker a NVMe (opcional, para ahorrar eMMC)
 
 Si tiene un NVMe y quiere que las imágenes Docker también se almacenen allí:
 
@@ -558,7 +558,7 @@ docker info | grep "Docker Root Dir"
 
 ---
 
-## 8.6 Docker Compose: Orquestar Múltiples Contenedores
+## 9.6 Docker Compose: Orquestar Múltiples Contenedores
 
 Docker Compose permite definir y lanzar stacks de múltiples contenedores con un solo comando. En el Jetson, es ideal para combinar servicios que trabajan juntos: un frontend (Open WebUI) con un backend TTS (kokoro), o un servidor de transcripción (faster-whisper) con una API de audio.
 
@@ -585,7 +585,7 @@ mkdir -p ~/stacks/{webui,voice,n8n,rag}
 
 > **IMPORTANTE — Regla de oro para Jetson:** Los contenedores con GPU de inferencia (vLLM, llama.cpp, faster-whisper con CUDA) deben usar `restart: "no"` para mantener la arquitectura de arranque limpio. Los contenedores sin GPU (frontends, bases de datos, APIs ligeras) pueden usar `restart: unless-stopped`. En caso de duda: `restart: "no"` es siempre seguro.
 
-### 8.6.1 Instalar Docker Compose
+### 9.6.1 Instalar Docker Compose
 
 `docker-compose-plugin` ya se instaló en §8.1.1 como parte del paquete de Docker. Verifique:
 
@@ -601,7 +601,7 @@ Docker Compose version v2.x.x
 
 > **NOTA:** En sistemas antiguos existe `docker-compose` (con guión, versión 1). El plugin `docker compose` (sin guión, versión 2) es el estándar actual y el que se usa en todos los ejemplos de este libro.
 
-### 8.6.2 Stack Básico: Open WebUI + faster-whisper
+### 9.6.2 Stack Básico: Open WebUI + faster-whisper
 
 Este es el stack de productividad offline más útil para el día a día: interfaz web para LLMs y transcripción de audio. Ambos servicios son livianos y pueden coexistir con el LLM que se cargue bajo demanda.
 
@@ -680,7 +680,7 @@ docker compose down
 # docker compose down --volumes
 ```
 
-### 8.6.3 Stack de Voz: faster-whisper + kokoro-tts
+### 9.6.3 Stack de Voz: faster-whisper + kokoro-tts
 
 Para el pipeline completo STT + TTS del Capítulo 13:
 
@@ -751,7 +751,7 @@ echo "Testing TTS..."
 curl -s http://localhost:8880/health && echo "[OK] kokoro-tts :8880 OK"
 ```
 
-### 8.6.4 Comandos Esenciales de Docker Compose
+### 9.6.4 Comandos Esenciales de Docker Compose
 
 ```bash
 # ── Gestión del stack ─────────────────────────────────────────────────
@@ -792,7 +792,7 @@ docker compose down --rmi all
 # docker compose down --rmi all --volumes
 ```
 
-### 8.6.5 Estructura de un compose.yml para el Jetson
+### 9.6.5 Estructura de un compose.yml para el Jetson
 
 ```yaml
 # Plantilla canónica para servicios con GPU en Jetson AGX Orin JP 7.2
@@ -834,7 +834,7 @@ volumes:
 
 > **Regla de la coma con GPU:** Si el servicio toca `/dev/nvidia*`, usa `restart: "no"` y `runtime: nvidia`. Si no tiene GPU, puede usar `restart: unless-stopped`.
 
-### 8.6.6 Aliases para Gestión de Stacks
+### 9.6.6 Aliases para Gestión de Stacks
 
 ```bash
 # Agregar al ~/.bashrc
@@ -854,7 +854,7 @@ source ~/.bashrc
 
 ---
 
-## 8.7 Verificación Final del Capítulo
+## 9.7 Verificación Final del Capítulo
 
 ```bash
 # Verificación completa de Docker + NVIDIA Container Toolkit

@@ -29,7 +29,7 @@ Micrófono USB → VAD → faster-whisper (STT) → qwen3:7b (LLM) → piper-tts
 
 ---
 
-## 24.1 Prerrequisito — Verificación de Hardware de Audio
+## 26.1 Prerrequisito — Verificación de Hardware de Audio
 
 ```bash
 # Verificar micrófonos USB detectados
@@ -63,7 +63,7 @@ pip install pyaudio sounddevice soundfile webrtcvad
 
 ---
 
-## 24.2 Prerrequisito — Iniciar los Servicios
+## 26.2 Prerrequisito — Iniciar los Servicios
 
 ```bash
 # Verificar recursos
@@ -103,7 +103,7 @@ echo "[OK] Todos los servicios listos"
 
 ---
 
-## 24.3 Módulo VAD — Detección de Actividad de Voz
+## 26.3 Módulo VAD — Detección de Actividad de Voz
 
 ```python
 # voice_assistant/vad.py
@@ -216,7 +216,7 @@ class AudioCapture:
 
 ---
 
-## 24.4 Módulo STT — Speech-to-Text
+## 26.4 Módulo STT — Speech-to-Text
 
 > **NOTA — STT alternativo:** Este módulo usa `faster-whisper` via HTTP por su baja latencia y fácil configuración. NVIDIA Riva (`nvidia/riva-speech`) es una alternativa de mayor rendimiento con soporte de streaming nativo, pero requiere más RAM y configuración adicional. Ver Capítulo 18 §18.6.
 
@@ -281,7 +281,7 @@ def transcribir(audio_bytes: bytes, idioma: str = "es") -> str:
 
 ---
 
-## 24.5 Módulo LLM — Procesamiento de Lenguaje Natural
+## 26.5 Módulo LLM — Procesamiento de Lenguaje Natural
 
 ```python
 # voice_assistant/llm.py
@@ -348,7 +348,7 @@ class AsistenteLLM:
 
 ---
 
-## 24.6 Módulo TTS — Texto a Voz
+## 26.6 Módulo TTS — Texto a Voz
 
 ```python
 # voice_assistant/tts.py
@@ -427,7 +427,7 @@ def sintetizar_y_reproducir(texto: str, voz: str = None) -> bool:
 
 ---
 
-## 24.7 Orquestador Principal del Asistente
+## 26.7 Orquestador Principal del Asistente
 
 ```python
 # voice_assistant.py
@@ -563,7 +563,7 @@ python voice_assistant.py es
 
 ---
 
-## 24.8 Benchmarking de Latencia
+## 26.8 Benchmarking de Latencia
 
 ```python
 # benchmark_latencia.py — medir la latencia real del pipeline
@@ -620,7 +620,7 @@ print(f"\n  Latencia estimada total: {0.4 + t_llm + 0.2:.2f}s (STT+LLM+TTS para 
 
 ---
 
-## 24.9 Limpieza Post-Pipeline
+## 26.9 Limpieza Post-Pipeline
 
 ```bash
 # Detener los servicios del asistente de voz
@@ -637,7 +637,7 @@ echo "[OK] Asistente de voz detenido"
 
 ---
 
-## 24.10 Verificación Final
+## 26.10 Verificación Final
 
 ```bash
 echo "╔═══════════════════════════════════════════════════════╗"
@@ -669,9 +669,9 @@ echo "════════════════════════�
 
 ---
 
-## 24.11 Escalabilidad y Extensiones
+## 26.11 Escalabilidad y Extensiones
 
-### 24.11.1 Canal de Texto vía Telegram como Fallback
+### 26.11.1 Canal de Texto vía Telegram como Fallback
 
 Cuando no haya micrófono disponible (trabajo remoto, entorno ruidoso), el mismo asistente puede atender consultas de texto por Telegram y responder con audio generado por kokoro-tts.
 
@@ -718,7 +718,7 @@ Nodo 4 — Send Voice:
 }
 ```
 
-### 24.11.2 Modo Mixto con OpenRouter
+### 26.11.2 Modo Mixto con OpenRouter
 
 Para consultas complejas que superen la capacidad del modelo local, derive al cloud manteniendo el pipeline de voz intacto:
 
@@ -739,7 +739,7 @@ else:
     MODELO = "meta-llama/llama-3.3-70b-instruct:free"
 ```
 
-### 24.11.3 Evaluación de Backend para Mínima Latencia
+### 26.11.3 Evaluación de Backend para Mínima Latencia
 
 La latencia es el factor crítico en un asistente de voz: el usuario espera respuesta en menos de 3 segundos. Cada backend impacta diferente en ese objetivo:
 

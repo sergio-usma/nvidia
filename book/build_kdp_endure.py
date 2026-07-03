@@ -24,7 +24,7 @@ from copy import deepcopy
 
 from docx import Document
 from docx.shared import Pt, RGBColor, Cm, Inches, Twips
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -110,6 +110,14 @@ BOOK_CHAPTERS = [
     'glosario/glosario.md',
     'parte-a/appendix/appendix.md',
 ]
+
+# ── División en 4 tomos para revisión editorial ───────────────────────────────
+BOOK_PARTS = {
+    'A': (BOOK_CHAPTERS[0:25],  'Jetson_Parte_A_Cimientos.docx'),
+    'B': (BOOK_CHAPTERS[25:36], 'Jetson_Parte_B_Manos_a_la_Obra.docx'),
+    'C': (BOOK_CHAPTERS[36:40], 'Jetson_Parte_C_Capstone.docx'),
+    'D': (BOOK_CHAPTERS[40:42], 'Jetson_Parte_D_Referencia.docx'),
+}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -259,6 +267,24 @@ def style_exists(doc, style_name):
 # CREACIÓN DEL DOCUMENTO BASE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _clean_template_running_text(doc):
+    """Elimina texto estático 'Capítulo X de Y' / 'de N' de headers y footers del template."""
+    _pat = re.compile(r'(Cap[ií]tulo\s+\d+\s+de\s+\d+|de\s+\d+)', re.IGNORECASE)
+    for section in doc.sections:
+        for hf in (
+            section.header, section.footer,
+            section.even_page_header, section.even_page_footer,
+            section.first_page_header, section.first_page_footer,
+        ):
+            try:
+                for para in hf.paragraphs:
+                    for run in para.runs:
+                        if _pat.search(run.text):
+                            run.text = _pat.sub('', run.text).strip()
+            except Exception:
+                pass
+
+
 def create_chapter_doc():
     """Abre la plantilla KDP y limpia el contenido, preservando todos los estilos Endure."""
     if not TEMPLATE_PATH.exists():
@@ -270,6 +296,7 @@ def create_chapter_doc():
         tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
         if tag in ('p', 'tbl', 'sdt'):
             body.remove(child)
+    _clean_template_running_text(doc)
     return doc
 
 
@@ -321,6 +348,7 @@ def add_subhead(doc, text, level=2):
     p.paragraph_format.keep_with_next = True
     p.paragraph_format.space_before = Pt(12 if level == 2 else 8)
     p.paragraph_format.space_after = Pt(3)
+    p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
     r = p.add_run(text)
     if level == 2:
         r.font.size = Pt(12)  # obs#5
@@ -345,6 +373,7 @@ def add_first_paragraph(doc, text, is_front_matter=False):
     p = doc.add_paragraph(style=style)
     p.paragraph_format.space_before = Pt(5)   # obs#1
     p.paragraph_format.space_after  = Pt(5)   # obs#1
+    p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
     _add_inline_formatted_runs(p, text, font_size=Pt(10))  # obs#5
     return p
 
@@ -355,6 +384,7 @@ def add_body_paragraph(doc, text, is_front_matter=False):
     p = doc.add_paragraph(style=style)
     p.paragraph_format.space_before = Pt(5)   # obs#1
     p.paragraph_format.space_after  = Pt(5)   # obs#1
+    p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
     _add_inline_formatted_runs(p, text, font_size=Pt(10))  # obs#5
     return p
 
@@ -547,6 +577,7 @@ def add_table(doc, headers, rows, description=None):
         p = cell.paragraphs[0]
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after  = Pt(0)
+        p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
         h_clean = re.sub(r'\*\*(.+?)\*\*', r'\1', str(h))
         p.alignment = (WD_ALIGN_PARAGRAPH.CENTER
                        if len(h_clean.replace(' ', '')) < 30
@@ -569,6 +600,7 @@ def add_table(doc, headers, rows, description=None):
             p = cell.paragraphs[0]
             p.paragraph_format.space_before = Pt(0)
             p.paragraph_format.space_after  = Pt(0)
+            p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
             val_clean = re.sub(r'\*\*(.+?)\*\*', r'\1', str(val))
             val_clean = re.sub(r'\*(.+?)\*', r'\1', val_clean)
             val_clean = re.sub(r'`(.+?)`', r'\1', val_clean)
@@ -591,6 +623,7 @@ def add_bullets(doc, items, numbered=False, is_front_matter=False):
         p.paragraph_format.first_line_indent = Inches(-0.15)
         p.paragraph_format.space_before = Pt(2)
         p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
         prefix = f'{i}. ' if numbered else '• '
         r_prefix = p.add_run(prefix)
         r_prefix.font.size = Pt(10)  # obs#5
@@ -605,6 +638,7 @@ def add_image_caption(doc, caption_text):
     p.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_before = Pt(2)
     p.paragraph_format.space_after = Pt(8)
+    p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
     r = p.add_run(caption_text)
     r.italic = True
     r.font.size = Pt(8)  # obs#5+#11
@@ -1699,13 +1733,15 @@ def verify_chapter_refs():
     return issues
 
 
-def compile_manuscript(output_path, infografias_generated=None):
-    """Compila todos los capítulos en un único DOCX manuscrito.
+def compile_manuscript(output_path, chapter_list=None, infografias_generated=None):
+    """Compila una lista de capítulos en un único DOCX.
     obs#10: usa add_page_break() — NO add_section() — para mantener una única sección
     compartiendo encabezados, pies y numeración de página en todo el manuscrito."""
+    if chapter_list is None:
+        chapter_list = BOOK_CHAPTERS
     doc = create_chapter_doc()
     first = True
-    for rel_path in BOOK_CHAPTERS:
+    for rel_path in chapter_list:
         md_path = BOOK_DIR / rel_path
         if not md_path.exists():
             print(f'  [AVISO] No encontrado: {rel_path}')
@@ -1719,6 +1755,16 @@ def compile_manuscript(output_path, infografias_generated=None):
     print(f'\nManuscrito compilado: {output_path}')
 
 
+def compile_parts(infografias_generated=None):
+    """Genera 4 DOCX separados (Partes A/B/C/D) para revisión editorial."""
+    for part_key, (chapter_list, filename) in BOOK_PARTS.items():
+        output_path = BOOK_DIR / filename
+        print(f'\n── Parte {part_key}: {filename} ({len(chapter_list)} capítulos) ──')
+        compile_manuscript(output_path, chapter_list=chapter_list,
+                           infografias_generated=infografias_generated)
+    print('\nLos 4 tomos han sido generados en book/')
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1728,6 +1774,7 @@ if __name__ == '__main__':
         print(f'Uso: python {sys.argv[0]} <archivo.md>')
         print(f'     python {sys.argv[0]} --batch')
         print(f'     python {sys.argv[0]} --compile [salida.docx]')
+        print(f'     python {sys.argv[0]} --compile-parts')
         print(f'     python {sys.argv[0]} --verify-refs')
         sys.exit(1)
 
@@ -1749,7 +1796,14 @@ if __name__ == '__main__':
         print('Generando infografías...')
         infos = generate_all_infografias()
         print(f'\nCompilando manuscrito → {out_file}')
-        compile_manuscript(out_file, infos)
+        compile_manuscript(out_file, infografias_generated=infos)
+        sys.exit(0)
+
+    if mode == '--compile-parts':
+        print('Generando infografías...')
+        infos = generate_all_infografias()
+        print('\nCompilando los 4 tomos editoriales...')
+        compile_parts(infografias_generated=infos)
         sys.exit(0)
 
     # Capítulo individual

@@ -14,7 +14,7 @@ Al completar esta parte, habrá instalado y verificado tres motores de inferenci
 - Docker instalado con runtime NVIDIA (Capítulo 8)
 - Token de HuggingFace configurado (ver Sección 12.3.1)
 
-### 12.0 Crear el Entorno Virtual Python para LLM
+### 10.0 Crear el Entorno Virtual Python para LLM
 
 Antes de comenzar, cree el entorno virtual Python que se usará para interactuar con los motores de inferencia desde código Python:
 
@@ -45,7 +45,7 @@ source ~/.bashrc
 
 > **NOTA:** Este venv se usa exclusivamente para código Python que **llama a** los motores de inferencia (Ollama, vLLM, llama.cpp). Los propios motores de inferencia corren dentro de contenedores Docker o como servicios del sistema — no dentro del venv.
 
-### 12.0.1 Iniciar Docker bajo demanda (clean-start)
+### 10.0.1 Iniciar Docker bajo demanda (clean-start)
 
 El Jetson arranca con Docker deshabilitado en boot (Capítulo 8 + Capítulo 15). Antes de cualquier `docker run`, inicie el daemon explícitamente:
 
@@ -89,11 +89,11 @@ Cada motor tiene sus ventajas:
 
 ---
 
-## 12.1 Motor de Inferencia 1: Ollama
+## 10.1 Motor de Inferencia 1: Ollama
 
 Ollama es el motor más sencillo de instalar y usar. Internamente utiliza llama.cpp y expone una API compatible con OpenAI en el puerto 11434. Es ideal para desarrollo, pruebas rápidas, y pipelines de RAG (*Retrieval-Augmented Generation*).
 
-### 12.1.1 Instalación nativa
+### 10.1.1 Instalación nativa
 
 En JetPack 7.2, el contenedor Docker de NVIDIA para Ollama (`r38.2.arm64-sbsa-cu130-24.04`) **no funciona** en el Jetson AGX Orin con JP 7.2 (L4T r39.2) porque está dirigido al Jetson Thor (L4T r38.x) y entra en un bucle de reinicios. Utilice siempre el **instalador nativo**:
 
@@ -131,7 +131,7 @@ ollama version is 0.x.x
      Active: active (running)
 ```
 
-### 12.1.2 Configurar acceso desde la red (crítico)
+### 10.1.2 Configurar acceso desde la red (crítico)
 
 Por defecto, Ollama solo acepta conexiones desde `127.0.0.1` (el propio Jetson). Para acceder desde Windows, otros contenedores o aplicaciones remotas, debe cambiarlo a `0.0.0.0`:
 
@@ -176,7 +176,7 @@ LISTEN 0  4096  *:11434  *:*  users:(("ollama",pid=XXXX,fd=3))
 sudo ufw allow 11434/tcp comment "Ollama API"
 ```
 
-### 12.1.3 Control de keep_alive (esencial para memoria)
+### 10.1.3 Control de keep_alive (esencial para memoria)
 
 Ollama mantiene el modelo en memoria **5 minutos** después de la última petición. En el Jetson, esto puede bloquear la RAM cuando quiere cambiar a vLLM u otro motor. Para descargar el modelo manualmente en cualquier momento:
 
@@ -208,7 +208,7 @@ sudo systemctl daemon-reload && sudo systemctl restart ollama
 
 > **IMPORTANTE:** Con `OLLAMA_KEEP_ALIVE=5m`, el modelo permanece en RAM 5 minutos entre consultas. Use el alias `stop-ollama` cuando termine de trabajar para liberar la memoria antes de iniciar otro motor. No use `OLLAMA_KEEP_ALIVE=-1` (infinito) en el Jetson — impedirá iniciar vLLM o llama.cpp.
 
-### 12.1.4 Descarga y gestión de modelos
+### 10.1.4 Descarga y gestión de modelos
 
 ```bash
 # Modelos recomendados para Jetson AGX Orin 64GB
@@ -241,7 +241,7 @@ gemma4:latest           adc7671b8ca6    9.4 GB    5 minutes ago
 nomic-embed-text:latest 0a109f422b47    274 MB    1 hour ago
 ```
 
-### 12.1.5 Modos de energía recomendados
+### 10.1.5 Modos de energía recomendados
 
 ```bash
 # Modelos 1B–4B
@@ -257,7 +257,7 @@ sudo jetson_clocks
 
 > **NOTA:** Al ejecutar `sudo nvpmodel -m X`, el Jetson mostrará un diálogo interactivo solicitando confirmación de reinicio (escriba `yes`). Tras el reinicio, el nuevo modo quedará activo. Consulte el Capítulo 5 para detalles sobre los modos de energía disponibles.
 
-### 12.1.6 Verificar acceso a la GPU
+### 10.1.6 Verificar acceso a la GPU
 
 ```bash
 # Correr con verbose para ver métricas de GPU
@@ -276,7 +276,7 @@ eval rate:     25+ tokens/s   ← GPU confirmada (CPU-only sería 2-5 tok/s)
 sudo tegrastats | grep -o "GR3D_FREQ [0-9]*%@\[[0-9,]*\]"
 ```
 
-### 12.1.7 Test de la API
+### 10.1.7 Test de la API
 
 ```bash
 # Desde el Jetson — llamada directa a la API
@@ -315,7 +315,7 @@ gemma4:latest           9.4
 nomic-embed-text:latest 0.3
 ```
 
-### 12.1.8 Verificación completa de Ollama
+### 10.1.8 Verificación completa de Ollama
 
 ```bash
 echo "=== Estado de Ollama ==="
@@ -339,11 +339,11 @@ ollama list
 
 ---
 
-## 12.2 Motor de Inferencia 2: llama.cpp (compilado desde fuente)
+## 10.2 Motor de Inferencia 2: llama.cpp (compilado desde fuente)
 
 llama.cpp es el motor de referencia para modelos en formato **GGUF** (cuantizados). Sus ventajas en el Jetson son significativas: al usar `--n-gpu-layers 999`, descarga todos los pesos al procesador GPU de la memoria unificada y los ejecuta a través de los núcleos CUDA, logrando una aceleración de 3–5x sobre la inferencia por CPU.
 
-### 12.2.1 ¿Por qué compilar desde fuente en JP 7.2?
+### 10.2.1 ¿Por qué compilar desde fuente en JP 7.2?
 
 JetPack 7.2 incluye **CUDA 13.2.1**. Los contenedores Docker precompilados de llama.cpp disponibles en Docker Hub (como `dustynv/llama_cpp:r36.4`) fueron compilados contra CUDA 12 y fallan en JP 7.2 con el error:
 
@@ -355,7 +355,7 @@ La solución es compilar llama.cpp directamente en el Jetson usando el toolchain
 
 > **NOTA:** El contenedor `ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin` del GitHub Container Registry de NVIDIA-AI-IOT es diferente a los contenedores de Docker Hub. Éste sí es compatible con JP 7.2 y se usa en los Backends C y D de la Sección 12.4. La compilación desde fuente que se documenta aquí es la alternativa para servir modelos GGUF propios en un flujo de trabajo independiente.
 
-### 12.2.2 Prerrequisitos
+### 10.2.2 Prerrequisitos
 
 ```bash
 # Instalar dependencias de compilación
@@ -369,7 +369,7 @@ pip install --upgrade huggingface-hub
 hf --version
 ```
 
-### 12.2.3 Descargar un modelo GGUF
+### 10.2.3 Descargar un modelo GGUF
 
 Antes de compilar, descargue el modelo que usará. Esto permite verificar más tarde que el servidor funciona:
 
@@ -400,7 +400,7 @@ Salida esperada:
 -rw-rw-r-- 1 jetson jetson 5.2G Jun 28 10:30 Qwen3-8B-Q4_K_M.gguf
 ```
 
-### 12.2.4 Compilar llama.cpp desde fuente
+### 10.2.4 Compilar llama.cpp desde fuente
 
 Ejecute este proceso dentro de una sesión **tmux** para que sobreviva a desconexiones SSH (la compilación tarda 10-15 minutos):
 
@@ -455,7 +455,7 @@ ls ~/llama.cpp/build/bin/
 # llama-server  llama-cli  llama-bench  (entre otros)
 ```
 
-### 12.2.5 Iniciar el servidor llama.cpp
+### 10.2.5 Iniciar el servidor llama.cpp
 
 ```bash
 # Ajustar el modo de energía según el modelo
@@ -499,7 +499,7 @@ Generación:    7.61 tokens/seg
 sudo ufw allow 8080/tcp comment "llama.cpp server"
 ```
 
-### 12.2.6 Probar la API
+### 10.2.6 Probar la API
 
 ```bash
 # Health check
@@ -523,7 +523,7 @@ curl http://localhost:8080/v1/chat/completions \
   }' | python3 -m json.tool
 ```
 
-### 12.2.7 Modo de razonamiento en Qwen3 (importante)
+### 10.2.7 Modo de razonamiento en Qwen3 (importante)
 
 Los modelos Qwen3 activan el "modo de pensamiento" (*thinking mode*) por defecto. El texto generado aparece en el campo `reasoning_content` en lugar de `content` (que puede aparecer vacío). Hay tres soluciones:
 
@@ -557,7 +557,7 @@ response = r["choices"][0]["message"]
 answer = response.get("content") or response.get("reasoning_content", "")
 ```
 
-### 12.2.8 Crear unit file systemd (solo referencia — NO habilitar en boot)
+### 10.2.8 Crear unit file systemd (solo referencia — NO habilitar en boot)
 
 > **ATENCIÓN — Arquitectura clean-start:** El Jetson debe arrancar siempre sin motores de inferencia activos. **NO** ejecute `sudo systemctl enable llama-server` si quiere mantener el arranque limpio. El unit file se crea como referencia para lanzamiento bajo demanda mediante `sudo systemctl start llama-server`. Véase el Capítulo 15 §15.8 para los aliases de lanzamiento bajo demanda que son el método recomendado.
 
@@ -616,11 +616,11 @@ Salida esperada:
 
 ---
 
-## 12.3 Motor de Inferencia 3: vLLM (Producción)
+## 10.3 Motor de Inferencia 3: vLLM (Producción)
 
 vLLM 0.22.0 utiliza **PagedAttention** y *continuous batching* para maximizar el rendimiento en producción. Con la alineación SBSA introducida en JetPack 7.2, el contenedor upstream oficial de vLLM funciona nativamente en el AGX Orin —sin necesidad de compilaciones específicas para Jetson.
 
-### 12.3.1 Token de HuggingFace — Configuración permanente (obligatorio)
+### 10.3.1 Token de HuggingFace — Configuración permanente (obligatorio)
 
 vLLM descarga los modelos dentro del contenedor al arrancar. Sin un token válido, las descargas están limitadas en velocidad y verá advertencias.
 
@@ -672,7 +672,7 @@ ls -la ~/.cache/huggingface/token
 
 > **CONSEJO:** Si rota su token de HuggingFace, ejecute `hf auth login` de nuevo y repita el paso de `echo export HF_TOKEN...` para actualizar `~/.bashrc`.
 
-### 12.3.2 Enfoque A: Contenedor SBSA upstream (uso general)
+### 10.3.2 Enfoque A: Contenedor SBSA upstream (uso general)
 
 Este enfoque usa el contenedor oficial de vLLM Project y es ideal para uso general, pruebas, y modelos que no requieren la integración con OpenClaw:
 
@@ -708,7 +708,7 @@ docker run --runtime nvidia -d \
 
 > **ADVERTENCIA:** Use siempre `--restart no` (nunca `--restart unless-stopped`). Un contenedor de vLLM con restart automático que se inicia al arrancar el sistema consume silenciosamente 10-15 GB de RAM unificada antes de que usted inicie sesión, dejando el sistema con poca memoria disponible. Esto se detalla en el Capítulo 15.
 
-### 12.3.3 Monitorear el arranque de vLLM
+### 10.3.3 Monitorear el arranque de vLLM
 
 El arranque de vLLM tiene **dos fases distintas** que pueden tomar varios minutos cada una:
 
@@ -746,7 +746,7 @@ Unknown vLLM environment variable: VLLM_BUILD_COMMIT / VLLM_BUILD_PIPELINE
 
 Metadatos internos del contenedor. Inofensivos.
 
-### 12.3.4 Verificar y probar vLLM
+### 10.3.4 Verificar y probar vLLM
 
 ```bash
 # Verificar que la API responde
@@ -810,7 +810,7 @@ Invoke-RestMethod `
     ForEach-Object { $_.message.content }
 ```
 
-### 12.3.5 vLLM con modelos de tool calling (requerido para OpenClaw)
+### 10.3.5 vLLM con modelos de tool calling (requerido para OpenClaw)
 
 OpenClaw requiere soporte nativo de *tool calling*. Qwen3 tiene mejor rendimiento que Gemma 4 E4B para flujos de trabajo agénticos:
 
@@ -875,7 +875,7 @@ En la respuesta busque: `"tool_calls": [{"function": {"name": "calculadora", ...
 sudo ufw allow 8000/tcp comment "vLLM API"
 ```
 
-### 12.3.6 vLLM como servicio systemd
+### 10.3.6 vLLM como servicio systemd
 
 Un **servicio systemd** es un proceso gestionado por el sistema operativo que puede configurarse para iniciarse automáticamente al arrancar el Jetson, sin intervención del usuario. `systemd` es el gestor de servicios de Ubuntu 24.04 — el mismo sistema que controla Docker, SSH y el servidor de NoMachine.
 
@@ -946,7 +946,7 @@ sudo systemctl daemon-reload
 
 ---
 
-## 12.4 Modos de Backend y Selección de Motor
+## 10.4 Modos de Backend y Selección de Motor
 
 > **NOTA:** Los modos de producción avanzados (cambio automático entre backends, switch-model.sh, contenedores NVIDIA-AI-IOT optimizados) se tratan en detalle en el **Capítulo 12 — OpenClaw**, donde se integran con el stack agéntico completo. Esta sección cubre la selección básica de motor para uso cotidiano.
 
@@ -972,13 +972,13 @@ sudo systemctl daemon-reload
 
 ---
 
-## 12.6 Open WebUI — Interfaz de Chat para Todos los Motores
+## 10.6 Open WebUI — Interfaz de Chat para Todos los Motores
 
 Open WebUI proporciona una interfaz web similar a ChatGPT que funciona con cualquier motor de inferencia compatible con la API de OpenAI. Se ejecuta en un contenedor Docker liviano y es accesible desde el navegador de Windows — sin instalar nada adicional en Windows.
 
 > **IMPORTANTE:** Open WebUI usa el puerto **3000** en el host del Jetson. El contenedor internamente corre en el 8080, pero se mapea al 3000 para no conflictuar con llama.cpp (también en 8080). Ambos pueden coexistir.
 
-### 12.6.1 Instalación
+### 10.6.1 Instalación
 
 ```bash
 # Verificar que Docker esta activo
@@ -1014,7 +1014,7 @@ done
 echo " [OK] Open WebUI disponible en http://192.168.1.100:3000"
 ```
 
-### 12.6.2 Primer acceso y configuracion inicial
+### 10.6.2 Primer acceso y configuracion inicial
 
 Acceda desde Windows: `http://192.168.1.100:3000`
 
@@ -1031,7 +1031,7 @@ ssh -L 3000:localhost:3000 jetson -N
 # Abrir en el navegador: http://localhost:3000
 ```
 
-### 12.6.3 Aliases para arranque y parada bajo demanda
+### 10.6.3 Aliases para arranque y parada bajo demanda
 
 ```bash
 # Agregar a ~/.bash_aliases en el Jetson
@@ -1062,7 +1062,7 @@ webui-logs     # Ver logs en tiempo real (Ctrl+C para salir)
 stop-webui     # Detener y liberar memoria
 ```
 
-### 12.6.4 Cambiar de motor de inferencia
+### 10.6.4 Cambiar de motor de inferencia
 
 Open WebUI puede apuntar a cualquier motor activo sin reinstalarse.
 
@@ -1097,7 +1097,7 @@ docker run -d \
 docker logs -f open-webui | grep -E "started|Running"
 ```
 
-### 12.6.5 Casos de uso principales
+### 10.6.5 Casos de uso principales
 
 | Caso de uso | Motor recomendado | Configuracion |
 |-------------|-------------------|---------------|
@@ -1107,7 +1107,7 @@ docker logs -f open-webui | grep -E "started|Running"
 | Carga de PDFs e imagenes | Ollama (gemma4) + panel integrado | Funcion nativa |
 | RAG sobre documentos propios | Ollama + nomic-embed-text | Ver Capitulo 25 |
 
-### 12.6.6 Monitoreo durante uso
+### 10.6.6 Monitoreo durante uso
 
 ```bash
 # Ver conversaciones activas y errores
@@ -1120,11 +1120,11 @@ docker stats open-webui --no-stream
 docker system df -v | grep open-webui-data
 ```
 
-### 12.6.7 SSL para Open WebUI (microfono en el navegador)
+### 10.6.7 SSL para Open WebUI (microfono en el navegador)
 
 Los navegadores modernos (Chrome, Edge) solo permiten acceso al microfono en conexiones HTTPS. Para habilitar entrada de voz en Open WebUI, necesita un certificado SSL local. El procedimiento completo se trata en el **Capitulo 14 — Open WebUI SSL + Proyecto Nemotron**.
 
-### 12.6.8 Pipelines — Integracion avanzada
+### 10.6.8 Pipelines — Integracion avanzada
 
 Open WebUI soporta "pipelines" — funciones Python que procesan las peticiones antes y despues del LLM:
 
